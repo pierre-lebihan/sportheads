@@ -1,10 +1,11 @@
 import { summarizeIce, iceServerLabel } from './ice-diagnostics.js';
+import { protectIceSignaling } from './ice-signaling.js';
 
 export const PROTOCOL = 'sportheads-rooms-6';
 const PREFIX = 'sportheads-room-v6-';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SILENCE_TIMEOUT = 120000;
-export const NETWORK_REVISION = 3;
+export const NETWORK_REVISION = 4;
 export function normalizeCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }
 export function validCode(code) { return /^[A-HJ-NP-Z2-9]{8}$/.test(code); }
 function randomCode() { return Array.from(crypto.getRandomValues(new Uint8Array(8)), n => ALPHABET[n & 31]).join(''); }
@@ -29,7 +30,8 @@ export class Room {
   diagnostic() {
     return { revision: NETWORK_REVISION, protocol: PROTOCOL, role: this.role,
       browser: globalThis.navigator?.userAgent, online: globalThis.navigator?.onLine,
-      connected: this.connected, connectivity: this.connectivity, events: this.events.map(event => ({ ...event })) };
+      connected: this.connected, candidateSignaling: this.iceSignaling?.snapshot(),
+      connectivity: this.connectivity, events: this.events.map(event => ({ ...event })) };
   }
 
   async captureConnectivity(connection) {
@@ -42,6 +44,7 @@ export class Room {
         ms: Math.round(performance.now() - this.createdAt),
         signaling: pc.signalingState, gathering: pc.iceGatheringState,
         localDescription: pc.localDescription?.type, remoteDescription: pc.remoteDescription?.type,
+        remoteSdpCandidates: (pc.remoteDescription?.sdp?.match(/^a=candidate:/gm) || []).length,
         ...summarizeIce(report),
       };
     } catch { /* Some browsers stop providing stats while closing or suspended. */ }
@@ -75,7 +78,9 @@ export class Room {
   openPeer(id) {
     return new Promise((resolve, reject) => {
       if (this.closed) { reject(new Error('Connexion annulée.')); return; }
+      this.iceSignaling?.close();
       const peer = this.peer = new window.Peer(id, { debug: 0 });
+      this.iceSignaling = protectIceSignaling(peer, (event, details) => this.record(event, details));
       let settled = false;
       const finish = error => {
         if (settled) return;
@@ -121,6 +126,7 @@ export class Room {
 
   attach(connection) {
     this.connection = connection;
+    this.iceSignaling?.watch(connection);
     this.connectivity = undefined;
     this.record('channel-attempt');
     const pc = connection.peerConnection;
@@ -196,6 +202,7 @@ export class Room {
     clearTimeout(this.timer); clearInterval(this.heartbeat); clearInterval(this.statsTimer);
     const connection = this.connection; this.connection = null;
     const wasConnected = this.connected; this.connected = false;
+    this.iceSignaling?.drop(connection?.connectionId);
     connection?.close();
     if (this.closed) return;
     if (wasConnected) this.onDisconnect(message);
@@ -208,6 +215,7 @@ export class Room {
     this.cancelOpen?.(); clearTimeout(this.reconnectTimer);
     clearTimeout(this.timer); clearInterval(this.heartbeat); clearInterval(this.statsTimer);
     const connection = this.connection; this.connection = null;
+    this.iceSignaling?.close();
     connection?.close(); this.peer?.destroy();
   }
 }

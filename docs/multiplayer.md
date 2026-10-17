@@ -100,6 +100,20 @@ envoyé automatiquement. Un échec de connexion initiale n'est plus présenté
 comme un match arrêté. Les modules du site utilisent une révision commune dans
 leurs URL afin qu'une page actualisée charge aussi le nouveau code réseau.
 
+La révision 4 distingue les candidats envoyés, reçus par `addIceCandidate`,
+acceptés, rejetés ou encore en attente. Elle conserve aussi le nombre de candidats
+présents dans le SDP distant, sans enregistrer le SDP. Une liste de candidats
+distants vide dans `getStats` ne suffit donc plus à conclure à une perte de
+signalisation : le navigateur peut encore traiter leur résolution.
+
+Un correctif local contourne la [perte silencieuse de messages de PeerJS](https://github.com/peers/peerjs/issues/1373)
+lorsque son WebSocket n'est pas prêt : offres, réponses et candidats attendent
+le prochain événement `open`. La file est bornée et supprimée au départ du joueur.
+Les candidats natifs sont convertis explicitement en objets JSON. Ce correctif
+ne modifie ni le transport direct du match ni les serveurs ICE. Son test reproduit
+une panne de signalisation ; il ne prouve pas que cette panne explique l'échec
+Samsung/iPhone observé sur le Wi-Fi du joueur.
+
 GitHub Pages continue d'héberger l'ensemble du site. Aucun serveur applicatif
 personnel ni abonnement payant n'a été créé. La découverte des salles dépend
 du service public PeerServer, sans garantie de disponibilité.
@@ -124,6 +138,8 @@ node scripts/check-background.cjs http://127.0.0.1:8765/_site/
 node scripts/check-background.cjs http://127.0.0.1:8765/_site/ --join-during-background
 node scripts/check-cross-browser.cjs http://127.0.0.1:8765/_site/
 node scripts/check-cross-browser.cjs http://127.0.0.1:8765/_site/ --lan-only
+node scripts/check-cross-browser.cjs http://127.0.0.1:8765/_site/ --lan-only --interrupt-signaling
+node scripts/check-cross-browser.cjs http://127.0.0.1:8765/_site/ --lan-only --interrupt-candidates
 # Diagnostic séparé, ne pas confondre avec un test validé :
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/ --relay
 ```
@@ -142,6 +158,11 @@ Il vérifie aussi l'affichage d'un diagnostic sur une erreur de transport inject
 Avec `--lan-only`, tous les serveurs ICE sont retirés et le test exige une route
 host-vers-host avec des octets reçus. Il valide le chemin direct sur l'ordinateur
 de test, sans reproduire le routeur ni les téléphones du joueur.
+Les interruptions simulées rendent temporairement le socket indisponible, soit
+dès l'offre/réponse, soit lors des premiers candidats ICE. La connexion doit
+aboutir après réouverture, et le diagnostic doit confirmer l'envoi des messages
+en attente puis l'acceptation des candidats distants. Ces deux scénarios échouent
+sur la version sans correctif.
 Ces essais ne prouvent pas la compatibilité de deux téléphones sur un autre réseau.
 
 Le test de réglages vérifie les 12 portraits, les terrains, les aides individuelles,

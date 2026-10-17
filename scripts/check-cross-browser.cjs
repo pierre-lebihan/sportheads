@@ -9,7 +9,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
   const pages = [], errors = [];
   async function pageAt(browser, target = url) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    await context.addInitScript(() => {
+    await context.addInitScript(({ interrupt, candidatesOnly }) => {
       window.networkEvents = []; window.testConnections = [];
       let Peer;
       const watch = connection => {
@@ -18,11 +18,29 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
       };
       Object.defineProperty(window, 'Peer', { configurable: true, get: () => Peer, set: Original => {
         Peer = class extends Original {
-          constructor(...args) { super(...args); this.on('connection', watch); this.on('error', error => window.networkEvents.push({ scope: 'peer', type: error.type, message: error.message })); }
-          connect(...args) { const connection = super.connect(...args); watch(connection); return connection; }
+          constructor(...args) { super(...args); window.testPeer = this; this.on('connection', connection => { if (interrupt && !candidatesOnly) this.interruptSignaling(); watch(connection); }); this.on('error', error => window.networkEvents.push({ scope: 'peer', type: error.type, message: error.message })); }
+          interruptSignaling() {
+            const original = this.socket._wsOpen;
+            this.socket._wsOpen = () => false;
+            setTimeout(() => { this.socket._wsOpen = original; this.emit('open', this.id); }, 1200);
+          }
+          connect(...args) { if (interrupt && !candidatesOnly) this.interruptSignaling(); const connection = super.connect(...args); watch(connection); return connection; }
         };
       } });
-    });
+      if (candidatesOnly) {
+        const Original = window.RTCPeerConnection;
+        window.RTCPeerConnection = class extends Original {
+          constructor(...args) {
+            super(...args);
+            let interrupted = false;
+            this.addEventListener('icecandidate', event => {
+              if (!event.candidate || interrupted) return;
+              interrupted = true; window.testPeer.interruptSignaling();
+            });
+          }
+        };
+      }
+    }, { interrupt: process.argv.includes('--interrupt-signaling'), candidatesOnly: process.argv.includes('--interrupt-candidates') });
     if (process.argv.includes('--lan-only')) await context.addInitScript(() => {
       const Original = window.RTCPeerConnection;
       window.RTCPeerConnection = class extends Original { constructor(config, ...args) { super({ ...config, iceServers: [] }, ...args); } };
@@ -61,7 +79,13 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
       await guest.evaluate(() => window.testConnections.at(-1).emit('error', { type: 'negotiation-failed' }));
       assert.equal(await guest.locator('#network-diagnostic').isVisible(), true);
       const report = JSON.parse(await guest.locator('#network-report').textContent());
-      assert.equal(report.revision, 3);
+      assert.equal(report.revision, 4);
+      assert.ok(report.candidateSignaling.incomingCandidates > 0);
+      assert.ok(report.candidateSignaling.appliedCandidates > 0);
+      assert.equal(report.candidateSignaling.rejectedCandidates, 0);
+      if (process.argv.includes('--interrupt-signaling') || process.argv.includes('--interrupt-candidates')) {
+        assert.ok(report.candidateSignaling.flushedSignals > 0, 'interrupted signals are sent after recovery');
+      }
       assert.ok(report.connectivity?.remoteCandidates.length > 0, 'report keeps remote routes before channel is destroyed');
       assert.ok(report.events.some(event => event.event === 'channel-error' && event.type === 'negotiation-failed'));
       await guest.click('#network-diagnostic summary');

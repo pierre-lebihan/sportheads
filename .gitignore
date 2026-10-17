@@ -1,0 +1,13 @@
+tools/
+probe/vendor/
+reference/
+evidence/*
+!evidence/physics-parity.json
+logs/
+flashlib/
+node_modules/
+.DS_Store
+__pycache__/
+target/
+_site/
+probe/*.wasm

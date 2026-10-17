@@ -1,0 +1,12 @@
+[package]
+name = "sportheads-core"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[profile.release]
+opt-level = 3
+strip = "symbols"

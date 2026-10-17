@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<title>Sports Heads — référence Flash</title>
+<style>
+  body { margin: 0; background: #202326; color: #eee; font: 14px system-ui; }
+  header { padding: 12px 20px; }
+  #game { width: 800px; height: 540px; }
+  ruffle-player { width: 800px; height: 540px; display: block; }
+</style>
+<header>Référence Flash locale — aucune reconstruction</header>
+<div id="game"></div>
+<script>
+window.traces = [];
+window.RufflePlayer = { config: {
+  autoplay: "on", unmuteOverlay: "hidden", splashScreen: false,
+  warnOnUnsupportedContent: false, allowScriptAccess: true,
+  logLevel: "warn", openUrlMode: "deny", maxExecutionDuration: 15,
+  backgroundColor: "#ffffff",
+} };
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const player = window.RufflePlayer.newest().createPlayer();
+    window.player = player;
+    document.querySelector("#game").appendChild(player);
+    const file = new URLSearchParams(location.search).get("file") || "original";
+    if (!["original", "instrumented", "seeded"].includes(file)) throw new Error("Unknown reference");
+    await player.ruffle().load({url: "/reference/" + file + ".swf"});
+    player.ruffle().traceObserver = message => window.traces.push(message);
+    window.loaded = true;
+    if (new URLSearchParams(location.search).get("boot") === "play" && file !== "original") {
+      for (let i = 0; i < 100 && typeof player.probeState !== "function"; i++)
+        await new Promise(resolve => setTimeout(resolve, 10));
+      // Bypass only the legacy intro/preloader. Frame 3 initializes audio and world.
+      player.ruffle().callExternalInterface("probeCall", "gotoAndPlay", [3]);
+    }
+  } catch (error) { window.loadError = String(error); }
+});
+</script>
+<script src="vendor/ruffle.js"></script>
+</html>

@@ -1,0 +1,224 @@
+# box-floor-two-points
+# Flash oracle; SWF SHA-256 6a8b371667a9f06da787301814f74afc7d6e80b5b8b0d9fb9b89e1982a559950
+reset 0 300
+box 400 470 400 10 0 0 0.5 0 0 0 0 0
+box 400 300 20 5 0 2 0.5 0 0 30 20 0
+# tick 0
+expect 0 400 470 0 0 0 0 0 0
+expect 1 400 300 30 20 0 0 800 113333.33333333331
+tick
+# tick 1
+expect 0 400 470 0 0 0 0 0 0
+expect 1 400.9375 300.8203125 30 29.375 0 0 800 113333.33333333331
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 10
+expect 0 400 470 0 0 0 0 0 0
+expect 1 409.375 321.38671875 30 113.75 0 0 800 113333.33333333331
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 17
+expect 0 400 470 0 0 0 0 0 0
+expect 1 415.9375 353.7890625 30 179.375 0 0 800 113333.33333333331
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 29
+expect 0 400 470 0 0 0 0 0 0
+expect 1 427.1875 442.734375 30 291.875 0 0 800 113333.33333333331
+tick
+# tick 30
+expect 0 400 470 0 0 0 0 0 0
+expect 1 428.125 452.05078125 30 301.25 0 0 800 113333.33333333331
+tick
+# tick 31
+expect 0 400 470 0 0 0 0 0 0
+expect 1 428.4375 455.00579081001297 2.830278343117645e-17 1.5987211554602254e-16 0.000009950685614147822 5.660878824815591e-18 800 113333.33333333331
+tick
+# tick 32
+expect 0 400 470 0 0 0 0 0 0
+expect 1 428.4375 455.0052705862182 -3.163015704078138e-17 4.085620730620576e-16 0.0000034049091912975027 -6.326154592789164e-18 800 113333.33333333331
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 45
+expect 0 400 470 0 0 0 0 0 0
+expect 1 428.4375000002651 455.0050000002384 -2.1278013996890606e-16 7.549516814411054e-16 3.000254579061491e-12 -4.259862662199247e-17 800 113333.33333333331
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 59
+expect 0 400 470 0 0 0 0 0 0
+expect 1 428.4375000002651 455.00500000000017 1.3879840574901194e-16 4.440892098500626e-16 1.0258697080129177e-15 2.778746861856844e-17 800 113333.33333333331
+tick
+# tick 60
+expect 0 400 470 0 0 0 0 0 0
+expect 1 428.4375000002651 455.00500000000017 1.387984058193223e-16 4.440892098500626e-16 1.0267380664075958e-15 2.778746863249493e-17 800 113333.33333333331
+tick
+# tick 61
+expect 0 400 470 0 0 0 0 0 0
+expect 1 428.4375000002651 455.00500000000017 1.3879840581550951e-16 4.440892098500626e-16 1.0276064248023292e-15 2.7787468631547054e-17 800 113333.33333333331
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 180
+expect 0 400 470 0 0 0 0 0 0
+expect 1 428.4375000002651 455.0050000000001 -5.06919686617367e-17 8.437694987151222e-16 2.1156131750059266e-15 -1.0148542274863975e-17 800 113333.33333333331

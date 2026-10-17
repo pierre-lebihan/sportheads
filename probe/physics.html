@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sportheads — comparaison physique</title>
+<style>
+  :root{font:15px system-ui;color:#20242a;background:#f4f5f5}
+  *{box-sizing:border-box}body{margin:0;padding:28px;max-width:1300px;margin-inline:auto}
+  h1{font-size:25px;font-weight:650;letter-spacing:-.6px;margin:0 0 8px}
+  p{color:#59616a;margin:6px 0 20px;line-height:1.5}
+  .controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:24px 0 16px}
+  select,button{font:inherit;background:white;border:1px solid #bdc3c7;border-radius:5px;padding:8px 12px;color:inherit}
+  button{min-width:90px;cursor:pointer}input{flex:1;min-width:150px;accent-color:#385c70}
+  output{font:13px ui-monospace,monospace;min-width:100px;text-align:right}
+  .panes{display:grid;grid-template-columns:1fr 1fr;gap:20px}.pane{background:white;border:1px solid #d7dcdf}
+  h2{font-size:14px;font-weight:600;margin:0;padding:14px 18px;border-bottom:1px solid #e3e6e8}
+  canvas{display:block;width:100%;height:auto;background:#fff}
+  .metrics{display:flex;gap:28px;flex-wrap:wrap;margin:20px 0;font:13px ui-monospace,monospace}
+  .note{font-size:13px;max-width:850px}a{color:#385c70}
+  @media(max-width:720px){body{padding:16px}.panes{grid-template-columns:1fr}}
+</style>
+<p class="note">SPORTHEADS · PHASE 1 — PROTOTYPE TECHNIQUE</p>
+<h1>Le même mouvement, deux moteurs</h1>
+<p id="summary">Comparaison des collisions et des articulations du jeu.</p>
+<div class="controls">
+  <label for="scene">Scénario</label><select id="scene"></select>
+  <button id="play" type="button">Lire</button>
+  <input id="tick" type="range" min="0" value="0" aria-label="Étape de simulation">
+  <output id="counter"></output>
+</div>
+<div class="panes">
+  <section class="pane"><h2>Référence Flash — Box2D dans Ruffle</h2><canvas id="flash" width="580" height="380"></canvas></section>
+  <section class="pane"><h2>Port Rust — exécuté en WebAssembly</h2><canvas id="rust" width="580" height="380"></canvas></section>
+</div>
+<div class="metrics"><span id="position"></span><span id="angle"></span></div>
+<p class="note">Le jeu complet est en cours de reconstruction. Ces replays proviennent des tests exécutés côte à côte. La forme des objets est dessinée à partir des états enregistrés ; les graphismes du jeu restent à intégrer. La détection continue et la mise en veille sont désactivées dans les deux moteurs pour ces essais.</p>
+<p class="note"><a href="/probe/?file=instrumented&amp;boot=play">Ouvrir la référence du jeu</a> · <a href="/docs/physics-progress.md">Constat technique</a></p>
+<script>
+const labels={
+  'ball-floor':'Ballon : rebond et friction au sol',
+  'ball-tilted-wall':'Ballon contre un mur incliné',
+  'ball-box-corner':'Ballon contre un angle',
+  'ball-head':'Ballon contre une tête',
+  'overlapping-circles':'Séparation de deux cercles superposés',
+  'motor-foot':'Pied motorisé en mouvement',
+  'motor-torque-limit':'Limitation du couple du pied',
+  'motor-foot-ball':'Le pied frappe le ballon',
+  'box-floor-two-points':'Deux points d’appui au sol',
+  'box-rotated-floor':'Un pied incliné retombe au sol',
+  'motor-foot-ground':'Pied motorisé avec appui au sol',
+};
+const select=document.querySelector('#scene'),slider=document.querySelector('#tick'),button=document.querySelector('#play');
+let data,playing=false,last=0,accumulator=0;
+function camera(c,state){
+  const points=state.bodies.map((b,i)=>{const s=c.spec.bodies[i],co=Math.abs(Math.cos(b.angle)),si=Math.abs(Math.sin(b.angle));return {x:b.x,y:b.y,rx:s.radius||co*s.hx+si*s.hy,ry:s.radius||si*s.hx+co*s.hy};});
+  const loX=Math.min(...points.map(b=>b.x-b.rx))-30,hiX=Math.max(...points.map(b=>b.x+b.rx))+30;
+  const loY=Math.min(...points.map(b=>b.y-b.ry))-30,hiY=Math.max(...points.map(b=>b.y+b.ry))+30;
+  return {x:(loX+hiX)/2,y:(loY+hiY)/2,scale:Math.min(580/Math.max(800,hiX-loX),380/Math.max(500,hiY-loY))};
+}
+function draw(canvas,c,state,view){
+  const ctx=canvas.getContext('2d');ctx.clearRect(0,0,580,380);
+  ctx.strokeStyle='#f0f2f3';ctx.lineWidth=1;
+  for(let x=0;x<580;x+=29){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,380);ctx.stroke();}
+  for(let y=0;y<380;y+=29){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(580,y);ctx.stroke();}
+  state.bodies.forEach((b,i)=>{
+    const s=c.spec.bodies[i];ctx.save();ctx.translate(290+(b.x-view.x)*view.scale,190+(b.y-view.y)*view.scale);ctx.rotate(b.angle);ctx.scale(view.scale,view.scale);
+    ctx.fillStyle=s.density===0?'#6b7277':s.type==='box'?'#6d577b':s.radius>=20?'#4b768d':'#c57a36';
+    ctx.beginPath();if(s.type==='circle')ctx.arc(0,0,s.radius,0,2*Math.PI);else ctx.rect(-s.hx,-s.hy,2*s.hx,2*s.hy);ctx.fill();
+    if(s.type==='circle'){ctx.strokeStyle='#ffffff';ctx.lineWidth=1.4/view.scale;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(s.radius*.8,0);ctx.stroke();}ctx.restore();
+  });
+}
+function render(){
+  const c=data.cases[+select.value],tick=+slider.value,a=c.flash[tick],b=c.rust[tick],view=camera(c,a);
+  draw(document.querySelector('#flash'),c,a,view);draw(document.querySelector('#rust'),c,b,view);
+  let pos=0,angle=0;a.bodies.forEach((v,i)=>{pos=Math.max(pos,Math.abs(v.x-b.bodies[i].x),Math.abs(v.y-b.bodies[i].y));angle=Math.max(angle,Math.abs(v.angle-b.bodies[i].angle));});
+  document.querySelector('#counter').value=`${tick} / ${c.spec.ticks}`;
+  document.querySelector('#position').textContent=`Écart de position : ${pos===0?'0':pos.toExponential(3)} px`;
+  document.querySelector('#angle').textContent=`Écart d’angle : ${angle===0?'0':angle.toExponential(3)} rad`;
+}
+function choose(){playing=false;button.textContent='Lire';slider.max=data.cases[+select.value].spec.ticks;slider.value=0;render();}
+select.addEventListener('change',choose);slider.addEventListener('input',render);
+button.addEventListener('click',()=>{if(+slider.value===+slider.max)slider.value=0;playing=!playing;button.textContent=playing?'Pause':'Lire';});
+function animate(time){const elapsed=last?time-last:0;last=time;
+  if(playing&&data){accumulator+=elapsed;while(accumulator>=1000/30){accumulator-=1000/30;slider.value=Math.min(+slider.max,+slider.value+1);if(+slider.value===+slider.max){playing=false;button.textContent='Lire';break;}}render();}else accumulator=0;
+  requestAnimationFrame(animate);
+}
+fetch('/evidence/physics-parity.json').then(r=>{if(!r.ok)throw new Error('Rapport indisponible');return r.json();}).then(report=>{
+  if(report.unexpectedErrors.length||report.cases.some(c=>!c.passed))throw new Error('Les essais doivent être validés avant ouverture');
+  data=report;report.cases.forEach((c,i)=>{const option=document.createElement('option');option.value=i;option.textContent=labels[c.name]||c.name;select.append(option);});
+  document.querySelector('#summary').textContent=`${report.cases.length} scénarios validés, dont ${report.cases.filter(c=>c.maxError===0).length} numériquement identiques sur tous les états comparés.`;
+  choose();window.ready=true;requestAnimationFrame(animate);
+}).catch(error=>{document.querySelector('#summary').textContent=error.message;window.loadError=error.message;});
+</script>
+</html>

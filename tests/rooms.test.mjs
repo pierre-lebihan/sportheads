@@ -197,6 +197,74 @@ for (const [name, welcome] of [
   });
 }
 
+test('a signalling outage while waiting keeps the same room and reconnects', async t => {
+  const { peers, createRoom } = setup(t);
+  const { room, events } = createRoom();
+  const code = await room.create();
+  const peer = peers[0];
+  // PeerJS emits the network error before its disconnected event.
+  peer.emit('error', Object.assign(new Error('Lost connection to server'), { type: 'network' }));
+  peer.disconnected = true; peer.emit('disconnected');
+  assert.equal(room.closed, false);
+  assert.equal(peer.destroyed, false);
+  assert.equal(room.code, code);
+  t.mock.timers.tick(1500);
+  assert.equal(peer.reconnects, 1);
+  assert.deepEqual(events.errors, []);
+  const guest = new FakeConnection(); peer.incoming(guest); guest.openChannel();
+  assert.equal(room.connected, true);
+  assert.deepEqual(events.ready, ['host']);
+});
+
+test('background suspension preserves a channel and return resets its presence deadline', async t => {
+  const { createRoom } = setup(t);
+  let now = 0; t.mock.method(performance, 'now', () => now);
+  const { room, events } = createRoom();
+  await room.join('ABCD2345');
+  const connection = room.connection; connection.openChannel();
+  connection.emit('data', { type: 'welcome', protocol: PROTOCOL, code: room.code });
+  room.suspend();
+  now = 240000; t.mock.timers.tick(240000);
+  assert.equal(room.connected, true, 'local suspension is not a lost connection');
+  room.resume();
+  now += 1000; t.mock.timers.tick(1000);
+  assert.equal(room.connected, true, 'return gives the remote channel time to answer');
+  connection.emit('data', { type: 'pong' });
+  assert.deepEqual(events.disconnects, []);
+  connection.close();
+  assert.equal(events.disconnects.length, 1, 'an actual departure still disconnects immediately');
+});
+
+test('a silent remote browser has two minutes to return before its slot is released', async t => {
+  const { createRoom } = setup(t);
+  let now = 0; t.mock.method(performance, 'now', () => now);
+  const { room, events } = createRoom();
+  await room.join('ABCD2345');
+  const connection = room.connection; connection.openChannel();
+  connection.emit('data', { type: 'welcome', protocol: PROTOCOL, code: room.code });
+  now = 30000; t.mock.timers.tick(30000);
+  assert.equal(room.connected, true, 'sharing an invitation must survive the old eight-second deadline');
+  now = 121000; t.mock.timers.tick(91000);
+  assert.equal(room.connected, false);
+  assert.equal(events.disconnects.length, 1);
+  assert.equal(connection.closed, true);
+});
+
+test('return reconnects signalling immediately with the existing peer and cancels the retry', async t => {
+  const { peers, createRoom } = setup(t);
+  const { room, events } = createRoom();
+  const code = await room.create();
+  peers[0].disconnected = true; peers[0].emit('disconnected');
+  room.suspend(); room.resume();
+  assert.equal(peers[0].reconnects, 1);
+  assert.equal(room.code, code);
+  t.mock.timers.tick(1500);
+  assert.equal(peers[0].reconnects, 1);
+  room.close(); room.resume();
+  assert.equal(peers[0].reconnects, 1, 'explicit departure cannot reconnect');
+  assert.deepEqual(events.errors, []);
+});
+
 test('a fatal peer error closes the waiting room before calling onError', async t => {
   const { peers, createRoom } = setup(t);
   let room;

@@ -265,8 +265,13 @@ window.addEventListener('keydown', event => {
 });
 window.addEventListener('keyup', event => { keys.delete(event.code); sendInput(); });
 window.addEventListener('blur', () => { clearInput(); sendInput(); pause(); });
-window.addEventListener('pagehide', () => room?.close());
-document.addEventListener('visibilitychange', () => { if (document.hidden) { clearInput(); sendInput(); pause(); } });
+function suspendPage() { clearInput(); sendInput(); pause(); room?.suspend(); }
+function resumePage() { room?.resume(); last = 0; accumulator = 0; }
+// Mobile browsers can suspend this page while the invitation is shared in another app.
+window.addEventListener('pagehide', event => { if (event.persisted) suspendPage(); else room?.close(); });
+window.addEventListener('pageshow', resumePage);
+window.addEventListener('online', resumePage);
+document.addEventListener('visibilitychange', () => { if (document.hidden) suspendPage(); else resumePage(); });
 setInterval(sendInput, 50);
 
 function renderState() {

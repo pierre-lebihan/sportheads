@@ -1,6 +1,7 @@
 export const PROTOCOL = 'sportheads-rooms-6';
 const PREFIX = 'sportheads-room-v6-';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const SILENCE_TIMEOUT = 120000;
 export function normalizeCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }
 export function validCode(code) { return /^[A-HJ-NP-Z2-9]{8}$/.test(code); }
 function randomCode() { return Array.from(crypto.getRandomValues(new Uint8Array(8)), n => ALPHABET[n & 31]).join(''); }
@@ -12,6 +13,7 @@ export class Room {
     Object.assign(this, { onReady, onMessage, onDisconnect, onError });
     this.closed = false; this.connected = false; this.peer = null; this.connection = null;
     this.timer = null; this.heartbeat = null; this.code = ''; this.role = null;
+    this.suspended = false; this.lastSeen = 0;
   }
 
   async create() {
@@ -73,6 +75,9 @@ export class Room {
       peer.on('error', error => {
         if (this.closed) return;
         if (!opened) finish(error);
+        // PeerJS reports a transient network error BEFORE emitting disconnected.
+        // Keep the host's ID alive while its signalling socket reconnects.
+        else if (['network', 'socket-error', 'socket-closed'].includes(error.type)) return;
         else if (!this.connected) this.fail(error.type === 'peer-unavailable'
           ? 'Salle introuvable ou fermée. Vérifiez le code avec son créateur.'
           : 'Connexion impossible. Réessayez ou créez une nouvelle salle.');
@@ -82,13 +87,15 @@ export class Room {
 
   attach(connection) {
     this.connection = connection;
-    let welcomed = false, lastSeen = performance.now(), rateStart = lastSeen, messages = 0;
+    let welcomed = false, rateStart = performance.now(), messages = 0;
+    this.lastSeen = rateStart;
     this.timer = setTimeout(() => this.lost('La connexion a expiré. Essayez une nouvelle salle ou un autre réseau.'), 18000);
     connection.on('open', () => {
       if (this.closed || this.connection !== connection) { connection.close(); return; }
-      lastSeen = performance.now();
+      this.lastSeen = performance.now();
       this.heartbeat = setInterval(() => {
-        if (performance.now() - lastSeen > 8000) { this.lost('Connexion perdue. Le match est arrêté.'); return; }
+        if (this.suspended) return;
+        if (performance.now() - this.lastSeen > SILENCE_TIMEOUT) { this.lost('Connexion perdue. Le match est arrêté.'); return; }
         this.send({ type: 'ping', time: Date.now() });
       }, 1000);
       if (this.role === 'host') {
@@ -101,7 +108,7 @@ export class Room {
       const now = performance.now();
       if (now - rateStart > 1000) { rateStart = now; messages = 0; }
       if (++messages > 240) { this.lost('La connexion a été interrompue.'); return; }
-      lastSeen = now;
+      this.lastSeen = now;
       if (message.type === 'reject') {
         this.fail(message.reason === 'full' ? 'Cette salle est complète. Créez une autre salle.' : 'Versions du jeu différentes. Rechargez les deux pages.'); return;
       }
@@ -118,6 +125,14 @@ export class Room {
   }
 
   markReady() { clearTimeout(this.timer); this.connected = true; this.onReady(this.role); }
+  suspend() { this.suspended = true; }
+  resume() {
+    if (this.closed) return;
+    this.suspended = false; this.lastSeen = performance.now();
+    clearTimeout(this.reconnectTimer); this.reconnectTimer = null;
+    if (this.peer?.disconnected && !this.peer.destroyed) this.peer.reconnect();
+    if (this.connected) this.send({ type: 'ping', time: Date.now() });
+  }
   send(message) {
     if (!this.connection?.open) return false;
     // Drop obsolete views instead of building seconds of delay on a slow link.

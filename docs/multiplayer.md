@@ -71,13 +71,21 @@ Chaque camp possède sa pause : un joueur ne peut pas annuler celle de l'autre.
 Les touches sont relâchées sur perte de focus, et une commande distante qui
 n'est plus rafraîchie cesse d'agir après 350 ms.
 
-Des messages de présence détectent une connexion muette après huit secondes.
+Passer dans une autre application pour partager le lien ne ferme plus la salle.
+Le créateur conserve le même code et ses choix ; si la connexion au service de
+salles a été suspendue, elle est rétablie au retour avec le même identifiant.
+Le match reste en pause et se reprend avec le bouton Reprendre.
+
+Des messages de présence laissent deux minutes à un navigateur distant suspendu
+avant de libérer sa place. Le navigateur local suspendu ne déclenche pas son
+propre délai d'expiration et vérifie la présence de l'autre au retour.
 Une connexion en cours expire après 18 secondes. En cas de déconnexion, le
 match s'arrête ; il n'y a pas de reprise silencieuse avec des commandes anciennes.
 Si l'invité part, le créateur peut partager le même code à un nouvel adversaire,
 ce qui remet les joueurs dans le salon pour une nouvelle partie. Si le créateur
 ferme son onglet ou quitte la salle, le code cesse de fonctionner. Aucun état
 de partie n'est sauvegardé côté service.
+Si le téléphone détruit ou recharge entièrement la page, il faut recréer la salle.
 
 ## Réseaux et dépendances
 
@@ -101,6 +109,7 @@ node scripts/check-game.cjs http://127.0.0.1:8765/_site/
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
 node scripts/check-setup.cjs http://127.0.0.1:8765/_site/
 node scripts/check-mobile.cjs http://127.0.0.1:8765/_site/
+node scripts/check-background.cjs http://127.0.0.1:8765/_site/
 # Diagnostic séparé, ne pas confondre avec un test validé :
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/ --relay
 ```
@@ -111,6 +120,9 @@ salle complète, commandes séparées, identité des états à l'arrêt, pause d
 joueurs, bonus, buts, fin de partie, revanche, fermeture et remplacement d'invité.
 Les tests sans réseau vérifient les paquets contre le WASM réel et les erreurs
 de cycle de connexion. Les régressions physiques Flash/Rust restent inchangées.
+Le test d'arrière-plan coupe réellement le WebSocket de signalisation, gèle des
+pages Chrome pendant 12 à 15 secondes, puis vérifie le même lien, l'arrivée d'un
+invité et la pause/reprise d'un match. Il ne remplace pas un essai sur téléphone physique.
 
 Le test de réglages vérifie les 12 portraits, les terrains, les aides individuelles,
 leur transmission dans une vraie salle et leur maintien lors de la revanche.

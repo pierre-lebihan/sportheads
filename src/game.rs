@@ -74,6 +74,7 @@ pub struct Game {
     streaker_target: f64,
     pub bonus_enabled: bool,
     pub mode: u32,
+    pub target_score: u32,
     pub goal_style: u32,
     pub active_ticks: u32,
     spawn_timer: u32,
@@ -114,6 +115,7 @@ impl Game {
             streaker_target: 400.0,
             bonus_enabled: false,
             mode: 0,
+            target_score: 7,
             goal_style: 0,
             active_ticks: 0,
             spawn_timer: 0,
@@ -135,6 +137,11 @@ impl Game {
         g.bonus_enabled = bonus;
         g.apply_goal_style();
         g
+    }
+    pub fn score_match(seed: u32, target: u32, bonus: bool) -> Self {
+        let mut game = Self::configured(seed, 1, 0, bonus);
+        game.target_score = target.clamp(1, 99);
+        game
     }
     pub fn set_skin(&mut self, side: usize, skin: usize) {
         const HEIGHTS: [f64; 26] = [
@@ -281,7 +288,7 @@ impl Game {
                 self.phase = Phase::Goal;
                 self.countdown = GOAL_TICKS;
                 self.sounds |= 4;
-                if self.mode == 2 || (self.mode == 1 && self.score[scorer] >= 7) {
+                if self.mode == 2 || (self.mode == 1 && self.score[scorer] >= self.target_score) {
                     self.phase = Phase::Finished;
                     self.countdown = 0;
                     self.sounds |= 8;

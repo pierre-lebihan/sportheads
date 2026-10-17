@@ -20,7 +20,9 @@ for (const [id, selected] of [['skin-left', 1], ['skin-right', 2]]) {
 const engine = () => mode === 'online' && role === 'guest' ? remote.engine : core;
 const skins = () => [+$('#skin-left').value, +$('#skin-right').value];
 const ownSide = () => role === 'guest' ? 1 : 0;
-const canStart = () => !!core && (mode === 'local' || (role === 'host' && room?.connected));
+const targetScore = () => +$('#target-score').value;
+const validTarget = () => Number.isInteger(targetScore()) && targetScore() >= 1 && targetScore() <= 99;
+const canStart = () => !!core && validTarget() && (mode === 'local' || (role === 'host' && room?.connected));
 function input() {
   let mask = 0;
   for (const key of keys) { const bit = bindings[key] || 0; mask |= mode === 'local' || bit < 16 ? bit : bit >> 4; }
@@ -29,7 +31,7 @@ function input() {
 function snapshot() {
   const e = engine();
   return { started, paused, mode, role, connected: !!room?.connected, code: room?.code || '', matchId,
-    phase: e?.game_value(0), remainingTicks: e?.game_value(1), score: [e?.game_value(2), e?.game_value(3)], countdown: e?.game_value(4), tick: e?.game_value(6) };
+    phase: e?.game_value(0), targetScore: started ? e?.game_value(14) : targetScore(), remainingTicks: e?.game_value(1), score: [e?.game_value(2), e?.game_value(3)], countdown: e?.game_value(4), tick: e?.game_value(6) };
 }
 function playSounds(mask) {
   if (!soundEnabled) return;
@@ -46,7 +48,10 @@ function sendInput() {
 }
 function broadcast() {
   if (mode !== 'online' || role !== 'host' || !room?.connected) return;
-  room.send({ type: 'frame', sequence: ++frameSequence, matchId, started, bonuses: $('#bonuses').checked, pauseFlags: [...pauseFlags], state: captureState(core, skins()) });
+  if (!started && !validTarget()) return;
+  const state = captureState(core, skins());
+  if (!started && validTarget()) state.values[14] = targetScore();
+  room.send({ type: 'frame', sequence: ++frameSequence, matchId, started, bonuses: $('#bonuses').checked, pauseFlags: [...pauseFlags], state });
   lastBroadcast = performance.now();
 }
 function pause(value = true) {
@@ -65,7 +70,7 @@ function applyPause() {
 function reset() {
   if (!canStart()) return;
   audio.unlock();
-  core.game_start(crypto.getRandomValues(new Uint32Array(1))[0], 0, 0, +$('#bonuses').checked);
+  core.game_start_match(crypto.getRandomValues(new Uint32Array(1))[0], targetScore(), +$('#bonuses').checked);
   skins().forEach((skin, side) => core.game_set_skin(side, skin));
   started = true; paused = false; pauseFlags = [false, false]; previousPhase = -1;
   remoteInput = 0; matchId++; keys.clear(); accumulator = 0; last = 0;
@@ -112,6 +117,7 @@ function onMessage(message) {
   // Preserve the guest's desired skin while an older snapshot is still in flight.
   $('#skin-left').value = message.state.skins[0];
   $('#bonuses').checked = message.bonuses;
+  $('#target-score').value = message.state.values[14];
   if (newMatch) { previousPhase = -1; keys.clear(); music(); if (started && document.hidden) pause(true); else if (started) canvas.focus(); }
   if (oldPaused !== paused) { keys.clear(); music(); if (!paused) canvas.focus(); }
   if (started && !paused && (soundTick !== engine().game_value(6) || soundMatch !== matchId)) {
@@ -180,6 +186,7 @@ $('#create-room').addEventListener('click', () => connectRoom(true));
 $('#join-form').addEventListener('submit', event => { event.preventDefault(); connectRoom(false); });
 $('#leave-room').addEventListener('click', leaveRoom);
 $('#copy-code').addEventListener('click', () => copyRoom(false)); $('#copy-link').addEventListener('click', () => copyRoom(true));
+$('#target-score').addEventListener('input', () => { update(); broadcast(); });
 $('#pause').addEventListener('click', () => pause(!pauseFlags[ownSide()]));
 $('#resume').addEventListener('click', () => { pause(false); if (mode === 'local') canvas.focus(); });
 for (const [side, id] of ['skin-left', 'skin-right'].entries()) $('#' + id).addEventListener('change', () => {
@@ -220,9 +227,8 @@ function renderState() {
 function update() {
   const e = engine(), state = snapshot(), phase = state.phase;
   $('#score-left').textContent = state.score[0] ?? 0; $('#score-right').textContent = state.score[1] ?? 0;
-  const seconds = Math.ceil((state.remainingTicks ?? 1800) / 30);
-  $('#clock').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-  $('.clock').classList.toggle('urgent', started && seconds <= 10);
+  const target = state.targetScore;
+  $('#clock').textContent = Number.isInteger(target) && target >= 1 && target <= 99 ? `${target} ${target === 1 ? 'but' : 'buts'}` : '—';
   const notice = e?.game_value(11) > 0 ? bonusNames[e.game_value(10)] : '';
   $('#bonus-notice').textContent = notice; $('#bonus-notice').hidden = !notice;
   $('#welcome').hidden = started; $('#finished').hidden = !started || phase !== 3; $('#paused').hidden = !started || !paused || phase === 3;
@@ -242,7 +248,8 @@ function update() {
   $('#again').disabled = !canStart(); $('#again').textContent = mode === 'online' && role === 'guest' ? 'Le créateur peut relancer' : 'Rejouer';
   $('#create-room').disabled = !core || busy; $('#join-room').disabled = !core || busy;
   $('#bonuses').disabled = mode === 'online' && (role === 'guest' || started);
-  $('#settings-legend').textContent = started ? 'Votre partie · 60 secondes' : 'Votre partie';
+  $('#target-score').disabled = (started && phase !== 3) || (mode === 'online' && role === 'guest');
+  $('#settings-legend').textContent = 'Votre partie';
   for (const side of [0, 1]) {
     $('#' + ['skin-left', 'skin-right'][side]).disabled = mode === 'online' && (role === null || side !== ownSide());
     $('.control-side.' + (side === 0 ? 'blue' : 'red')).dataset.own = String(mode === 'online' && role !== null && side === ownSide());

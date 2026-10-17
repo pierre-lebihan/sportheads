@@ -25,7 +25,7 @@ function compareFacade(remote, packet) {
 
 test('actual WASM survives snapshot round trips through every bonus and body replacement', async () => {
   const host = await wasm();
-  host.game_start(12345, 0, 0, 1);
+  host.game_start_match(12345, 7, 1);
   const guest = createRemoteEngine();
   for (let kind = 0; kind <= 18; kind++) {
     if (kind) host.game_collect(kind, kind % 2);
@@ -47,7 +47,7 @@ test('actual WASM survives snapshot round trips through every bonus and body rep
 
 test('active play captures moving bodies, spawned pickups, bombs and animation effects', async () => {
   const host = await wasm();
-  host.game_start(777, 0, 0, 1);
+  host.game_start_match(777, 3, 1);
   for (let tick = 0; tick < 89 + 205; tick++) host.game_tick(tick % 30 < 10 ? 4 | 64 : 0);
   host.game_collect(9, 0);
   host.game_tick(0);
@@ -73,8 +73,11 @@ test('malformed and oversized packets cannot mutate the last accepted state', as
     packet => { packet.values[1] = -1; },
     packet => { packet.values[2] = 0.5; },
     packet => { packet.values[6] = Infinity; },
-    packet => { packet.values[12] = 1; },
+    packet => { packet.values[12] = 2; },
     packet => { packet.values[13] = 3; },
+    packet => { packet.values[14] = 0; },
+    packet => { packet.values[14] = 100; },
+    packet => { packet.values[14] = 1.5; },
     packet => { packet.values.push(1); },
     packet => { delete packet.values[0]; },
     packet => { packet.skins[0] = 0; },

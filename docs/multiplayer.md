@@ -1,8 +1,8 @@
 # Salles privées
 
 Le site GitHub Pages propose deux parcours : jeu sur le même clavier et jeu à
-distance. Les deux utilisent le même cœur Rust/WASM, sans IA. Les parties
-durent 60 secondes, avec les buts classiques et les bonus activables.
+distance. Les deux utilisent le même cœur Rust/WASM, sans IA. Le premier à atteindre l’objectif de buts gagne, sans limite de temps :
+7 par défaut, réglable de 1 à 99. Les buts sont classiques et les bonus activables.
 
 ## Créer et rejoindre
 
@@ -12,7 +12,9 @@ durent 60 secondes, avec les buts classiques et les bonus activables.
 4. Le créateur lance la partie. Il joue Bleu ; l'invité joue Rouge.
 
 Chaque joueur contrôle uniquement son camp, avec les flèches et P ou Q/A, D,
-Z/W et espace. Chacun choisit son personnage ; le créateur choisit les bonus.
+Z/W et espace. Chacun choisit son personnage ; le créateur choisit les bonus et le nombre
+de buts pour gagner. Cet objectif est transmis à l’invité, reste fixe pendant
+le match et est conservé pour la revanche.
 Un troisième navigateur est refusé. Le créateur peut proposer une nouvelle
 partie avec le bouton Rejouer ; l'invité attend ce lancement.
 
@@ -28,7 +30,7 @@ salles, aucun compte ni historique. Il faut partager le code avec son adversaire
   relation ; un canal WebRTC chiffré transporte ensuite les messages.
 - Le navigateur du créateur est l'autorité : un seul moteur fait avancer le
   match à 30 Hz. L'invité envoie uniquement ses commandes et son personnage.
-- Le créateur transmet les corps actifs, animations, bonus, score et horloge.
+- Le créateur transmet les corps actifs, animations, bonus, score et objectif de victoire.
   L'invité utilise une façade de lecture pour le même renderer. Il ne recalcule
   pas la physique et ne peut pas modifier le camp adverse par ses commandes.
 - Les messages sont validés : version du protocole, ordre des états/commandes,

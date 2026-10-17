@@ -5,16 +5,16 @@
 Reconstruction web de Sports Heads Football European Edition. Le cœur du match
 est écrit en Rust et compilé en WebAssembly. Le navigateur gère l'affichage et
 les entrées ; la physique, les commandes, le score, les remises en jeu et le
-chronomètre sont dans le cœur indépendant du navigateur.
+objectif de buts sont dans le cœur indépendant du navigateur.
 
 Deux choix : **sur le même clavier** ou **à distance dans une salle privée**.
-Les matchs durent 60 secondes, sur terrain libre, avec les **18 bonus** et
+Le premier à atteindre l’objectif de buts gagne : **7 par défaut**, réglable
+de 1 à 99, sans limite de temps. Sur terrain libre, avec les **18 bonus** et
 26 personnages. Le rendu utilise les sprites, animations et sons du
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
 L'IA est volontairement exclue. Tournoi, sauvegarde et sélection de tous les terrains
-restent hors de cette version. Les variantes premier à sept/premier but et les
-tailles de buts ne sont plus proposées dans l'interface.
+restent hors de cette version. Seule la victoire au nombre de buts est proposée.
 
 - Gauche : A/Q, D, W/Z et espace.
 - Droite : flèches et P.
@@ -22,7 +22,7 @@ tailles de buts ne sont plus proposées dans l'interface.
 
 À distance : choisir **À distance**, créer une salle et partager son code de
 huit caractères ou son lien. L'autre joueur clique sur **Rejoindre**, puis
-le créateur lance le match. Le créateur joue Bleu, l'invité Rouge ; chacun peut
+le créateur choisit l’objectif et lance le match. Le créateur joue Bleu, l'invité Rouge ; chacun peut
 utiliser les flèches et P ou les touches Q/A, D, Z/W et espace.
 
 La salle accueille deux joueurs. Les pauses sont partagées, et chaque joueur

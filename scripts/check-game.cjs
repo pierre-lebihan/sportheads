@@ -14,6 +14,10 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     await page.waitForFunction(()=>window.ready||window.loadError);
     assert.equal(await page.evaluate(()=>window.loadError),undefined);
     assert.equal(await page.locator('#start').isEnabled(),true);
+    assert.equal(await page.locator('#target-score').inputValue(),'7');
+    assert.equal(await page.locator('#clock').innerText(),'7 buts');
+    await page.fill('#target-score','0'); assert.equal(await page.locator('#start').isEnabled(),false);
+    await page.fill('#target-score','3');
     await page.click('#start');
     await page.evaluate(()=>{for(let i=0;i<89;i++)sportheads.engine.game_tick(0);sportheads.render();});
     assert.equal(await page.evaluate(()=>sportheads.snapshot().phase),1);
@@ -45,17 +49,18 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     assert.equal(await page.locator('#score-right').innerText(),'1');
     const reset=await page.evaluate(()=>{for(let i=0;i<15;i++)sportheads.engine.game_tick(0);sportheads.render();return sportheads.snapshot();});
     assert.equal(reset.phase,0);assert.deepEqual(reset.score,[0,1]);
-    // Complete an entire seeded match, including any goals and their countdowns.
-    const final=await page.evaluate(()=>{const e=sportheads.engine;e.game_reset(7);let steps=0;while(e.game_value(0)!==3&&steps<7000){e.game_tick(steps%120<60?2|16|8|128:4|64);steps++;}sportheads.render();return {...sportheads.snapshot(),steps,finite:Array.from({length:e.game_body_count()},(_,i)=>Number.isFinite(e.game_body_value(i,0))&&Number.isFinite(e.game_body_value(i,1))).every(Boolean)};});
-    assert.equal(final.phase,3);assert.equal(final.remainingTicks,0);assert.ok(final.finite);assert.ok(final.steps<7000);
+    // Complete a real first-to-three match, including goals and countdowns.
+    const final=await page.evaluate(()=>{const e=sportheads.engine;e.game_start_match(7,3,0);let steps=0;while(e.game_value(0)!==3&&steps<20000){e.game_tick(steps%120<60?2|16|8|128:4|64);steps++;}sportheads.render();return {...sportheads.snapshot(),steps,finite:Array.from({length:e.game_body_count()},(_,i)=>Number.isFinite(e.game_body_value(i,0))&&Number.isFinite(e.game_body_value(i,1))).every(Boolean)};});
+    assert.equal(final.phase,3);assert.equal(final.targetScore,3);assert.equal(Math.max(...final.score),3);assert.ok(final.finite);assert.ok(final.steps<20000);
     assert.equal(await page.locator('#finished').isVisible(),true);
     await page.click('#again');
     const fresh=await page.evaluate(()=>sportheads.snapshot());assert.deepEqual(fresh.score,[0,0]);assert.equal(fresh.phase,0);
-    // Only local/remote multiplayer are exposed; all games share timed rules.
+    // Only local/remote multiplayer are exposed; the chosen target survives replay.
     assert.equal(await page.locator('#skin-left option').count(),26);
     assert.equal(await page.locator('#mode,#goals').count(),0);
     assert.equal(await page.locator('.play-modes button').count(),2);
-    assert.deepEqual(await page.evaluate(()=>[sportheads.engine.game_value(12),sportheads.engine.game_value(8),sportheads.engine.game_value(9)]),[0,100,100]);
+    assert.deepEqual(await page.evaluate(()=>[sportheads.engine.game_value(12),sportheads.engine.game_value(14)]),[1,3]);
+    assert.equal(await page.locator('#clock').innerText(),'3 buts');
     for(let kind=1;kind<=18;kind++){
       const state=await page.evaluate(kind=>{const e=sportheads.engine;e.game_start(4,0,0,true);for(let i=0;i<89;i++)e.game_tick(0);e.game_collect(kind,kind%2);for(let i=0;i<3;i++)e.game_tick(0);sportheads.render();return sportheads.renderState();},kind);
       assert.ok(state.players.every(p=>Number.isFinite(p.scale)));
@@ -77,6 +82,6 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await page.screenshot({path:'evidence/local-match-mobile.png',fullPage:true});
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({passed:true,url,checks:['two-player movement/jump/kick','pause/resume','goal/score/reset','full-match expiry/replay','blur pause','mobile layout','local/remote selection','18 bonus renderings','automatic pickup spawn','decoded audio/mute'],completeMatchSteps:final.steps,score:final.score}));
+    console.log(JSON.stringify({passed:true,url,checks:['two-player movement/jump/kick','pause/resume','goal/score/reset','first-to-target victory/replay','blur pause','mobile layout','local/remote selection','18 bonus renderings','automatic pickup spawn','decoded audio/mute'],completeMatchSteps:final.steps,score:final.score}));
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

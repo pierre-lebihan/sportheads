@@ -34,14 +34,15 @@
       <p class="room-help">Deux joueurs maximum. Le créateur garde cet onglet ouvert pendant la partie.</p>
     </section>
     <fieldset class="settings"><legend id="settings-legend">Votre partie</legend>
-      <span>60 secondes · Buts classiques</span>
+      <label>Buts pour gagner <input id="target-score" type="number" min="1" max="99" step="1" value="7" title="Entre 1 et 99 buts"></label>
+      <span>Buts classiques</span>
       <label class="check"><input id="bonuses" type="checkbox" checked> Bonus</label>
       <button id="sound" type="button" aria-pressed="true">Son activé</button>
     </fieldset>
     <section class="arena" aria-label="Match de football à deux">
-      <div class="scoreboard" aria-label="Score et temps restant">
+      <div class="scoreboard" aria-label="Score et objectif de buts">
         <div class="team blue"><span>Bleu</span><strong id="score-left">0</strong></div>
-        <div class="clock"><span>Temps restant</span><strong id="clock">1:00</strong></div>
+        <div class="clock"><span>Objectif</span><strong id="clock">7 buts</strong></div>
         <div class="team red"><strong id="score-right">0</strong><span>Rouge</span></div>
       </div>
       <div class="field-wrap">
@@ -60,7 +61,7 @@
       <div class="control-side red"><h2><i aria-hidden="true"></i>Rouge <label class="skin-label">Personnage <select id="skin-right" aria-label="Personnage rouge"></select></label></h2><p><kbd>←</kbd><kbd>→</kbd> se déplacer <span><kbd>↑</kbd> sauter</span><span><kbd>P</kbd> frapper</span></p></div>
     </section>
     <p id="online-controls" class="online-controls" hidden>À distance, utilisez les flèches et <kbd>P</kbd>, ou <kbd>Q / A</kbd> <kbd>D</kbd> <kbd>Z / W</kbd> et <kbd>Espace</kbd>. Vous contrôlez uniquement votre joueur.</p>
-    <footer><p>Un match à deux, 60 secondes et les 18 bonus du jeu original. Choisissez votre personnage et entrez sur le terrain.</p><p><kbd>Échap</kbd> pour mettre en pause. À distance, la pause arrête le match pour les deux joueurs.</p></footer>
+    <footer><p>Le premier à atteindre l’objectif de buts gagne, sans limite de temps. Choisissez votre personnage et entrez sur le terrain.</p><p><kbd>Échap</kbd> pour mettre en pause. À distance, la pause arrête le match pour les deux joueurs.</p></footer>
   </main>
 </body>
 </html>

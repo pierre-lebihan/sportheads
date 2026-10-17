@@ -10,11 +10,12 @@ Elle propose le terrain libre correspondant à un blueprint vide du jeu original
 - Joueur rouge à droite : flèches gauche/droite, flèche haut et P.
 - Paramètres des corps, accélération, ralentissement, impulsion de saut et
   asservissement des pieds repris de `MainTimeline`.
-- Compte à rebours initial de 89 étapes à 30 Hz ; 60 secondes de jeu actif.
+- Compte à rebours initial de 89 étapes à 30 Hz ; aucune limite de temps.
 - Un but donne un point à l'autre camp, une seule fois. Après 15 étapes, le
-  terrain est réinitialisé et le compte à rebours revient. Score et temps restant
-  sont conservés. Le chronomètre avance pendant la célébration, pas le décompte.
-- Fin à zéro, même en cas d'égalité. Les commandes ne font plus avancer le match.
+  terrain est réinitialisé et le compte à rebours revient. Le score et l’objectif
+  sont conservés.
+- Le premier à atteindre l’objectif gagne (7 par défaut, réglable de 1 à 99).
+  Les commandes ne font plus avancer le match une fois terminé.
 - Pause/reprise, nouvelle partie et pause automatique à la perte de focus.
 - Hasard explicite pour le lancement du ballon. Même graine et mêmes commandes
   reproduisent les mêmes états dans la compilation testée.
@@ -52,9 +53,9 @@ rejouer, perte de focus et absence de débordement sur écran étroit.
 ## Suite de la phase 1
 
 L'interface expose seulement deux modes : sur le même clavier et à distance
-avec code de salle. Les matchs sont chronométrés sur 60 secondes, avec buts
-classiques. Les anciennes variantes restent testées dans le noyau mais ne sont
-plus proposées. Les bonus peuvent toujours modifier temporairement les buts.
+avec code de salle. Les matchs se gagnent au nombre de buts, sans chronomètre,
+avec buts classiques. Les variantes historiques chronométrées restent testées
+dans le noyau pour les comparaisons Flash mais ne sont plus proposées. Les bonus peuvent toujours modifier temporairement les buts.
 Les 26 têtes sont sélectionnables.
 
 Les 18 bonus, le rendu des sprites, les animations et les sons sont intégrés.

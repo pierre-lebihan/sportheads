@@ -236,6 +236,7 @@ pub extern "C" fn game_value(field: u32) -> f64 {
             11 => g.notice_ticks as f64,
             12 => g.mode as f64,
             13 => g.powerups.bounce as f64,
+            14 => g.target_score as f64,
             _ => f64::NAN,
         }
     })
@@ -397,6 +398,10 @@ pub extern "C" fn game_manifold_value(i: u32, p: u32, f: u32) -> f64 {
 #[no_mangle]
 pub extern "C" fn game_start(seed: u32, mode: u32, goals: u32, bonus: u32) {
     GAME.with(|g| *g.borrow_mut() = game::Game::configured(seed, mode, goals, bonus != 0));
+}
+#[no_mangle]
+pub extern "C" fn game_start_match(seed: u32, target: u32, bonus: u32) {
+    GAME.with(|g| *g.borrow_mut() = game::Game::score_match(seed, target, bonus != 0));
 }
 #[no_mangle]
 pub extern "C" fn game_set_skin(side: u32, skin: u32) {

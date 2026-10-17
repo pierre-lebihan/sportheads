@@ -30,8 +30,7 @@ jobs:
           node --check web/rooms.js
           node --check web/net-state.js
           node --check web/selection.js
-          node --check web/tournament.js
-          node --check web/competition-ui.js
+          node --check web/players.js
           node --check web/touch-controls.js
           node --test tests/*.test.mjs
       - name: Build playable match and comparison bench

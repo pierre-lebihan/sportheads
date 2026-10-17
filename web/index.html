@@ -36,15 +36,11 @@
     <fieldset class="settings"><legend id="settings-legend">Votre partie</legend>
       <label>Buts pour gagner <input id="target-score" type="number" min="1" max="99" step="1" value="7" title="Entre 1 et 99 buts"></label>
       <label>Terrain <select id="pitch"></select></label>
-      <label>Format <select id="competition"><option value="duel">Match simple</option><option value="series">Coupe à deux</option><option value="bracket4">Tournoi à 4 · local</option><option value="bracket8">Tournoi à 8 · local</option></select></label>
-      <label id="series-options" hidden>Manches <select id="best-of"><option value="3">2 victoires (3 matchs max.)</option><option value="5">3 victoires (5 matchs max.)</option></select></label>
       <label class="check"><input id="bonuses" type="checkbox" checked> Bonus</label>
       <button id="sound" type="button" aria-pressed="true">Son activé</button>
     </fieldset>
+    <fieldset class="settings assistance"><legend>Un coup de pouce</legend><label>Bleu <select id="assist-left" aria-label="Aide du joueur bleu"></select></label><label>Rouge <select id="assist-right" aria-label="Aide du joueur rouge"></select></label><p>Pour aider le joueur moins fort : vitesse, saut et frappe renforcés pendant le match.</p><p id="assist-status" role="status"></p></fieldset>
     <div class="pitch-choice"><canvas id="pitch-preview" width="320" height="216" aria-label="Aperçu du terrain sélectionné"></canvas><p><strong id="pitch-caption">Terrain libre</strong><span>Les obstacles font partie du jeu. Choisissez votre terrain avant le match.</span></p></div>
-    <section id="tournament-setup" class="tournament-box" hidden aria-label="Participants au tournoi"><h2>Les participants</h2><p>Chaque match se joue à deux sur le même écran, avec les commandes tactiles ou le clavier. Passez la place aux joueurs du match suivant.</p><div id="entrant-fields" class="entrant-fields"></div></section>
-    <p id="competition-error" role="alert" hidden></p>
-    <section id="tournament-panel" class="tournament-box" hidden aria-label="Progression du tournoi"><div class="tournament-heading"><h2 id="tournament-title">Tournoi</h2><button id="cancel-tournament">Quitter le tournoi</button></div><p id="tournament-status" role="status"></p><ol id="tournament-results"></ol></section>
     <section class="arena" aria-label="Match de football à deux">
       <div class="scoreboard" aria-label="Score et objectif de buts">
         <div class="team blue"><span>Bleu</span><strong id="score-left">0</strong></div>

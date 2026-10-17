@@ -416,6 +416,10 @@ pub extern "C" fn game_start_on_pitch(seed: u32, target: u32, bonus: u32, pitch:
     GAME.with(|g| *g.borrow_mut() = game::Game::score_match_on(seed, target, bonus != 0, pitch));
 }
 #[no_mangle]
+pub extern "C" fn game_set_assistance(side: u32, level: u32) {
+    GAME.with(|g| g.borrow_mut().set_assistance(side as usize, level));
+}
+#[no_mangle]
 pub extern "C" fn game_set_skin(side: u32, skin: u32) {
     GAME.with(|g| g.borrow_mut().set_skin(side as usize, skin as usize));
 }
@@ -442,6 +446,7 @@ pub extern "C" fn game_player_value(side: u32, f: u32) -> f64 {
             3 => p.broken[s] as u32 as f64,
             4 => p.bombed[s] as u32 as f64,
             5 => p.scale[s],
+            6 => g.assistance[s] as f64,
             _ => f64::NAN,
         }
     })

@@ -2,7 +2,7 @@
 
 La version publique exécute le cœur Rust/WASM en direct, sans Flash ni Ruffle.
 Elle propose les 19 terrains du sélecteur original, dont le terrain libre
-(numéro 8), avec les 18 bonus originaux, sans améliorations ni IA.
+(numéro 8), avec les 18 bonus originaux, avec aides individuelles facultatives, sans IA.
 
 ## Comportement
 
@@ -24,8 +24,9 @@ Le moteur conserve les asymétries de l'original : le joueur de droite peut
 sauter sur l'autre tête et la borne `x < 720` garde uniquement le mouvement
 vers la droite. La détection de but utilise les limites visuelles du ballon
 rotatif, comme le `hitTestObject` de la référence.
-La condition de saut utilise la hauteur visuelle du personnage sélectionné,
-y compris sous les bonus de taille, comme dans le Flash.
+Les scénarios historiques conservent la condition de saut liée à la hauteur
+du sprite Flash. Les avatars modernes du site partagent tous une hauteur de
+référence de 43 pixels : leur choix est cosmétique.
 
 ## Vérification
 
@@ -56,12 +57,12 @@ L'interface expose seulement deux modes : sur le même écran et à distance
 avec code de salle. Les matchs se gagnent au nombre de buts, sans chronomètre,
 avec buts classiques. Les variantes historiques chronométrées restent testées
 dans le noyau pour les comparaisons Flash mais ne sont plus proposées. Les bonus peuvent toujours modifier temporairement les buts.
-Les 26 personnages sont sélectionnables avec leur nom et un aperçu.
+Les 12 joueurs récents sont sélectionnables avec leur nom et leur portrait.
 
 Les 18 bonus, le rendu des sprites, les animations et les sons sont intégrés.
-Les 19 terrains et les tournois humains sont intégrés : coupe à deux en local
-ou à distance, tableau à 4 ou 8 en local. Voir [terrains et tournois](selection-tournament.md).
-Les améliorations et la sauvegarde restent hors de cette version. Les salles et le réseau sont décrits
+Les 19 terrains et les aides individuelles à trois niveaux sont intégrés.
+Voir [joueurs et aides](players.md). Seuls les matchs simples sont proposés.
+Les salles et le réseau sont décrits
 dans [multiplayer.md](multiplayer.md).
 
 Le rendu utilise les ressources originales exportées en SVG/PNG et les sons en MP3.

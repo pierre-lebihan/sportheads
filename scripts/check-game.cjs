@@ -56,7 +56,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     await page.click('#again');
     const fresh=await page.evaluate(()=>sportheads.snapshot());assert.deepEqual(fresh.score,[0,0]);assert.equal(fresh.phase,0);
     // Only local/remote multiplayer are exposed; the chosen target survives replay.
-    assert.equal(await page.locator('#skin-left option').count(),26);
+    assert.equal(await page.locator('#skin-left option').count(),12);
     assert.equal(await page.locator('#mode,#goals').count(),0);
     assert.equal(await page.locator('.play-modes button').count(),2);
     assert.deepEqual(await page.evaluate(()=>[sportheads.engine.game_value(12),sportheads.engine.game_value(14)]),[1,3]);

@@ -3,8 +3,7 @@ import './vendor/peerjs-1.5.5.min.js';
 import { Room, normalizeCode, validCode } from './rooms.js';
 import { captureState, createRemoteEngine } from './net-state.js';
 import { PLAYER_NAMES, PITCHES, updateSelectionPreviews } from './selection.js';
-import { currentMatch, recordResult, validateTournament } from './tournament.js';
-import { prepareEntrants, createFromSetup, playingEntrants, renderTournament } from './competition-ui.js';
+import { ASSISTS, PLAYER_COUNT } from './players.js';
 import { createTouchControls } from './touch-controls.js';
 
 const $ = selector => document.querySelector(selector);
@@ -17,16 +16,19 @@ let started = false, paused = false, pauseFlags = [false, false], soundEnabled =
 let last = 0, accumulator = 0, previousPhase = -1, lastBroadcast = 0;
 let matchId = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, receivedInput = -1;
 let remoteInput = 0, lastInputAt = 0, soundTick = -1, soundMatch = -1, busy = false;
-let tournament = null, playView = false;
+let playView = false;
 const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
 const touch = createTouchControls($('#touch-controls'), sendInput);
 function clearInput() { keys.clear(); touch.clear(); }
 
 for (const [id, selected] of [['skin-left', 1], ['skin-right', 2]]) {
-  for (let i = 1; i <= 26; i++) { const option = new Option(PLAYER_NAMES[i - 1], i); option.selected = i === selected; $('#' + id).add(option); }
+  for (let i = 1; i <= PLAYER_COUNT; i++) { const option = new Option(PLAYER_NAMES[i - 1], i); option.selected = i === selected; $('#' + id).add(option); }
 }
 for (const pitch of PITCHES) { const option = new Option(pitch.name, pitch.id); option.selected = pitch.id === 8; $('#pitch').add(option); }
 const engine = () => mode === 'online' && role === 'guest' ? remote.engine : core;
+for (const id of ['assist-left', 'assist-right']) ASSISTS.forEach((label, level) => $('#' + id).add(new Option(label, level)));
+const assists = () => [+$('#assist-left').value, +$('#assist-right').value];
+const applyAssists = () => assists().forEach((level, side) => core?.game_set_assistance(side, level));
 const skins = () => [+$('#skin-left').value, +$('#skin-right').value];
 const ownSide = () => role === 'guest' ? 1 : 0;
 const targetScore = () => +$('#target-score').value;
@@ -41,7 +43,7 @@ function snapshot() {
   const e = engine();
   return { started, paused, mode, role, connected: !!room?.connected, code: room?.code || '', matchId,
     phase: e?.game_value(0), targetScore: started ? e?.game_value(14) : targetScore(), pitch: started ? e?.game_value(15) : +$('#pitch').value,
-    tournament: tournament && structuredClone(tournament), remainingTicks: e?.game_value(1), score: [e?.game_value(2), e?.game_value(3)], countdown: e?.game_value(4), tick: e?.game_value(6) };
+    assists: started ? [0, 1].map(side => e?.game_player_value(side, 6)) : assists(), remainingTicks: e?.game_value(1), score: [e?.game_value(2), e?.game_value(3)], countdown: e?.game_value(4), tick: e?.game_value(6) };
 }
 function playSounds(mask) {
   if (!soundEnabled) return;
@@ -61,9 +63,9 @@ function broadcast() {
   if (!started && !validTarget()) return;
   const state = captureState(core, skins());
   if (!started && validTarget()) state.values[14] = targetScore();
-  if (!started) state.values[15] = +$('#pitch').value;
+  if (!started) { state.values[15] = +$('#pitch').value; state.players.forEach((player, side) => { player[6] = assists()[side]; }); }
   room.send({ type: 'frame', sequence: ++frameSequence, matchId, started, bonuses: $('#bonuses').checked,
-    competition: $('#competition').value, bestOf: +$('#best-of').value, tournament, pauseFlags: [...pauseFlags], state });
+    pauseFlags: [...pauseFlags], state });
   lastBroadcast = performance.now();
 }
 function pause(value = true) {
@@ -81,25 +83,19 @@ function applyPause() {
 }
 function reset() {
   if (!canStart()) return;
-  try {
-    if ($('#competition').value === 'duel') tournament = null;
-    else if (!tournament || tournament.champion !== null) tournament = createFromSetup($('#competition').value, skins(), +$('#best-of').value);
-    $('#competition-error').hidden = true;
-  } catch (error) { $('#competition-error').textContent = error.message; $('#competition-error').hidden = false; return; }
-  if (tournament) currentMatch(tournament).players.forEach((index, side) => { $('#' + ['skin-left', 'skin-right'][side]).value = tournament.entrants[index].skin; });
   audio.unlock();
   core.game_start_on_pitch(crypto.getRandomValues(new Uint32Array(1))[0], targetScore(), +$('#bonuses').checked, +$('#pitch').value);
-  skins().forEach((skin, side) => core.game_set_skin(side, skin));
+  applyAssists();
   if (hasTouch()) playView = true;
   started = true; paused = false; pauseFlags = [false, false]; previousPhase = -1;
   remoteInput = 0; matchId++; clearInput(); accumulator = 0; last = 0;
   canvas.focus({ preventScroll: true }); music(); update(); broadcast();
 }
 function clearMatch() {
-  tournament = null; playView = false;
+  playView = false;
   started = false; paused = false; pauseFlags = [false, false]; clearInput(); remoteInput = 0;
   last = 0; accumulator = 0; previousPhase = -1; receivedSequence = -1; receivedInput = -1;
-  remote = createRemoteEngine(); audio.stopAll(); core?.game_reset(1);
+  remote = createRemoteEngine(); audio.stopAll(); core?.game_reset(1); applyAssists();
 }
 function leaveRoom() {
   room?.close(); room = null; role = null; busy = false; clearMatch();
@@ -109,7 +105,6 @@ function leaveRoom() {
 function selectMode(next) {
   if (mode === next) return;
   leaveRoom(); mode = next;
-  if (mode === 'online' && $('#competition').value.startsWith('bracket')) $('#competition').value = 'series';
   $('#online-panel').hidden = mode !== 'online'; $('#online-controls').hidden = mode !== 'online';
   $('#play-local').setAttribute('aria-pressed', String(mode === 'local'));
   $('#play-online').setAttribute('aria-pressed', String(mode === 'online'));
@@ -119,9 +114,11 @@ function onMessage(message) {
   if (role === 'host') {
     if (message.type === 'input' && Number.isSafeInteger(message.sequence) && message.sequence > receivedInput
       && Number.isInteger(message.mask) && message.mask >= 0 && message.mask <= 15
-      && Number.isInteger(message.skin) && message.skin >= 1 && message.skin <= 26) {
+      && Number.isInteger(message.skin) && message.skin >= 1 && message.skin <= PLAYER_COUNT) {
       receivedInput = message.sequence; remoteInput = message.mask; lastInputAt = performance.now();
-      if (!tournament) { $('#skin-right').value = message.skin; core.game_set_skin(1, message.skin); }
+      const changed = +$('#skin-right').value !== message.skin;
+      $('#skin-right').value = message.skin;
+      if (changed) update();
     } else if (message.type === 'pause' && typeof message.value === 'boolean' && started && core.game_value(0) !== 3) {
       pauseFlags[1] = message.value; applyPause(); broadcast();
     }
@@ -129,22 +126,18 @@ function onMessage(message) {
   }
   if (role !== 'guest' || message.type !== 'frame' || !Number.isSafeInteger(message.sequence) || message.sequence <= receivedSequence
     || !Number.isSafeInteger(message.matchId) || message.matchId < matchId || typeof message.started !== 'boolean' || typeof message.bonuses !== 'boolean'
-    || !['duel', 'series'].includes(message.competition) || ![3, 5].includes(message.bestOf)
-    || (message.tournament !== null && (!validateTournament(message.tournament) || message.tournament.format !== 'series' || message.competition !== 'series'))
     || !Array.isArray(message.pauseFlags) || message.pauseFlags.length !== 2 || !message.pauseFlags.every(v => typeof v === 'boolean')
     || !remote.update(message.state)) return;
   const newMatch = message.matchId !== matchId || started !== message.started;
   const oldPaused = paused;
   receivedSequence = message.sequence; matchId = message.matchId; started = message.started;
-  tournament = message.tournament;
   pauseFlags = message.pauseFlags; paused = pauseFlags.some(Boolean);
   // Preserve the guest's desired skin while an older snapshot is still in flight.
   $('#skin-left').value = message.state.skins[0];
-  if (tournament) $('#skin-right').value = message.state.skins[1];
+  for (const side of [0, 1]) $('#' + ['assist-left', 'assist-right'][side]).value = message.state.players[side][6];
   $('#bonuses').checked = message.bonuses;
   $('#target-score').value = message.state.values[14];
   $('#pitch').value = message.state.values[15];
-  $('#competition').value = message.competition; $('#best-of').value = message.bestOf;
   if (newMatch) { if (started && hasTouch()) playView = true; previousPhase = -1; clearInput(); music(); if (started && document.hidden) pause(true); else if (started) canvas.focus({ preventScroll: true }); }
   if (oldPaused !== paused) { clearInput(); music(); if (!paused) canvas.focus({ preventScroll: true }); }
   if (started && !paused && (soundTick !== engine().game_value(6) || soundMatch !== matchId)) {
@@ -214,11 +207,7 @@ $('#join-form').addEventListener('submit', event => { event.preventDefault(); co
 $('#leave-room').addEventListener('click', leaveRoom);
 $('#copy-code').addEventListener('click', () => copyRoom(false)); $('#copy-link').addEventListener('click', () => copyRoom(true));
 $('#target-score').addEventListener('input', () => { update(); broadcast(); });
-for (const id of ['pitch', 'competition', 'best-of']) $('#' + id).addEventListener('change', () => {
-  if (id === 'competition' && tournament?.champion != null) clearMatch();
-  $('#competition-error').hidden = true; update(); broadcast();
-});
-$('#cancel-tournament').addEventListener('click', () => { if (mode === 'local' || role === 'host') { clearMatch(); update(); broadcast(); } });
+for (const id of ['pitch', 'assist-left', 'assist-right']) $('#' + id).addEventListener('change', () => { applyAssists(); update(); broadcast(); });
 $('#play-view').addEventListener('click', () => {
   if (playView) pause();
   playView = !playView; update(); canvas.focus({ preventScroll: true });
@@ -226,8 +215,9 @@ $('#play-view').addEventListener('click', () => {
 $('#pause').addEventListener('click', () => pause(!pauseFlags[ownSide()]));
 $('#resume').addEventListener('click', () => { pause(false); if (mode === 'local') canvas.focus({ preventScroll: true }); });
 for (const [side, id] of ['skin-left', 'skin-right'].entries()) $('#' + id).addEventListener('change', () => {
-  if (mode === 'local' || (role === 'host' && side === 0)) { core?.game_set_skin(side, +$('#' + id).value); broadcast(); }
+  if (mode === 'local' || (role === 'host' && side === 0)) { broadcast(); }
   else if (role === 'guest' && side === 1) sendInput();
+  update();
 });
 $('#sound').addEventListener('click', () => {
   soundEnabled = !soundEnabled; $('#sound').textContent = soundEnabled ? 'Son activé' : 'Son coupé';
@@ -248,7 +238,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { cle
 setInterval(sendInput, 50);
 
 function renderState() {
-  const e = engine(), state = { started, paused, skins: skins(), blueprintFrame: started ? e?.game_value(15) : +$('#pitch').value }; if (!e) return state;
+  const e = engine(), state = { started, paused, skins: skins(), modernPlayers: true, blueprintFrame: started ? e?.game_value(15) : +$('#pitch').value }; if (!e) return state;
   state.goalFrames = [8, 9].map(f => e.game_value(f) === 140 ? 2 : e.game_value(f) === 60 ? 3 : 1);
   state.players = [0, 1].map(s => Object.fromEntries(['speed', 'jump', 'freeze', 'broken', 'bombed', 'scale'].map((name, f) => [name, e.game_player_value(s, f)])));
   state.powerups = Array.from({ length: e.game_pickup_count() }, (_, i) => ({ kind: e.game_pickup_value(i, 0), x: e.game_pickup_value(i, 1), y: e.game_pickup_value(i, 2), ttl: e.game_pickup_value(i, 3) }));
@@ -262,18 +252,15 @@ function renderState() {
 }
 function update() {
   const e = engine(), state = snapshot(), phase = state.phase;
-  if (started && phase === 3 && tournament && (mode === 'local' || role === 'host') && !tournament.records.some(record => record.id === matchId)) {
-    tournament = recordResult(tournament, { scores: state.score, target: state.targetScore, matchId });
-    broadcast();
-  }
-  const fixture = playingEntrants(tournament, matchId), names = fixture ? fixture.map(entrant => entrant.name) : ['Bleu', 'Rouge'];
+  const names = ['Bleu', 'Rouge'];
   document.body.classList.toggle('touch-device', hasTouch());
   document.body.classList.toggle('play-view', playView && started);
   $('#play-view').hidden = !started; $('#play-view').textContent = playView ? 'Réglages' : 'Vue jeu';
   $('#play-view').setAttribute('aria-pressed', String(playView));
   $('#touch-controls').hidden = !started;
   touch.update({ mode, side: ownSide(), names, enabled: started && !paused && phase !== 3 && (mode === 'local' || !!room?.connected) });
-  $('.team.blue span').textContent = names[0]; $('.team.red span').textContent = names[1];
+  const teamNames = names.map((name, side) => `${name}${state.assists[side] ? ' +' + state.assists[side] * 10 + '%' : ''}`);
+  $('.team.blue span').textContent = teamNames[0]; $('.team.red span').textContent = teamNames[1];
   $('.team.blue span').title = names[0]; $('.team.red span').title = names[1];
   $('#score-left').textContent = state.score[0] ?? 0; $('#score-right').textContent = state.score[1] ?? 0;
   const target = state.targetScore;
@@ -295,32 +282,23 @@ function update() {
     : pauseFlags[ownSide()] ? 'Vous avez mis le match en pause. Chaque joueur doit reprendre pour continuer.' : 'Votre adversaire a mis le match en pause.';
   $('#restart').hidden = mode === 'online'; $('#restart').disabled = !started;
   $('#again').disabled = !canStart(); $('#again').textContent = mode === 'online' && role === 'guest' ? 'Le créateur peut relancer'
-    : tournament ? tournament.champion === null ? 'Match suivant' : 'Nouveau tournoi' : 'Rejouer';
+    : 'Rejouer';
   $('#create-room').disabled = !core || busy; $('#join-room').disabled = !core || busy;
   $('#bonuses').disabled = mode === 'online' && (role === 'guest' || started);
-  const competitionLocked = tournament && tournament.champion === null;
-  if (competitionLocked) $('#bonuses').disabled = true;
-  const settingsLocked = (started && phase !== 3) || competitionLocked || (mode === 'online' && role === 'guest');
-  for (const id of ['target-score', 'pitch', 'competition', 'best-of']) $('#' + id).disabled = !!settingsLocked;
-  for (const option of $('#competition').options) if (option.value.startsWith('bracket')) option.disabled = mode === 'online';
-  $('#series-options').hidden = $('#competition').value !== 'series';
-  const bracketSize = $('#competition').value.startsWith('bracket') ? +$('#competition').value.slice(7) : 0;
-  $('#tournament-setup').hidden = !bracketSize || !!tournament;
-  if (bracketSize && !tournament) prepareEntrants(bracketSize);
-  renderTournament(tournament, matchId, mode === 'local' || role === 'host');
+  const settingsLocked = (started && phase !== 3) || (mode === 'online' && role === 'guest');
+  for (const id of ['target-score', 'pitch', 'assist-left', 'assist-right']) $('#' + id).disabled = !!settingsLocked;
+  $('#assist-status').textContent = assists().map((level, side) => `${names[side]} : ${ASSISTS[level].toLowerCase()}`).join(' · ');
   updateSelectionPreviews(state.pitch, skins());
   $('#settings-legend').textContent = 'Votre partie';
   for (const side of [0, 1]) {
-    $('#' + ['skin-left', 'skin-right'][side]).disabled = !!tournament || (mode === 'online' && (role === null || side !== ownSide()));
+    $('#' + ['skin-left', 'skin-right'][side]).disabled = (mode === 'online' && (role === null || side !== ownSide()));
     $('.control-side.' + (side === 0 ? 'blue' : 'red')).dataset.own = String(mode === 'online' && role !== null && side === ownSide());
   }
   $('#status').textContent = mode === 'online' && !room?.connected ? 'Salle privée · En attente d’un adversaire'
     : !started ? 'Choisissez vos joueurs et votre terrain' : phase === 0 ? 'Préparez-vous…' : phase === 2 ? `But pour ${names[e.game_value(5)]} !`
       : phase === 3 ? 'Match terminé' : mode === 'online' ? `Duel à distance · Vous jouez ${role === 'host' ? 'Bleu' : 'Rouge'}` : 'Duel local · À vous de jouer';
-  // A final snapshot can arrive before its tournament history on the same tick.
   if (started && phase === 3) {
     const [a, b] = state.score; $('#result').textContent = `${names[a > b ? 0 : 1]} remporte le match !`;
-    if (tournament && tournament.champion !== null) $('#result').textContent = `${tournament.entrants[tournament.champion].name} remporte ${tournament.format === 'series' ? 'la coupe' : 'le tournoi'} !`;
     $('#final-score').textContent = `${names[0]} ${a} — ${b} ${names[1]}`;
     if (phase !== previousPhase) { clearInput(); audio.stopAll(); }
   }

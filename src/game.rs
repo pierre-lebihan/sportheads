@@ -1,5 +1,5 @@
 //! Two-player match rules and bonuses transcribed from the original ActionScript.
-//! Left player: A/D/W/Space. Right player: arrows/P. No opponent AI or upgrades.
+//! Left player: A/D/W/Space. Right player: arrows/P. No opponent AI; optional per-match assistance is neutral by default.
 use crate::{
     body::Body,
     math::Vec2,
@@ -65,6 +65,8 @@ pub struct Game {
     pub xspeed: [f64; 2],
     /// Flash tests the current head bitmap's height when deciding to jump.
     pub head_height: [f64; 2],
+    /// Per-match human handicap: 0 neutral, 1/2/3 = +10/20/30% controls.
+    pub assistance: [u32; 2],
     random_state: u32,
     pub powerups: Powerups,
     pub pickups: Vec<Pickup>,
@@ -111,6 +113,7 @@ impl Game {
             last_scorer: None,
             xspeed: [0.0; 2],
             head_height: [43.0; 2],
+            assistance: [0; 2],
             random_state: seed,
             powerups: Powerups::new(),
             pickups: vec![],
@@ -161,6 +164,11 @@ impl Game {
         ];
         if side < 2 && (1..=HEIGHTS.len()).contains(&skin) {
             self.head_height[side] = HEIGHTS[skin - 1];
+        }
+    }
+    pub fn set_assistance(&mut self, side: usize, level: u32) {
+        if side < 2 {
+            self.assistance[side] = level.min(3);
         }
     }
     fn apply_goal_style(&mut self) {
@@ -330,6 +338,7 @@ impl Game {
         // Preserve the asymmetries in the original game: only the right head can
         // jump off its opponent, and the x<720 restriction only guards rightward motion.
         for side in [1, 0] {
+            let assist = 1.0 + self.assistance[side] as f64 * 0.1;
             let shift = side * 4;
             let keys = (input >> shift) & 15;
             let index = self.player[side];
@@ -338,10 +347,10 @@ impl Game {
             let other_position = self.world.bodies[other].position;
             let moving = !self.powerups.freeze[side] && !self.powerups.bombed[side];
             if keys & 1 != 0 && moving {
-                self.xspeed[side] -= 50.0 + 30.0 * self.powerups.speed[side] as f64;
+                self.xspeed[side] -= (50.0 + 30.0 * self.powerups.speed[side] as f64) * assist;
             }
             if keys & 2 != 0 && position.x < 720.0 && moving {
-                self.xspeed[side] += 50.0 + 30.0 * self.powerups.speed[side] as f64;
+                self.xspeed[side] += (50.0 + 30.0 * self.powerups.speed[side] as f64) * assist;
             }
             if moving && position.y > 439.0 && self.active_ticks.is_multiple_of(2) {
                 for direction in [1, 2] {
@@ -371,7 +380,7 @@ impl Game {
                     || on_head)
             {
                 self.world.bodies[index].velocity.y =
-                    -150.0 - 50.0 * self.powerups.jump[side] as f64;
+                    (-150.0 - 50.0 * self.powerups.jump[side] as f64) * assist;
                 self.sounds |= 2;
                 let kind = if self.powerups.jump[side] == 0 { 2 } else { 1 };
                 self.emit_effect(kind, Vec2::new(position.x, position.y + 20.0), 60.0, 30.0);
@@ -394,6 +403,9 @@ impl Game {
                     (0, true) => -12.0 * (angle + PI - 1.2 - PI / 2.0 + 1.67),
                     _ => unreachable!(),
                 };
+                if keys & 8 != 0 {
+                    joint.motor_speed *= assist;
+                }
                 self.world.bodies[self.foot[side]].wake();
             }
         }

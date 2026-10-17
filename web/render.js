@@ -1,3 +1,4 @@
+import { AVATAR_ATLAS, PLAYER_COUNT } from './players.js';
 // Original vector sprites exported from the SWF; all registration points and
 // timeline frames come from assets/manifest.json, without a Flash runtime.
 let manifest;
@@ -19,6 +20,10 @@ export function loadAssets() {
     const response = await fetch(new URL('manifest.json', base));
     if (!response.ok) throw new Error('Les graphismes du jeu ne sont pas disponibles.');
     manifest = await response.json();
+    manifest.sprites['modern-heads'] = { frames: Array.from({ length: PLAYER_COUNT }, (_, index) => ({
+      file: AVATAR_ATLAS, width: 50, height: 50, originX: 25, originY: 25,
+      sourceRect: [(index % 4) / 4, Math.floor(index / 4) / 3, 1 / 4, 1 / 3],
+    })) };
     const pending = [...new Map(Object.values(manifest.sprites).flatMap(sprite => sprite.frames).map(frame => [frame.file, frame])).values()];
     // Bound concurrent SVG decoding (several animation frames reuse one file).
     await Promise.all(Array.from({ length: 2 }, async () => {
@@ -54,7 +59,11 @@ export function drawSprite(ctx, name, number, x, y, width, height, angle = 0, op
   ctx.translate(x, y); ctx.rotate(angle); ctx.scale(sx, sy);
   ctx.globalAlpha *= options.alpha ?? 1;
   if (options.filter) ctx.filter = options.filter;
-  ctx.drawImage(image, -frame.originX, -frame.originY, frame.width, frame.height);
+  if (frame.sourceRect) {
+    const [x, y, w, h] = frame.sourceRect;
+    ctx.drawImage(image, x * image.naturalWidth, y * image.naturalHeight, w * image.naturalWidth, h * image.naturalHeight,
+      -frame.originX, -frame.originY, frame.width, frame.height);
+  } else ctx.drawImage(image, -frame.originX, -frame.originY, frame.width, frame.height);
   ctx.restore();
   return true;
 }
@@ -115,7 +124,7 @@ export function drawGame(ctx, engine, state = {}) {
     if (body.role === 1 || body.role === 2) {
       const side = body.role - 1;
       const scale = body.r / 20;
-      drawSprite(ctx, 'heads', state.skins?.[side] || side + 1, body.x, body.y, undefined, undefined, 0, { scale, flipX: side === 1 });
+      drawSprite(ctx, state.modernPlayers ? 'modern-heads' : 'heads', state.skins?.[side] || side + 1, body.x, body.y, undefined, undefined, 0, { scale, flipX: side === 1 });
       const effect = state.players?.[side] || state.headEffects?.[side];
       if (effect?.freeze || effect?.ice || effect?.bombed) drawSprite(ctx, 'body-effect', effect.bombed ? 3 : 2, body.x, body.y, undefined, undefined, 0, { scale });
       if (effect?.speed !== undefined && effect.speed !== 1) drawSprite(ctx, 'speed-bolt', effect.speed === 0 ? 3 : 2, body.x + 12 * scale, body.y + 3 * scale, undefined, undefined, 0, { scale });

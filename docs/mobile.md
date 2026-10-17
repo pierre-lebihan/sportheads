@@ -1,7 +1,7 @@
 # Jouer sur téléphone ou tablette
 
-Ouvrir le site dans le navigateur du téléphone. Les réglages, les 26 personnages,
-les terrains, les salles et les tournois restent accessibles. Le match ouvre
+Ouvrir le site dans le navigateur du téléphone. Les réglages, les 12 joueurs récents,
+les terrains, les aides individuelles et les salles restent accessibles. Le match ouvre
 automatiquement une vue qui occupe le viewport ; aucune installation ni
 autorisation de plein écran n'est nécessaire.
 

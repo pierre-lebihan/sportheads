@@ -30,7 +30,7 @@ test('actual WASM survives snapshot round trips through every bonus and body rep
   for (let kind = 0; kind <= 18; kind++) {
     if (kind) host.game_collect(kind, kind % 2);
     for (let tick = 0; tick < 3; tick++) host.game_tick(0);
-    const original = captureState(host, [3, 26]);
+    const original = captureState(host, [3, 12]);
     assert.ok(isValidState(original), `bonus ${kind}`);
     assert.ok(original.bodies.length >= 5 && original.bodies.length <= 6);
     assert.equal(new Set(original.bodies.map(body => body[9])).size, original.bodies.length);
@@ -83,7 +83,7 @@ test('malformed and oversized packets cannot mutate the last accepted state', as
     packet => { packet.values.push(1); },
     packet => { delete packet.values[0]; },
     packet => { packet.skins[0] = 0; },
-    packet => { packet.skins[1] = 27; },
+    packet => { packet.skins[1] = 13; },
     packet => { packet.bodies[0][0] = NaN; },
     packet => { packet.bodies[0][1] = 1e12 + 1; },
     packet => { packet.bodies[0][8] = 31; },
@@ -95,6 +95,8 @@ test('malformed and oversized packets cannot mutate the last accepted state', as
     packet => { packet.bodies[0].pop(); },
     packet => { packet.players[0][2] = 2; },
     packet => { packet.players[1][5] = 1e12; },
+    packet => { packet.players[0][6] = 4; },
+    packet => { packet.players[1][6] = -1; },
     packet => { packet.players.push(packet.players[0]); },
     packet => { packet.pickups = [[19, 400, 200, 600]]; },
     packet => { packet.pickups = [[1, 400, 200, -1]]; },
@@ -138,4 +140,17 @@ test('accepted packet arrays are copied and the facade cannot be edited', async 
   assert.equal(guest.update(invalid), false);
   compareFacade(guest.engine, expected);
   assert.ok(Number.isNaN(guest.engine.game_body_value(999, 0)));
+});
+
+
+test('assistance levels survive the WASM snapshot boundary independently for each player', async () => {
+  const host = await wasm(); host.game_start_match(7, 3, 0);
+  const guest = createRemoteEngine();
+  for (let level = 0; level <= 3; level++) {
+    host.game_set_assistance(0, level); host.game_set_assistance(1, 3 - level);
+    const packet = captureState(host, [1, 12]);
+    assert.equal(guest.update(packet), true);
+    assert.equal(guest.engine.game_player_value(0, 6), level);
+    assert.equal(guest.engine.game_player_value(1, 6), 3 - level);
+  }
 });

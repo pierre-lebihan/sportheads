@@ -63,8 +63,8 @@ assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
     await host.fill('#target-score', '3');
     await guest.waitForFunction(() => document.querySelector('#target-score').value === '3');
     assert.equal(await guest.locator('#target-score').isEnabled(), false);
-    await guest.selectOption('#skin-right', '26');
-    await host.waitForFunction(() => document.querySelector('#skin-right').value === '26');
+    await guest.selectOption('#skin-right', '12');
+    await host.waitForFunction(() => document.querySelector('#skin-right').value === '12');
     // A third browser must be rejected without disturbing the existing match.
     const third = await pageAt(share.href); await third.click('#join-room');
     await third.waitForFunction(() => document.querySelector('#room-status').textContent.includes('complète'), { timeout: 25000 });

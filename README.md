@@ -10,13 +10,15 @@ l’objectif de buts sont dans le cœur indépendant du navigateur.
 Deux choix : **sur le même écran** ou **à distance dans une salle privée**.
 Le premier à atteindre l’objectif de buts gagne : **7 par défaut**, réglable
 de 1 à 99, sans limite de temps. Choisissez parmi **19 terrains**, les **18 bonus**
-et **26 personnages** avec aperçu. Le rendu utilise les sprites, animations et sons du
+et **12 joueurs récents** avec aperçu. Les portraits des joueurs sont des caricatures originales ; les autres sprites, animations et sons viennent du
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
-En local comme à distance : duel ou coupe à deux, au meilleur des 3 ou 5 matchs.
-En local, un tournoi à élimination directe accueille aussi **4 ou 8 participants
-humains** qui se relaient sur le même appareil. Les résultats joués alimentent le tableau.
-L'IA, la boutique d'améliorations et la sauvegarde de progression restent exclues.
+Un match simple entre deux humains, en local ou à distance. Chaque joueur
+peut recevoir une aide de niveau 1, 2 ou 3 : **+10 %, +20 % ou +30 %** sur
+la vitesse de déplacement, le saut et la frappe. « Aucune aide » est le
+réglage par défaut. Les aides sont choisies avant le match et restent fixes
+jusqu'à sa fin ; à distance, le créateur les choisit pour les deux camps.
+Les personnages ont tous les mêmes caractéristiques de base.
 
 - Sur mobile : flèches tactiles, Saut et Tir ; plusieurs boutons peuvent être maintenus ensemble.
 - Gauche au clavier : A/Q, D, W/Z et espace.
@@ -45,7 +47,7 @@ La connexion directe a été vérifiée ; le test forcé des relais TURN publics
 donc empêcher la connexion et nécessiteront un relais dédié.
 
 [État du match](docs/match-progress.md) · [État de la physique](docs/physics-progress.md) ·
-[Multijoueur distant](docs/multiplayer.md) · [Terrains et tournois](docs/selection-tournament.md) ·
+[Multijoueur distant](docs/multiplayer.md) · [Joueurs et aides](docs/players.md) ·
 [Banc de comparaison Flash/Rust](https://pierre-lebihan.github.io/sportheads/physics.html)
 
 ## Construire et lancer
@@ -85,7 +87,7 @@ node scripts/match-parity.cjs
 node scripts/check-game.cjs http://127.0.0.1:8765/_site/
 node --test tests/*.test.mjs
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
-node scripts/check-competition.cjs http://127.0.0.1:8765/_site/
+node scripts/check-setup.cjs http://127.0.0.1:8765/_site/
 node scripts/check-mobile.cjs http://127.0.0.1:8765/_site/
 node scripts/check-pages.cjs http://127.0.0.1:8765/_site/physics.html
 ```

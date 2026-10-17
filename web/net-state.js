@@ -1,9 +1,10 @@
+import { PLAYER_COUNT } from './players.js';
 // Host-authoritative render snapshots. No simulation, assets or executable code
 // cross this boundary; the guest only reads the last validated numeric state.
 const KEYS = ['values', 'skins', 'bodies', 'players', 'pickups', 'bombs', 'effects'];
 const MAX_NUMBER = 1e12;
 const DEFAULT_VALUES = [0, 1800, 0, 0, 89, -1, 0, 0, 100, 100, 0, 0, 0, 1, 7, 8];
-const NEUTRAL_PLAYER = [1, 1, 0, 0, 0, 1];
+const NEUTRAL_PLAYER = [1, 1, 0, 0, 0, 1, 0];
 const finite = value => typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= MAX_NUMBER;
 const integer = (value, min, max = MAX_NUMBER) => finite(value) && Number.isInteger(value) && value >= min && value <= max;
 const oneOf = (value, choices) => choices.includes(value);
@@ -28,7 +29,7 @@ export function isValidState(packet) {
     const keys = Object.keys(packet);
     if (keys.length !== KEYS.length || !KEYS.every(key => Object.hasOwn(packet, key))) return false;
     const { values: v, skins, bodies, players, pickups, bombs, effects } = packet;
-    if (!row(v, 16) || !row(skins, 2) || !skins.every(skin => integer(skin, 1, 26))) return false;
+    if (!row(v, 16) || !row(skins, 2) || !skins.every(skin => integer(skin, 1, PLAYER_COUNT))) return false;
     if (!integer(v[0], 0, 3) || !integer(v[1], 0) || !integer(v[2], 0) || !integer(v[3], 0)
       || !integer(v[4], 0) || !integer(v[5], -1, 1) || !integer(v[6], 0)
       || !integer(v[7], 0, 127) || !oneOf(v[8], [60, 100, 140]) || !oneOf(v[9], [60, 100, 140])
@@ -43,10 +44,10 @@ export function isValidState(packet) {
       roles.add(role);
       return true;
     }) || ![1, 2, 3, 4, 5].every(role => roles.has(role))) return false;
-    if (!Array.isArray(players) || players.length !== 2 || !rows(players, 2, 6, player =>
+    if (!Array.isArray(players) || players.length !== 2 || !rows(players, 2, 7, player =>
       integer(player[0], 0, 2) && integer(player[1], 0, 2)
       && integer(player[2], 0, 1) && integer(player[3], 0, 1) && integer(player[4], 0, 1)
-      && oneOf(player[5], [0.5, 1, 1.5]))) return false;
+      && oneOf(player[5], [0.5, 1, 1.5]) && integer(player[6], 0, 3))) return false;
     if (!rows(pickups, 16, 4, pickup => integer(pickup[0], 1, 18) && integer(pickup[3], 0, 600))) return false;
     if (!rows(bombs, 16, 2)) return false;
     if (!rows(effects, 256, 6, effect => integer(effect[0], 0, 5) && integer(effect[3], 0, 1000)
@@ -83,7 +84,7 @@ export function captureState(engine, skins) {
     values: Array.from({ length: 16 }, (_, field) => engine.game_value(field)),
     skins: Array.isArray(skins) ? skins.slice() : skins,
     bodies,
-    players: Array.from({ length: 2 }, (_, side) => Array.from({ length: 6 }, (_, field) => engine.game_player_value(side, field))),
+    players: Array.from({ length: 2 }, (_, side) => Array.from({ length: 7 }, (_, field) => engine.game_player_value(side, field))),
     pickups: captureRows(engine, 'game_pickup_count', 'game_pickup_value', 4, 16),
     bombs: captureRows(engine, 'game_bomb_count', 'game_bomb_value', 2, 16),
     effects: captureRows(engine, 'game_effect_count', 'game_effect_value', 6, 256),

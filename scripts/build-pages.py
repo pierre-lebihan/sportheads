@@ -27,7 +27,7 @@ for old, new in replacements.items():
         raise SystemExit(f'Expected exactly one occurrence of {old}')
     html = html.replace(old, new)
 (site / 'physics.html').write_text(html)
-for filename in ('index.html', 'game.js', 'game.css', 'render.js', 'rooms.js', 'net-state.js', 'selection.js', 'tournament.js', 'competition-ui.js', 'touch-controls.js'):
+for filename in ('index.html', 'game.js', 'game.css', 'render.js', 'rooms.js', 'net-state.js', 'selection.js', 'players.js', 'touch-controls.js'):
     shutil.copyfile(root / 'web' / filename, site / filename)
 manifest=json.loads((root/'web/assets/manifest.json').read_text())
 for sprite in manifest['sprites'].values():

@@ -8,6 +8,23 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
   const errors = [], pages = [];
   async function mobile(viewport, target = url) {
     const context = await browser.newContext({ viewport, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+    await context.addInitScript(() => {
+      window.dropPointerRelease = false; window.lastRemoteInput = null;
+      for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) window.addEventListener(type, event => {
+        if (window.dropPointerRelease) event.stopImmediatePropagation();
+      }, true);
+      let Peer;
+      Object.defineProperty(window, 'Peer', { configurable: true, get: () => Peer, set: Original => {
+        Peer = class extends Original {
+          constructor(...args) {
+            super(...args);
+            this.on('connection', connection => connection.on('data', message => {
+              if (message?.type === 'input') window.lastRemoteInput = message.mask;
+            }));
+          }
+        };
+      } });
+    });
     const page = await context.newPage(); pages.push(page);
     page.on('pageerror', error => errors.push(error.message));
     const cdp = await context.newCDPSession(page);
@@ -168,6 +185,13 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     assert.ok(Math.abs(after.find(b => b.role === 5).angle - before.find(b => b.role === 5).angle) > .1, 'guest kicks');
     assert.ok(Math.abs(after.find(b => b.role === 1).x - before.find(b => b.role === 1).x) < .1, 'guest cannot move blue');
     await guest.release();
+    // The remote controller must send zero even when pointer release events vanish.
+    await g.evaluate(() => { window.dropPointerRelease = true; });
+    await guest.hold([[1, 1]]); await h.waitForFunction(() => window.lastRemoteInput === 1);
+    await guest.release();
+    assert.equal(await g.locator('.touch-pad .pressed').count(), 0);
+    await h.waitForFunction(() => window.lastRemoteInput === 0);
+    await g.evaluate(() => { window.dropPointerRelease = false; });
     before = await bodies(h); await host.hold([[0, 2], [0, 4], [0, 8]]); await waitTicks(h, 8); after = await bodies(h);
     assert.ok(after.find(b => b.role === 1).x > before.find(b => b.role === 1).x + 5, 'host touch drives blue');
     assert.ok(after.find(b => b.role === 1).y < before.find(b => b.role === 1).y - 10, 'host jumps');

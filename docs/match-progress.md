@@ -52,7 +52,7 @@ rejouer, perte de focus et absence de débordement sur écran étroit.
 
 ## Suite de la phase 1
 
-L'interface expose seulement deux modes : sur le même clavier et à distance
+L'interface expose seulement deux modes : sur le même écran et à distance
 avec code de salle. Les matchs se gagnent au nombre de buts, sans chronomètre,
 avec buts classiques. Les variantes historiques chronométrées restent testées
 dans le noyau pour les comparaisons Flash mais ne sont plus proposées. Les bonus peuvent toujours modifier temporairement les buts.
@@ -67,7 +67,7 @@ dans [multiplayer.md](multiplayer.md).
 Le rendu utilise les ressources originales exportées en SVG/PNG et les sons en MP3.
 La page et ses réglages sont une interface web ; ils ne reproduisent pas encore
 tous les menus Flash. L'affichage s'adapte aux petits écrans,
-mais les commandes nécessitent un clavier, partagé en local ou propre à chaque joueur à distance.
+avec commandes tactiles sur mobile et clavier sur ordinateur. Voir [mobile](mobile.md).
 
 ## Preuves des blocs 3 et 4
 

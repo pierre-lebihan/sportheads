@@ -11,8 +11,8 @@ distance. Les deux utilisent le même cœur Rust/WASM, sans IA. Le premier à at
 3. L'invité saisit le code, ou ouvre le lien et clique sur « Rejoindre ».
 4. Le créateur lance la partie. Il joue Bleu ; l'invité joue Rouge.
 
-Chaque joueur contrôle uniquement son camp, avec les flèches et P ou Q/A, D,
-Z/W et espace. Chacun choisit parmi 26 personnages avec aperçu ; le créateur
+Chaque joueur contrôle uniquement son camp, avec les boutons tactiles sur
+mobile, ou avec les flèches et P ou Q/A, D, Z/W et espace au clavier. Chacun choisit parmi 26 personnages avec aperçu ; le créateur
 choisit parmi les 19 terrains, les bonus et le nombre de buts pour gagner. Cet objectif est transmis à l’invité, reste fixe pendant
 le match et est conservé pour la revanche.
 Un troisième navigateur est refusé. Le créateur peut proposer une nouvelle
@@ -85,6 +85,7 @@ node --test tests/*.test.mjs
 node scripts/check-game.cjs http://127.0.0.1:8765/_site/
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
 node scripts/check-competition.cjs http://127.0.0.1:8765/_site/
+node scripts/check-mobile.cjs http://127.0.0.1:8765/_site/
 # Diagnostic séparé, ne pas confondre avec un test validé :
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/ --relay
 ```

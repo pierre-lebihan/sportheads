@@ -15,10 +15,10 @@ Trois formats humains sont disponibles :
 
 - Duel : un match au nombre de buts choisi (7 par défaut).
 - Coupe à deux : premier à 2 victoires (3 matchs maximum) ou 3 victoires
-  (5 matchs maximum), sur le même clavier ou à distance dans la même salle.
+  (5 matchs maximum), sur le même écran ou à distance dans la même salle.
 - Tournoi local à 4 ou 8 : tableau à élimination directe, sans tirage aléatoire,
-  noms et personnages choisis à l'inscription. Deux participants se relaient
-  à chaque match ; les vainqueurs avancent jusqu'à la finale.
+  noms et personnages choisis à l'inscription. Les participants se relaient
+  sur le même appareil à chaque match ; les vainqueurs avancent jusqu'à la finale.
 
 Chaque résultat vient d'un match réellement joué ; aucune IA ni simulation
 de résultat. Les paramètres restent fixes pendant la compétition. Le bouton

@@ -5,6 +5,7 @@ import { captureState, createRemoteEngine } from './net-state.js';
 import { PLAYER_NAMES, PITCHES, updateSelectionPreviews } from './selection.js';
 import { currentMatch, recordResult, validateTournament } from './tournament.js';
 import { prepareEntrants, createFromSetup, playingEntrants, renderTournament } from './competition-ui.js';
+import { createTouchControls } from './touch-controls.js';
 
 const $ = selector => document.querySelector(selector);
 const canvas = $('#field'), ctx = canvas.getContext('2d'), keys = new Set(), audio = createAudio();
@@ -16,7 +17,10 @@ let started = false, paused = false, pauseFlags = [false, false], soundEnabled =
 let last = 0, accumulator = 0, previousPhase = -1, lastBroadcast = 0;
 let matchId = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, receivedInput = -1;
 let remoteInput = 0, lastInputAt = 0, soundTick = -1, soundMatch = -1, busy = false;
-let tournament = null;
+let tournament = null, playView = false;
+const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
+const touch = createTouchControls($('#touch-controls'), sendInput);
+function clearInput() { keys.clear(); touch.clear(); }
 
 for (const [id, selected] of [['skin-left', 1], ['skin-right', 2]]) {
   for (let i = 1; i <= 26; i++) { const option = new Option(PLAYER_NAMES[i - 1], i); option.selected = i === selected; $('#' + id).add(option); }
@@ -29,7 +33,7 @@ const targetScore = () => +$('#target-score').value;
 const validTarget = () => Number.isInteger(targetScore()) && targetScore() >= 1 && targetScore() <= 99;
 const canStart = () => !!core && validTarget() && (mode === 'local' || (role === 'host' && room?.connected));
 function input() {
-  let mask = 0;
+  let mask = touch.mask();
   for (const key of keys) { const bit = bindings[key] || 0; mask |= mode === 'local' || bit < 16 ? bit : bit >> 4; }
   return mask;
 }
@@ -64,14 +68,14 @@ function broadcast() {
 }
 function pause(value = true) {
   if (!started || engine().game_value(0) === 3) return;
-  keys.clear(); accumulator = 0; last = 0;
-  if (!value) canvas.focus();
+  clearInput(); accumulator = 0; last = 0;
+  if (!value) canvas.focus({ preventScroll: true });
   if (mode === 'online' && role === 'guest') { room?.send({ type: 'pause', value: !!value }); sendInput(); return; }
   pauseFlags[0] = !!value; applyPause(); broadcast();
 }
 function applyPause() {
   const changed = paused !== pauseFlags.some(Boolean);
-  paused = pauseFlags.some(Boolean); keys.clear(); accumulator = 0; last = 0;
+  paused = pauseFlags.some(Boolean); clearInput(); accumulator = 0; last = 0;
   if (changed) music();
   update();
 }
@@ -86,13 +90,14 @@ function reset() {
   audio.unlock();
   core.game_start_on_pitch(crypto.getRandomValues(new Uint32Array(1))[0], targetScore(), +$('#bonuses').checked, +$('#pitch').value);
   skins().forEach((skin, side) => core.game_set_skin(side, skin));
+  if (hasTouch()) playView = true;
   started = true; paused = false; pauseFlags = [false, false]; previousPhase = -1;
-  remoteInput = 0; matchId++; keys.clear(); accumulator = 0; last = 0;
-  canvas.focus(); music(); update(); broadcast();
+  remoteInput = 0; matchId++; clearInput(); accumulator = 0; last = 0;
+  canvas.focus({ preventScroll: true }); music(); update(); broadcast();
 }
 function clearMatch() {
-  tournament = null;
-  started = false; paused = false; pauseFlags = [false, false]; keys.clear(); remoteInput = 0;
+  tournament = null; playView = false;
+  started = false; paused = false; pauseFlags = [false, false]; clearInput(); remoteInput = 0;
   last = 0; accumulator = 0; previousPhase = -1; receivedSequence = -1; receivedInput = -1;
   remote = createRemoteEngine(); audio.stopAll(); core?.game_reset(1);
 }
@@ -140,8 +145,8 @@ function onMessage(message) {
   $('#target-score').value = message.state.values[14];
   $('#pitch').value = message.state.values[15];
   $('#competition').value = message.competition; $('#best-of').value = message.bestOf;
-  if (newMatch) { previousPhase = -1; keys.clear(); music(); if (started && document.hidden) pause(true); else if (started) canvas.focus(); }
-  if (oldPaused !== paused) { keys.clear(); music(); if (!paused) canvas.focus(); }
+  if (newMatch) { if (started && hasTouch()) playView = true; previousPhase = -1; clearInput(); music(); if (started && document.hidden) pause(true); else if (started) canvas.focus({ preventScroll: true }); }
+  if (oldPaused !== paused) { clearInput(); music(); if (!paused) canvas.focus({ preventScroll: true }); }
   if (started && !paused && (soundTick !== engine().game_value(6) || soundMatch !== matchId)) {
     soundTick = engine().game_value(6); soundMatch = matchId; playSounds(engine().game_value(7));
   }
@@ -164,7 +169,7 @@ async function connectRoom(create) {
     onMessage: message => { if (room === candidate) onMessage(message); },
     onDisconnect: message => {
       if (room !== candidate) return;
-      busy = false; keys.clear(); remoteInput = 0;
+      busy = false; clearInput(); remoteInput = 0;
       if (started) { pauseFlags = [true, true]; paused = true; audio.stopAll(); }
       roomStatus(message + (role === 'host' ? ' Partagez le code pour accueillir un nouvel adversaire.' : ' Rejoignez une salle pour rejouer.'), true);
       if (role === 'guest') { $('#room-details').hidden = true; $('#room-actions').hidden = false; }
@@ -214,8 +219,12 @@ for (const id of ['pitch', 'competition', 'best-of']) $('#' + id).addEventListen
   $('#competition-error').hidden = true; update(); broadcast();
 });
 $('#cancel-tournament').addEventListener('click', () => { if (mode === 'local' || role === 'host') { clearMatch(); update(); broadcast(); } });
+$('#play-view').addEventListener('click', () => {
+  if (playView) pause();
+  playView = !playView; update(); canvas.focus({ preventScroll: true });
+});
 $('#pause').addEventListener('click', () => pause(!pauseFlags[ownSide()]));
-$('#resume').addEventListener('click', () => { pause(false); if (mode === 'local') canvas.focus(); });
+$('#resume').addEventListener('click', () => { pause(false); if (mode === 'local') canvas.focus({ preventScroll: true }); });
 for (const [side, id] of ['skin-left', 'skin-right'].entries()) $('#' + id).addEventListener('change', () => {
   if (mode === 'local' || (role === 'host' && side === 0)) { core?.game_set_skin(side, +$('#' + id).value); broadcast(); }
   else if (role === 'guest' && side === 1) sendInput();
@@ -223,7 +232,7 @@ for (const [side, id] of ['skin-left', 'skin-right'].entries()) $('#' + id).addE
 $('#sound').addEventListener('click', () => {
   soundEnabled = !soundEnabled; $('#sound').textContent = soundEnabled ? 'Son activé' : 'Son coupé';
   $('#sound').setAttribute('aria-pressed', String(soundEnabled)); audio.unlock(); music();
-  if (started && !paused) canvas.focus();
+  if (started && !paused) canvas.focus({ preventScroll: true });
 });
 window.addEventListener('keydown', event => {
   if (['SELECT', 'INPUT', 'BUTTON'].includes(event.target.tagName) && event.code !== 'Escape') return;
@@ -233,9 +242,9 @@ window.addEventListener('keydown', event => {
   }
 });
 window.addEventListener('keyup', event => { keys.delete(event.code); sendInput(); });
-window.addEventListener('blur', () => { keys.clear(); sendInput(); pause(); });
+window.addEventListener('blur', () => { clearInput(); sendInput(); pause(); });
 window.addEventListener('pagehide', () => room?.close());
-document.addEventListener('visibilitychange', () => { if (document.hidden) { keys.clear(); sendInput(); pause(); } });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { clearInput(); sendInput(); pause(); } });
 setInterval(sendInput, 50);
 
 function renderState() {
@@ -258,6 +267,12 @@ function update() {
     broadcast();
   }
   const fixture = playingEntrants(tournament, matchId), names = fixture ? fixture.map(entrant => entrant.name) : ['Bleu', 'Rouge'];
+  document.body.classList.toggle('touch-device', hasTouch());
+  document.body.classList.toggle('play-view', playView && started);
+  $('#play-view').hidden = !started; $('#play-view').textContent = playView ? 'Réglages' : 'Vue jeu';
+  $('#play-view').setAttribute('aria-pressed', String(playView));
+  $('#touch-controls').hidden = !started;
+  touch.update({ mode, side: ownSide(), names, enabled: started && !paused && phase !== 3 && (mode === 'local' || !!room?.connected) });
   $('.team.blue span').textContent = names[0]; $('.team.red span').textContent = names[1];
   $('.team.blue span').title = names[0]; $('.team.red span').title = names[1];
   $('#score-left').textContent = state.score[0] ?? 0; $('#score-right').textContent = state.score[1] ?? 0;
@@ -269,7 +284,7 @@ function update() {
   $('#start').disabled = !canStart(); $('#start').hidden = mode === 'online' && role === 'guest';
   $('#start').textContent = !core ? 'Chargement…' : mode === 'local' ? 'Commencer' : room?.connected ? 'Lancer le match' : 'En attente d’un adversaire';
   $('#welcome-title').textContent = mode === 'local' ? 'À vous de jouer.' : room?.connected ? 'Vous êtes deux !' : 'Invitez un adversaire.';
-  $('#welcome-detail').textContent = mode === 'local' ? 'Marquez plus de buts que votre adversaire. Le match se joue à deux sur le même clavier.'
+  $('#welcome-detail').textContent = mode === 'local' ? 'Marquez plus de buts que votre adversaire. Jouez à deux avec les commandes tactiles ou le clavier.'
     : room?.connected ? role === 'host' ? 'Vous jouez Bleu. Votre adversaire joue Rouge. Lancez le match quand vous êtes prêts.' : 'Vous jouez Rouge. Le créateur de la salle va lancer le match.'
       : 'Créez une salle, partagez son code et retrouvez-vous sur le terrain.';
   $('#pause').disabled = !started || phase === 3 || (mode === 'online' && !room?.connected);
@@ -307,7 +322,7 @@ function update() {
     const [a, b] = state.score; $('#result').textContent = `${names[a > b ? 0 : 1]} remporte le match !`;
     if (tournament && tournament.champion !== null) $('#result').textContent = `${tournament.entrants[tournament.champion].name} remporte ${tournament.format === 'series' ? 'la coupe' : 'le tournoi'} !`;
     $('#final-score').textContent = `${names[0]} ${a} — ${b} ${names[1]}`;
-    if (phase !== previousPhase) { keys.clear(); audio.stopAll(); }
+    if (phase !== previousPhase) { clearInput(); audio.stopAll(); }
   }
   previousPhase = phase;
 }

@@ -7,7 +7,7 @@ est écrit en Rust et compilé en WebAssembly. Le navigateur gère l'affichage e
 les entrées ; la physique, les commandes, le score, les remises en jeu et
 l’objectif de buts sont dans le cœur indépendant du navigateur.
 
-Deux choix : **sur le même clavier** ou **à distance dans une salle privée**.
+Deux choix : **sur le même écran** ou **à distance dans une salle privée**.
 Le premier à atteindre l’objectif de buts gagne : **7 par défaut**, réglable
 de 1 à 99, sans limite de temps. Choisissez parmi **19 terrains**, les **18 bonus**
 et **26 personnages** avec aperçu. Le rendu utilise les sprites, animations et sons du
@@ -15,12 +15,19 @@ SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
 En local comme à distance : duel ou coupe à deux, au meilleur des 3 ou 5 matchs.
 En local, un tournoi à élimination directe accueille aussi **4 ou 8 participants
-humains** qui se relaient sur le clavier. Les résultats joués alimentent le tableau.
+humains** qui se relaient sur le même appareil. Les résultats joués alimentent le tableau.
 L'IA, la boutique d'améliorations et la sauvegarde de progression restent exclues.
 
-- Gauche : A/Q, D, W/Z et espace.
-- Droite : flèches et P.
+- Sur mobile : flèches tactiles, Saut et Tir ; plusieurs boutons peuvent être maintenus ensemble.
+- Gauche au clavier : A/Q, D, W/Z et espace.
+- Droite au clavier : flèches et P.
 - Échap : pause. Le match se met aussi en pause à la perte de focus.
+
+Sur téléphone, le match ouvre une vue qui occupe l’écran. En paysage, les
+commandes entourent le terrain ; en portrait, elles sont dessous. À distance,
+chaque téléphone contrôle son joueur. En local, Bleu et Rouge ont chacun leur
+manette tactile. « Réglages » met en pause et revient aux menus ; « Vue jeu »
+ramène au terrain. Voir [commandes mobiles](docs/mobile.md).
 
 À distance : choisir **À distance**, créer une salle et partager son code de
 huit caractères ou son lien. L'autre joueur clique sur **Rejoindre**, puis
@@ -79,6 +86,7 @@ node scripts/check-game.cjs http://127.0.0.1:8765/_site/
 node --test tests/*.test.mjs
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
 node scripts/check-competition.cjs http://127.0.0.1:8765/_site/
+node scripts/check-mobile.cjs http://127.0.0.1:8765/_site/
 node scripts/check-pages.cjs http://127.0.0.1:8765/_site/physics.html
 ```
 

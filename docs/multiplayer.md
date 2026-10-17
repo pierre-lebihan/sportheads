@@ -37,7 +37,7 @@ camp reçoit une aide. Le moteur neutralise l'autre camp et l'invité rejette
 les états où les deux camps seraient aidés. Le curseur est partagé dès le
 salon et verrouillé pendant le match. Le choix d'un personnage est visuel.
 Les réglages et le partage du code sont accessibles dans le menu du jeu,
-ouvert avec la roue dentée sous le sol.
+ouvert avec la roue dentée au-dessus du terrain.
 
 Le code est tiré avec `crypto.getRandomValues`, sur un alphabet de 32 caractères
 sans 0, 1, I ou O : 40 bits aléatoires. Les collisions d'identifiant sont reprises

@@ -29,7 +29,8 @@ Sur téléphone, le match ouvre une vue qui occupe l’écran. En paysage, les
 commandes entourent le terrain ; en portrait, elles sont dessous. À distance,
 chaque téléphone contrôle son joueur. En local, Bleu et Rouge ont chacun leur
 manette tactile. Les réglages sont dans le jeu ; la roue dentée dans la bande
-sous le sol ouvre le menu et met en pause. « Retour au match » ferme le menu. Voir [commandes mobiles](docs/mobile.md).
+au-dessus du terrain ouvre le menu et met en pause. Le score compact reste dans cette
+bande, sans recouvrir le ballon. « Retour au match » ferme le menu. Voir [commandes mobiles](docs/mobile.md).
 
 La préparation se déroule dans le jeu : **mode → joueurs → terrain → paramètres**.
 Les boutons **Aléatoire** choisissent immédiatement un autre joueur ou terrain et actualisent son aperçu. Recliquez autant que vous voulez avant de continuer ; en ligne, chacun garde les mêmes droits que pour le choix manuel.

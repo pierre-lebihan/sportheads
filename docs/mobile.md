@@ -14,7 +14,10 @@ autorisation de plein écran n'est nécessaire.
 - À distance, seules les commandes de son propre joueur sont visibles.
 - En paysage, les commandes entourent le terrain. En portrait, elles sont
   placées dans la bande sous le terrain. Les zones sûres de l'écran sont conservées.
-- Pause arrête le match. La roue dentée sous le sol ouvre les réglages
+- Pause, réglages et son sont dans une bande au-dessus du terrain, avec un
+  score compact Bleu — Rouge. Cette bande ne recouvre aucune partie du terrain ;
+  l'objectif de buts reste uniquement dans les paramètres.
+- Pause arrête le match. La roue dentée ouvre les réglages
   dans le jeu et met en pause ; Retour au match ferme le menu. Reprendre
   relance ensuite la partie.
 

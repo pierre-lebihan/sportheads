@@ -19,7 +19,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     await goToSetup(page, 'rules');
     assert.equal(await page.locator('#start').isEnabled(),true);
     assert.equal(await page.locator('#target-score').inputValue(),'7');
-    assert.equal(await page.locator('#clock').innerText(),'7 buts');
+    assert.equal(await page.locator('#clock').count(),0);
     await page.fill('#target-score','0'); assert.equal(await page.locator('#start').isEnabled(),false);
     await page.fill('#target-score','3');
     await page.click('#start');
@@ -64,7 +64,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     assert.equal(await page.locator('#mode,#goals').count(),0);
     assert.equal(await page.locator('.play-modes button').count(),2);
     assert.deepEqual(await page.evaluate(()=>[sportheads.engine.game_value(12),sportheads.engine.game_value(14)]),[1,3]);
-    assert.equal(await page.locator('#clock').innerText(),'3 buts');
+    assert.equal(await page.locator('#target-score').inputValue(),'3');
     for(let kind=1;kind<=18;kind++){
       const state=await page.evaluate(kind=>{const e=sportheads.engine;e.game_start(4,0,0,true);for(let i=0;i<89;i++)e.game_tick(0);e.game_collect(kind,kind%2);for(let i=0;i<3;i++)e.game_tick(0);sportheads.render();return sportheads.renderState();},kind);
       assert.ok(state.players.every(p=>Number.isFinite(p.scale)));

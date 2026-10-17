@@ -73,7 +73,7 @@ assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
     assert.equal((await state(host)).connected, true); assert.equal((await state(guest)).connected, true);
     await host.click('#start');
     await guest.waitForFunction(() => sportheads.snapshot().started && sportheads.snapshot().targetScore === 3);
-    assert.equal(await guest.locator('#clock').innerText(), '3 buts');
+    assert.equal(await guest.locator('#clock').count(), 0, 'the goal target stays in settings');
     await Promise.all([host, guest].map(page => page.waitForFunction(() => sportheads.snapshot().phase === 1 && !sportheads.snapshot().paused)));
     const before = await bodyStates(host);
     await guest.locator('#field').focus(); await guest.keyboard.down('ArrowLeft');

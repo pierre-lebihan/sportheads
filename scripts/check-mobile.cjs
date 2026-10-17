@@ -43,13 +43,20 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     await page.waitForFunction(tick => sportheads.snapshot().tick >= tick, (await state(page)).tick + amount);
   }
   async function fits(page) {
+    // Let resize events and the arena's ResizeObserver settle after rotation.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     assert.ok(await page.evaluate(() => {
       const arena = document.querySelector('.arena').getBoundingClientRect();
-      const visible = [...document.querySelectorAll('.touch-pad:not([hidden]) button, #play-view, #pause')];
+      const visible = [...document.querySelectorAll('.touch-pad:not([hidden]) button, .match-bar button:not([hidden])')];
+      const field = document.querySelector('#field').getBoundingClientRect();
+      const toolbar = document.querySelector('.match-bar').getBoundingClientRect();
+      const score = document.querySelector('.scoreboard').getBoundingClientRect();
       return document.body.classList.contains('play-view') && document.documentElement.scrollWidth <= innerWidth
         && arena.top >= 0 && arena.bottom <= innerHeight + 1
+        && toolbar.bottom <= field.top + .5 && score.bottom <= field.top + .5
+        && score.left >= toolbar.left && score.right <= toolbar.right
         && visible.every(button => { const r = button.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; });
-    }), 'arena and controls fit the viewport');
+    }), 'arena and controls fit; the toolbar and compact score never cover the pitch');
   }
   try {
     const local = await mobile({ width: 390, height: 844 }), p = local.page;

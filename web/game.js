@@ -308,8 +308,6 @@ function update() {
   $('.team.blue span').textContent = teamNames[0]; $('.team.red span').textContent = teamNames[1];
   $('.team.blue span').title = names[0]; $('.team.red span').title = names[1];
   $('#score-left').textContent = state.score[0] ?? 0; $('#score-right').textContent = state.score[1] ?? 0;
-  const target = state.targetScore;
-  $('#clock').textContent = Number.isInteger(target) && target >= 1 && target <= 99 ? `${target} ${target === 1 ? 'but' : 'buts'}` : '—';
   const notice = e?.game_value(11) > 0 ? bonusNames[e.game_value(10)] : '';
   $('#bonus-notice').textContent = notice; $('#bonus-notice').hidden = !notice;
   $('#welcome').hidden = started && !settingsOpen; $('#finished').hidden = !started || phase !== 3 || settingsOpen; $('#paused').hidden = !started || !paused || phase === 3 || settingsOpen;
@@ -320,7 +318,9 @@ function update() {
     : room?.connected ? role === 'host' ? 'Vous jouez Bleu. Votre adversaire joue Rouge. Lancez le match quand vous êtes prêts.' : 'Vous jouez Rouge. Le créateur de la salle va lancer le match.'
       : 'Créez une salle, partagez son code et retrouvez-vous sur le terrain.';
   $('#pause').disabled = !started || phase === 3 || (mode === 'online' && !room?.connected);
-  $('#pause').textContent = pauseFlags[ownSide()] ? 'Reprendre' : 'Pause';
+  const pauseLabel = pauseFlags[ownSide()] ? 'Reprendre' : 'Pause';
+  $('#pause').textContent = pauseFlags[ownSide()] ? '▶' : 'Ⅱ';
+  $('#pause').setAttribute('aria-label', pauseLabel); $('#pause').title = pauseLabel;
   const mayResume = mode === 'local' || (!!room?.connected && pauseFlags[ownSide()]);
   $('#resume').disabled = !mayResume; $('#resume').textContent = mayResume ? 'Reprendre' : 'Adversaire en pause';
   $('#pause-detail').textContent = mode === 'local' ? 'Le temps vous attend.' : !room?.connected ? 'Votre adversaire est déconnecté. Rejoignez une salle pour rejouer.'

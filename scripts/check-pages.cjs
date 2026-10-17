@@ -17,8 +17,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     assert.equal((await page.goto(url)).status(), 200);
     await page.waitForFunction(() => window.ready || window.loadError);
     assert.equal(await page.evaluate(() => window.loadError), undefined);
-    assert.equal(await page.locator('#scene option').count(), 11);
-    for (let i = 0; i < 11; i++) {
+    const count=await page.locator('#scene option').count();
+    assert.ok(count>=11);
+    for (let i = 0; i < count; i++) {
       await page.selectOption('#scene', String(i));
       await page.locator('#tick').evaluate(slider => {
         slider.value = slider.max;
@@ -35,7 +36,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
     await page.setViewportSize({ width: 390, height: 844 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     assert.deepEqual(errors, []);
-    console.log(`PASS ${url}: 11 replays, playback, mobile layout, no failed requests`);
+    console.log(`PASS ${url}: ${count} replays, playback, mobile layout, no failed requests`);
   } finally {
     await browser.close();
   }

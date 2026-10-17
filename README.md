@@ -1,87 +1,101 @@
-# Sportheads — faisabilité de la reconstruction web
+# Sportheads
 
-Le SWF original a été décompilé, exécuté dans un navigateur et instrumenté pour
-servir de référence. Un premier noyau physique Rust/WASM est implémenté et
-comparé à Flash ; le match complet n'est pas encore porté.
+**[Jouer à deux sur le même clavier](https://pierre-lebihan.github.io/sportheads/)**
 
-**Version en ligne : https://pierre-lebihan.github.io/sportheads/**
+Reconstruction web de Sports Heads Football European Edition. Le cœur du match
+est écrit en Rust et compilé en WebAssembly. Le navigateur gère l'affichage et
+les entrées ; la physique, les commandes, le score, les remises en jeu et le
+chronomètre sont dans le cœur indépendant du navigateur.
 
-Le site public présente les replays du banc de comparaison physique. Ce n’est
-pas encore un match jouable. Le déploiement GitHub Pages est automatique après
-chaque push sur `main`, si les tests Rust et la compilation WASM passent.
+Cette version propose un **match local sur terrain libre**, les **18 bonus**,
+les trois modes (60 secondes, premier à sept, premier but gagnant), les tailles
+de buts et 26 personnages. Le rendu utilise les sprites, animations et sons du
+SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
-Lire le [constat technique](docs/feasibility.md), avec les preuves et les limites.
-Le [suivi du port physique](docs/physics-progress.md) décrit les 11 scénarios
-validés et les prochaines étapes.
+L'IA est volontairement exclue. Tournoi, sauvegarde, sélection de tous les terrains
+et multijoueur à distance restent à venir.
 
-## Contenu
+- Gauche : A/Q, D, W/Z et espace.
+- Droite : flèches et P.
+- Échap : pause. Le match se met aussi en pause à la perte de focus.
 
-- `reference/` : copie du SWF original, copie instrumentée minimale et variante à
-  hasard contrôlé. Le fichier situé dans `Documents/Jeux` reste intact.
-- `evidence/` : code ActionScript décompilé, ressources exportées, journaux,
-  captures et enregistrements des états.
-- `probe/` : lecteur Ruffle local, destiné aux essais.
-- `spikes/rust-parity/` : petit port Rust de la trajectoire libre du ballon,
-  sans collisions. Ce n'est pas le moteur complet.
-- `src/` : noyau Rust actuel, contacts discrets et pieds motorisés.
-- `tests/` : références Flash et tests de régression Rust natifs.
-- `scripts/` : préparation et vérification de la référence.
-- `tools/` : JPEXS et chaîne Rust locale, sans modification du PATH système.
+[État du match](docs/match-progress.md) · [État de la physique](docs/physics-progress.md) ·
+[Banc de comparaison Flash/Rust](https://pierre-lebihan.github.io/sportheads/physics.html)
 
-Le dépôt public contient le noyau Rust, les tests, les scripts et les résultats
-numériques du banc. Les SWF, ressources extraites, code décompilé, outils et
-journaux locaux sont exclus par `.gitignore` et ne sont pas publiés.
+## Construire et lancer
 
-## Relancer les essais
-
-Depuis ce dossier, avec Java 17+, Python 3, Node et Chrome :
+Avec Python 3 et Rust stable, `rustfmt`, `clippy` et la cible `wasm32-unknown-unknown` :
 
 ```sh
-python3 scripts/setup-reference.py
-python3 -m http.server 8765 --bind 127.0.0.1
-```
-
-Dans un second terminal :
-
-```sh
-node scripts/replay-probe.cjs
-node scripts/replay-probe.cjs seeded
-node scripts/timeline-replay-probe.cjs
-python3 scripts/build-rust-spike.py
-node scripts/wasm-parity-probe.cjs
-python3 scripts/build-core.py
-node scripts/physics-parity.cjs
-```
-
-Les scripts navigateur nécessitent Playwright (`npm install --no-save playwright`)
-et Google Chrome. `PLAYWRIGHT_MODULE` permet d’indiquer un module déjà installé.
-La compilation utilise Rust stable, avec `rustfmt`, `clippy` et la cible
-`wasm32-unknown-unknown` ; la chaîne locale `tools/rust/` est utilisée si présente.
-
-Le script de préparation vérifie les SHA-256 du SWF et des archives des outils.
-Il accepte aussi le chemin du SWF en argument.
-
-## Ouvrir la référence
-
-Une fois le serveur démarré :
-
-- [Référence jouable, introduction passée](http://127.0.0.1:8765/probe/?file=instrumented&boot=play)
-- [SWF original brut](http://127.0.0.1:8765/probe/?file=original)
-- [Comparaison visuelle du noyau physique](http://127.0.0.1:8765/probe/physics.html)
-
-La référence jouable reste le jeu Flash exécuté par Ruffle. Le contournement du
-préchargeur est explicite ; il ne constitue pas une reconstruction HTML5/Rust.
-
-
-## Publication GitHub Pages
-
-```sh
+rustup component add rustfmt clippy
+rustup target add wasm32-unknown-unknown
 python3 scripts/build-core.py
 python3 scripts/build-pages.py
 python3 -m http.server 8766 --directory _site --bind 127.0.0.1
 ```
 
-Seul `_site/` est publié : la page et les enregistrements numériques de 11
-scénarios validés. Les replays enregistrés ne sont pas recalculés par ce build.
-Pour revenir à une version précédente, rétablir le commit souhaité sur `main`
-et laisser le workflow Pages republier cette version.
+Ouvrir `http://127.0.0.1:8766/`. Le build vérifie le format, les tests natifs et
+Clippy, puis compile le WASM. Une chaîne locale `tools/rust/` est utilisée si présente.
+Aucune dépendance Rust externe ni requête vers un service de jeu n'est nécessaire.
+
+## Tests contre Flash
+
+25 scènes physiques sont comparées aux états du moteur original : contacts,
+articulations, détection continue, sommeil/réveil et polygones convexes. Les états
+attendus des régressions natives proviennent exclusivement de Flash et ne sont
+jamais régénérés par la compilation. Le banc web montre les enregistrements.
+
+Le match possède également des scénarios comparatifs dédiés et des tests de règles.
+Pour relancer les essais navigateur, installer Playwright et Google Chrome :
+
+```sh
+npm install --no-save playwright
+python3 scripts/setup-reference.py /chemin/vers/Sports_Heads_Football_European_Edition.swf
+python3 -m http.server 8765 --bind 127.0.0.1
+# Dans un autre terminal :
+node scripts/physics-parity.cjs
+node scripts/match-parity.cjs
+node scripts/check-game.cjs http://127.0.0.1:8765/_site/
+node scripts/check-pages.cjs http://127.0.0.1:8765/_site/physics.html
+```
+
+`PLAYWRIGHT_MODULE` permet d'utiliser un module déjà installé. Les anciens scripts
+`replay-probe.cjs` et `timeline-replay-probe.cjs` documentent l'investigation du
+Flash ; le [constat initial](docs/feasibility.md) conserve les premières preuves.
+Les fichiers non versionnés qu'il référence restent locaux.
+
+## Publication
+
+GitHub Actions teste le cœur, compile le WASM et publie `_site/` après chaque push
+sur `main`. Le site contient le match, son moteur WASM et les replays numériques.
+Pour revenir à une version précédente, rétablir le commit souhaité sur `main` et
+laisser le workflow Pages republier cette version.
+
+Le SWF, le code décompilé, les outils et les journaux locaux sont exclus de Git
+et du site. Les ressources nécessaires au rendu et au son sont dans `web/assets/` ;
+le manifeste conserve l'empreinte du SWF source et les identifiants des sprites.
+Le fichier original reste intact.
+
+## Bonus, graphismes et sons
+
+`src/powerups.rs` conserve les 18 règles et leurs durées, y compris les asymétries
+et erreurs de temporisation du jeu d'origine. `scripts/powerups-parity.cjs`
+compare 43 scénarios à Flash : 657 états et 36 valeurs par état, identiques dans
+la version validée. Les références natives sont capturées uniquement dans Flash.
+
+`python3 scripts/export-web-assets.py` régénère les 47 sprites (289 frames) et
+10 sons depuis le SWF local. Cette extraction n'est pas nécessaire pour compiler
+le dépôt cloné : les fichiers publiés sont versionnés. Le rendu anime les frames
+à 30 Hz et conserve les points d'inscription Flash. Les sons démarrent après le
+clic sur Commencer et peuvent être coupés avec le bouton Son.
+
+Les scénarios de match couvrent les commandes, les collisions au centre, le toit
+des buts et le bonus grande tête. Ils se relancent avec :
+
+```sh
+node scripts/match-parity.cjs
+node scripts/match-parity.cjs --center
+node scripts/match-parity.cjs --roof
+node scripts/match-parity.cjs --big-player
+node scripts/powerups-parity.cjs
+```

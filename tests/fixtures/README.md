@@ -21,3 +21,27 @@ node scripts/capture-physics-goldens.cjs
 ```
 
 La compilation et les tests ne régénèrent jamais ces références.
+
+## Matchs complets
+
+Les fichiers `match/*.txt` enregistrent des matchs à deux joueurs,
+avec détection continue et sommeil actifs. Les trois scénarios sans bonus
+contiennent 180 frames ; `big-player` en conserve 120 pour la régression native.
+Le rapport navigateur compare toujours les 180 frames du scénario géant.
+Les chemins numériques natif et WASM accumulent des arrondis différents après
+des contacts répétés ; cette fenêtre native maintient les seuils indiqués.
+Le scénario `big-player` applique le
+bonus 14 au joueur de droite avant la première frame (`collect 14 1`), puis
+fait avancer les deux joueurs vers le centre avec sauts et frappes.
+
+Les commandes `tolerances` indiquent les seuils absolus de comparaison :
+positions et angles `1e-7`, vitesses linéaires et angulaires `1e-6` pour ce
+scénario géant. Les autres matchs conservent `1e-7` sur tous les champs.
+La tolérance des vitesses couvre une dérive mesurée maximale de `5.97e-7` après
+180 frames ; celle des positions reste inchangée (écart mesuré `1.54e-8` pixel).
+
+Capture volontaire depuis Flash, après reconstruction du WASM :
+
+```sh
+node scripts/match-parity.cjs --big-player --capture
+```

@@ -1,9 +1,13 @@
 # motor-foot-ground
 # Flash oracle; SWF SHA-256 6a8b371667a9f06da787301814f74afc7d6e80b5b8b0d9fb9b89e1982a559950
 reset 0 300
+settings 0 0
 box 400 470 400 10 0 0 0.5 0 0 0 0 0
+flags 0 0 0 1
 circle 600 440 20 100 0 0.01 1 0 0 0
+flags 1 0 0 1
 box 604 455.6 20 5 4.511592653589793 2 0.5 1 0 0 0 0
+flags 2 0 0 1
 joint 1 2 600 440 100000000
 # tick 0
 expect 0 400 470 0 0 0 0 0 0

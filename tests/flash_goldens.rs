@@ -45,6 +45,19 @@ fn replay(fixture: &str) {
                 core_joint(a[0] as u32, a[1] as u32, a[2], a[3], a[4]);
             }
             "motor" => core_motor(a[0] as u32, a[1]),
+            "settings" => core_settings(a[0] as u32, a[1] as u32),
+            "flags" => core_body_flags(a[0] as u32, a[1] as i32, a[2] as u32, a[3] as u32),
+            "vertex" => core_vertex(a[0], a[1]),
+            "polygon" => {
+                core_polygon(a[0], a[1], a[2], a[3], a[4], a[5], a[6] as u32);
+            }
+            "velocity" => core_velocity(a[0] as u32, a[1], a[2], a[3]),
+            "expect_sleep" => assert_eq!(
+                core_sleeping(a[0] as u32),
+                a[1] as u32,
+                "sleep at fixture line {}",
+                line_number + 1
+            ),
             "tick" => core_tick(),
             "expect" => {
                 for field in 0..8 {
@@ -102,3 +115,17 @@ fixture!(motor_foot_ball, "motor-foot-ball");
 fixture!(box_floor_two_points, "box-floor-two-points");
 fixture!(box_rotated_floor, "box-rotated-floor");
 fixture!(motor_foot_ground, "motor-foot-ground");
+fixture!(continuous_ball_floor, "continuous-ball-floor");
+fixture!(fast_ball_thin_wall, "fast-ball-thin-wall");
+fixture!(fast_ball_corner, "fast-ball-corner");
+fixture!(fast_box_wall, "fast-box-wall");
+fixture!(bullet_ball_head, "bullet-ball-head");
+fixture!(sleep_and_wake, "sleep-and-wake");
+fixture!(connected_sleep, "connected-sleep");
+fixture!(island_three_circles, "island-three-circles");
+fixture!(convex_ramp, "convex-ramp");
+fixture!(continuous_motor_ground, "continuous-motor-ground");
+fixture!(convex_triangle, "convex-triangle");
+fixture!(convex_right_triangle, "convex-right-triangle");
+fixture!(convex_trapezoid, "convex-trapezoid");
+fixture!(convex_hexagon, "convex-hexagon");

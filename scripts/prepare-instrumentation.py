@@ -15,6 +15,7 @@ source = source.replace('import flash.display.DisplayObject;', '''import Box2D.C
    import Box2D.Collision.b2Manifold;
    import flash.display.DisplayObject;
    import flash.display.DisplayObjectContainer;
+   import flash.utils.getDefinitionByName;
    import flash.external.ExternalInterface;''')
 source = source.replace('   public class KeyPoll', '   use namespace b2internal;\n\n   public class KeyPoll')
 anchor = 'dispObj = param1;'
@@ -34,6 +35,13 @@ source = source.replace(anchor, anchor + '''
             ExternalInterface.addCallback("physicsLoad", physicsLoad);
             ExternalInterface.addCallback("physicsState", physicsState);
             ExternalInterface.addCallback("physicsStep", physicsStep);
+            ExternalInterface.addCallback("physicsVelocity", physicsVelocity);
+            ExternalInterface.addCallback("probeGeometry", probeGeometry);
+            ExternalInterface.addCallback("probeContacts", probeContacts);
+            ExternalInterface.addCallback("probePowerupReset", probePowerupReset);
+            ExternalInterface.addCallback("probePowerup", probePowerup);
+            ExternalInterface.addCallback("probePowerupStep", probePowerupStep);
+            ExternalInterface.addCallback("probePowerupState", probePowerupState);
          }
 ''')
 anchor = '      public function isDown(param1:uint) : Boolean'
@@ -90,6 +98,60 @@ source = source.replace(anchor, '''      private static var randomState:uint = 1
 
       private function probeRoot() : Object {
          return DisplayObjectContainer(dispObj).getChildAt(0);
+      }
+
+      public function probePowerupReset() : Object {
+         var r:Object=probeRoot();r.resetPUVars();r.heroLegBroken=false;r.oppLegBroken=false;
+         if(r.streakerAlive){r.removeBody(r.streaker);}r.streakerAlive=false;
+         r.makeHeroNormal();r.makeOppNormal();r.updateBall();r.PUHandler.resetGoalSizes();
+         for each(var prefix:String in ["hero","opp"]){for each(var suffix:String in ["PUSpeed","PUJump","PUIce","PUBombs","PUSize","PUBreak"]){r.PUHandler[prefix+suffix+"Timer"]=10000;}}
+         for each(var key:String in ["PUFireTimer","PUSizeTimer","PUBouncyTimer","PUStreakerTimer"]){r.PUHandler[key]=10000;}
+         return probePowerupState();
+      }
+      public function probePowerup(kind:uint,side:uint) : Object {
+         var names:Array=["PU_Speed_Good","PU_Speed_Bad","PU_Jump_Good","PU_Jump_Bad","PU_Ice_Good","PU_Ice_Bad","PU_Bombs_Good","PU_Bombs_Bad","PU_Fireground_Neu","PU_Bigball_Neu","PU_Bouncyball_Neu","PU_Smallball_Neu","PU_Deadball_Neu","PU_Size_Good","PU_Size_Bad","PU_Break_Good","PU_Break_Bad","PU_Streaker_Neu"];
+         var factory:Class=getDefinitionByName(names[kind-1]) as Class;
+         var item:Object=new factory();probeRoot().PUHandler.gotOne(side==1?"hero":"opp",item);
+         return probePowerupState();
+      }
+      public function probePowerupStep(count:uint) : Object {for(var i:uint=0;i<count;i++)probeRoot().PUHandler.Update();return probePowerupState();}
+      public function probePowerupState() : Object {
+         var r:Object=probeRoot();var p:Object=r.PUHandler;
+         var v:Array=[r.oppPUSpeed,r.heroPUSpeed,r.oppPUJump,r.heroPUJump,r.oppPUFreeze?1:0,r.heroPUFreeze?1:0,r.oppLegBroken?1:0,r.heroLegBroken?1:0,r.oppBombed?1:0,r.heroBombed?1:0,r.PUSize,r.PUBouncy,r.goal1Hit.height,r.goal2Hit.height,r.Heads.scaleX,r.YourHead.scaleX,r.PUFire?1:0,r.streakerAlive?1:0,p.oppPUSpeedTimer,p.heroPUSpeedTimer,p.oppPUJumpTimer,p.heroPUJumpTimer,p.oppPUIceTimer,p.heroPUIceTimer,p.oppPUBombsTimer,p.heroPUBombsTimer,p.oppPUSizeTimer,p.heroPUSizeTimer,p.oppPUBreakTimer,p.heroPUBreakTimer,p.PUFireTimer,p.PUSizeTimer,p.PUBouncyTimer,p.PUStreakerTimer,r.oppPUBombs?1:0,r.heroPUBombs?1:0];
+         return {values:v};
+      }
+      private function probeBodyName(b:b2Body) : String {
+         var r:Object=probeRoot();
+         for each(var n:String in ["hero","opp","ball","racket","oppracket","ground","leftGoalPost","rightGoalPost"]){if(r[n]===b)return n;}
+         return "static";
+      }
+      public function probeContacts() : Object {
+         var r:Object=probeRoot(); var contacts:Array=[];var edges:Object={};
+         var c:b2Contact=r.m_world.b2internal::m_contactList;
+         while(c){
+            var ms:Array=[];
+            for each(var manifold:Object in c.GetManifolds()) {for(var k:int=0;k<manifold.pointCount;k++){
+               var pt:Object=manifold.points[k];ms.push([manifold.normal.x,manifold.normal.y,pt.localPoint1.x,pt.localPoint1.y,pt.localPoint2.x,pt.localPoint2.y,pt.separation,pt.id.key,pt.normalImpulse,pt.tangentImpulse]);
+            }}
+            contacts.push({a:probeBodyName(c.GetShape1().GetBody()),b:probeBodyName(c.GetShape2().GetBody()),points:c.GetManifoldCount(),manifolds:ms});c=c.GetNext();}
+         for each(var n:String in ["hero","opp","racket","oppracket"]){
+            edges[n]=[];var edge:Object=r[n].b2internal::m_contactList;
+            while(edge){edges[n].push({other:probeBodyName(edge.other),points:edge.contact.GetManifoldCount()});edge=edge.next;}
+         }
+         return {contacts:contacts,edges:edges};
+      }
+      public function probeGeometry() : Object {
+         var r:Object = probeRoot(); var result:Object = {};
+         for each (var n:String in ["goal1Hit","goal2Hit","top1Hit","top2Hit","ball","Heads","YourHead"] ) {
+            var display:Object = n == "ball" ? r[n].GetUserData() : r[n];
+            var rect:Object = display.getBounds(r);
+            var mat:Object = display.transform.matrix;
+            var local:Object = display.getBounds(display);
+            result[n] = {x:rect.x,y:rect.y,width:rect.width,height:rect.height,
+                matrix:{a:mat.a,b:mat.b,c:mat.c,d:mat.d,tx:mat.tx,ty:mat.ty},
+                local:{x:local.x,y:local.y,width:local.width,height:local.height}};
+         }
+         return result;
       }
 
       public function probeState() : Object {

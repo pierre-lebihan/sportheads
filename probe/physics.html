@@ -32,8 +32,9 @@
   <section class="pane"><h2>Référence Flash — Box2D dans Ruffle</h2><canvas id="flash" width="580" height="380"></canvas></section>
   <section class="pane"><h2>Port Rust — exécuté en WebAssembly</h2><canvas id="rust" width="580" height="380"></canvas></section>
 </div>
+<p id="settings" class="note"></p>
 <div class="metrics"><span id="position"></span><span id="angle"></span></div>
-<p class="note">Le jeu complet est en cours de reconstruction. Ces replays proviennent des tests exécutés côte à côte. La forme des objets est dessinée à partir des états enregistrés ; les graphismes du jeu restent à intégrer. La détection continue et la mise en veille sont désactivées dans les deux moteurs pour ces essais.</p>
+<p class="note">Le jeu complet est en cours de reconstruction. Ces replays proviennent des tests exécutés côte à côte. La forme des objets est dessinée à partir des états enregistrés ; les graphismes du jeu restent à intégrer. Les options physiques de chaque essai sont appliquées de la même manière aux deux moteurs.</p>
 <p class="note"><a href="/probe/?file=instrumented&amp;boot=play">Ouvrir la référence du jeu</a> · <a href="/docs/physics-progress.md">Constat technique</a></p>
 <script>
 const labels={
@@ -52,7 +53,7 @@ const labels={
 const select=document.querySelector('#scene'),slider=document.querySelector('#tick'),button=document.querySelector('#play');
 let data,playing=false,last=0,accumulator=0;
 function camera(c,state){
-  const points=state.bodies.map((b,i)=>{const s=c.spec.bodies[i],co=Math.abs(Math.cos(b.angle)),si=Math.abs(Math.sin(b.angle));return {x:b.x,y:b.y,rx:s.radius||co*s.hx+si*s.hy,ry:s.radius||si*s.hx+co*s.hy};});
+  const points=state.bodies.map((b,i)=>{const s=c.spec.bodies[i],co=Math.abs(Math.cos(b.angle)),si=Math.abs(Math.sin(b.angle));return {x:b.x,y:b.y,rx:s.radius||(s.vertices?Math.max(...s.vertices.map(v=>Math.abs(v[0])*co+Math.abs(v[1])*si)):co*s.hx+si*s.hy),ry:s.radius||(s.vertices?Math.max(...s.vertices.map(v=>Math.abs(v[0])*si+Math.abs(v[1])*co)):si*s.hx+co*s.hy)};});
   const loX=Math.min(...points.map(b=>b.x-b.rx))-30,hiX=Math.max(...points.map(b=>b.x+b.rx))+30;
   const loY=Math.min(...points.map(b=>b.y-b.ry))-30,hiY=Math.max(...points.map(b=>b.y+b.ry))+30;
   return {x:(loX+hiX)/2,y:(loY+hiY)/2,scale:Math.min(580/Math.max(800,hiX-loX),380/Math.max(500,hiY-loY))};
@@ -65,7 +66,7 @@ function draw(canvas,c,state,view){
   state.bodies.forEach((b,i)=>{
     const s=c.spec.bodies[i];ctx.save();ctx.translate(290+(b.x-view.x)*view.scale,190+(b.y-view.y)*view.scale);ctx.rotate(b.angle);ctx.scale(view.scale,view.scale);
     ctx.fillStyle=s.density===0?'#6b7277':s.type==='box'?'#6d577b':s.radius>=20?'#4b768d':'#c57a36';
-    ctx.beginPath();if(s.type==='circle')ctx.arc(0,0,s.radius,0,2*Math.PI);else ctx.rect(-s.hx,-s.hy,2*s.hx,2*s.hy);ctx.fill();
+    ctx.beginPath();if(s.type==='circle')ctx.arc(0,0,s.radius,0,2*Math.PI);else if(s.vertices){s.vertices.forEach((v,i)=>i?ctx.lineTo(...v):ctx.moveTo(...v));ctx.closePath();}else ctx.rect(-s.hx,-s.hy,2*s.hx,2*s.hy);ctx.fill();
     if(s.type==='circle'){ctx.strokeStyle='#ffffff';ctx.lineWidth=1.4/view.scale;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(s.radius*.8,0);ctx.stroke();}ctx.restore();
   });
 }
@@ -73,6 +74,7 @@ function render(){
   const c=data.cases[+select.value],tick=+slider.value,a=c.flash[tick],b=c.rust[tick],view=camera(c,a);
   draw(document.querySelector('#flash'),c,a,view);draw(document.querySelector('#rust'),c,b,view);
   let pos=0,angle=0;a.bodies.forEach((v,i)=>{pos=Math.max(pos,Math.abs(v.x-b.bodies[i].x),Math.abs(v.y-b.bodies[i].y));angle=Math.max(angle,Math.abs(v.angle-b.bodies[i].angle));});
+  document.querySelector('#settings').textContent=`Détection continue : ${c.spec.continuous?'activée':'désactivée'} · Mise en veille : ${c.spec.sleep?'activée':'désactivée'}`;
   document.querySelector('#counter').value=`${tick} / ${c.spec.ticks}`;
   document.querySelector('#position').textContent=`Écart de position : ${pos===0?'0':pos.toExponential(3)} px`;
   document.querySelector('#angle').textContent=`Écart d’angle : ${angle===0?'0':angle.toExponential(3)} rad`;

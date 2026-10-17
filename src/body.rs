@@ -28,6 +28,13 @@ pub struct Body {
     pub restitution: f64,
     pub fixed_rotation: bool,
     pub group: i32,
+    pub active: bool,
+    pub sleeping: bool,
+    pub sleep_time: f64,
+    pub allow_sleep: bool,
+    pub bullet: bool,
+    pub linear_damping: f64,
+    pub angular_damping: f64,
 }
 impl Body {
     pub fn circle(
@@ -66,14 +73,35 @@ impl Body {
             Vec2::new(hx, hy),
             Vec2::new(-hx, hy),
         ];
+        Self::polygon(position, vertices, density, friction, restitution, fixed)
+    }
+    pub fn polygon(
+        position: Vec2,
+        vertices: Vec<Vec2>,
+        density: f64,
+        friction: f64,
+        restitution: f64,
+        fixed: bool,
+    ) -> Self {
+        assert!((3..=8).contains(&vertices.len()));
+        for i in 0..vertices.len() {
+            let edge = vertices[(i + 1) % vertices.len()] - vertices[i];
+            assert!(edge.length() > 0.005);
+            // The Flash API requires strictly convex counter-clockwise vertices.
+            for j in 0..vertices.len() {
+                if j != i && j != (i + 1) % vertices.len() {
+                    assert!(edge.cross(vertices[j] - vertices[i]) > 0.0);
+                }
+            }
+        }
         // b2PolygonShape.ComputeMass, not a rearranged closed-form box formula.
         let mut area = 0.0;
         let mut center = Vec2::default();
         let mut integral = 0.0;
         let third = 1.0 / 3.0;
-        for i in 0..4 {
+        for i in 0..vertices.len() {
             let p = vertices[i];
-            let q = vertices[(i + 1) % 4];
+            let q = vertices[(i + 1) % vertices.len()];
             let d = p.cross(q);
             let tri = 0.5 * d;
             area += tri;
@@ -86,9 +114,9 @@ impl Body {
         let inv_area = 1.0 / area;
         center.x *= inv_area;
         center.y *= inv_area;
-        let normals = (0..4)
+        let normals = (0..vertices.len())
             .map(|i| {
-                let e = vertices[(i + 1) % 4] - vertices[i];
+                let e = vertices[(i + 1) % vertices.len()] - vertices[i];
                 let inv = 1.0 / e.length();
                 Vec2::new(e.y * inv, -e.x * inv)
             })
@@ -140,7 +168,18 @@ impl Body {
             restitution,
             fixed_rotation: fixed,
             group: 0,
+            active: true,
+            sleeping: false,
+            sleep_time: 0.0,
+            allow_sleep: true,
+            bullet: false,
+            linear_damping: 0.0,
+            angular_damping: 0.0,
         }
+    }
+    pub fn wake(&mut self) {
+        self.sleeping = false;
+        self.sleep_time = 0.0;
     }
     pub fn is_static(&self) -> bool {
         self.inv_mass == 0.0 && self.inv_i == 0.0

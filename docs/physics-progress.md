@@ -1,103 +1,81 @@
-# Port du noyau physique — première étape implémentée
+# Noyau physique Rust/WASM
 
-État du 17 octobre 2026. Le match complet et ses graphismes restent à porter.
+État du 17 octobre 2026. Le noyau sert désormais à un match local jouable.
 
-## Code livré
+## Implémenté
 
-Le projet contient désormais une bibliothèque Rust sans dépendance externe,
-compilée nativement et en WebAssembly : `sportheads-core`.
+- Cercles et polygones convexes de trois à huit sommets, calcul des masses et
+  inerties en `f64`. Rectangles, triangles, trapèzes et hexagones sont couverts.
+- Contacts cercle/cercle, cercle/polygone et polygone/polygone ; solveur à deux
+  points, friction, restitution et réutilisation des impulsions.
+- Articulations pivot motorisées, couple limité et correction des ancrages.
+- Îlots de corps connectés, parcours des contacts et joints, groupes de collision.
+- Sommeil par îlot après 0,5 seconde de repos et réveil lors d'une commande ou
+  d'un contact avec un corps actif.
+- Détection continue : formes internes, distance GJK, recherche du premier
+  instant de contact et résolution sur le temps restant. Les corps dynamiques
+  ordinaires utilisent les mêmes critères que Flash ; le mode bullet est disponible.
+- Trois sous-pas de `1/96` seconde et 48 itérations par mise à jour du match à 30 Hz.
 
-- Corps circulaires et rectangulaires, masses/inerties et transformations en `f64`.
-- Contacts cercle/cercle et cercle/polygone, y compris les angles.
-- Contacts polygone/polygone avec jusqu'à deux points d'appui.
-- Solveur de vitesse et de position, friction, restitution et réutilisation des
-  impulsions de l'étape précédente.
-- Articulation pivot motorisée correspondant au pied du jeu, sans limites d'angle,
-  avec le plafond de couple et la correction de l'ancrage.
-- Trois sous-pas de `1/96` seconde par mise à jour, avec 48 itérations, comme la
-  boucle physique récupérée du SWF.
+Le code reprend le comportement du Box2D 2.0.2 embarqué, y compris des particularités
+observées dans sa résolution continue des joints. Remplacer ces boucles par celles
+d'un Box2D moderne change les résultats. Les caches du sol partagé entre plusieurs
+îlots ont un test indirect dans la comparaison du match complet.
 
-Sources : [src/](../src/), [Cargo.toml](../Cargo.toml).
-Le `World` Rust est indépendant du navigateur. Les exports `core_*` servent au
-banc de test WASM ; ils ne constituent pas une API réseau ni un système de rooms.
+Sources : [world.rs](../src/world.rs), [continuous.rs](../src/continuous.rs),
+[body.rs](../src/body.rs), [contact.rs](../src/contact.rs), [joint.rs](../src/joint.rs).
 
-## Comparaisons exécutées
+## Validation
 
-Onze scénarios font exécuter les mêmes paramètres aux deux moteurs, sur 1 170
-mises à jour et 3 510 sous-pas :
+Le [rapport enregistré](../evidence/physics-parity.json) compare Flash dans Ruffle
+et le WASM sur **25 scénarios et 2 232 mises à jour** :
 
-- rebond et friction du ballon au sol ;
-- ballon contre un mur incliné et contre un angle ;
-- ballon contre une tête lourde ;
-- séparation de cercles initialement superposés ;
-- pied motorisé en mouvement, couple limité et frappe du ballon ;
-- appui à deux points d'un rectangle au sol, chute d'un rectangle incliné ;
-- pied motorisé avec les contacts du sol.
+- les 11 premières scènes de contacts et pieds motorisés ;
+- un rebond avec la détection continue activée ;
+- ballon rapide contre paroi fine et angle, rectangle rapide contre paroi,
+  ballon bullet contre une tête ;
+- sommeil puis réveil, sommeil d'un ensemble articulé ;
+- interactions de trois cercles et pied articulé au sol avec détection continue ;
+- rampe convexe, triangle, triangle rectangle, trapèze et hexagone.
 
-Les positions, vitesses, angles, vitesses angulaires, masses, inerties, angles
-d'articulation et erreurs d'ancrage sont comparés à chaque mise à jour. Les
-contacts sont aussi relevés à chacun des trois sous-pas : un choc bref peut
-disparaître avant la capture suivante. Les tests vérifient qu'ils exercent
-réellement des collisions et le cas d'appui à deux points.
+**25/25 passent avec le seuil inchangé de `1e-7` par valeur.** Les 24 scènes
+sans écart sont numériquement identiques sur tous les états comparés. Le plus
+grand écart mesuré reste `1,1641532182693481e-10` (inertie de l'hexagone). Le sommeil est comparé comme un
+état booléen et les essais vérifient qu'un endormissement et un réveil ont
+réellement eu lieu. Les scènes rapides exercent effectivement des collisions.
 
-Résultats :
+Les [25 régressions natives](../tests/flash_goldens.rs) utilisent des états
+capturés uniquement dans Flash. La compilation ne régénère jamais ces références.
+Cinq tests supplémentaires ciblent la géométrie et le temps d'impact.
 
-- **11/11 scénarios navigateur passent.**
-- **9 scénarios donnent les mêmes valeurs numériques sur tous les états comparés.**
-- Les deux autres donnent un écart maximal de position de
-  `1,107298430724768e-8` unité, soit autant de pixels avec l'échelle du jeu.
-- Le seuil d'acceptation du banc est `1e-7` par valeur comparée. L'origine des
-  petits écarts des contacts à deux points reste à isoler avant de prétendre à
-  une identité numérique stricte sur ces cas.
-- Aucune erreur Flash inattendue dans les essais physiques. Les erreurs connues
-  de l'introduction Ruffle restent classées séparément.
+Le match ajoute sa propre comparaison des commandes, déplacements, articulations,
+score et chronomètre : voir [match local](match-progress.md).
 
-Rapport complet : [physics-parity.json](../evidence/physics-parity.json).
-
-Onze tests Rust natifs passent sur des états de référence capturés uniquement
-dans Flash, aux instants importants des scénarios. Ces fichiers attendus ne
-sont jamais régénérés par la compilation ou les tests.
-
-Preuves : [flash_goldens.rs](../tests/flash_goldens.rs),
-[références](../tests/fixtures/README.md).
-La compilation native et la compilation WASM respectent donc la même tolérance
-sur les scènes testées ; ce n'est pas une preuve de déterminisme universel.
-
-## Voir et relancer
-
-Le [banc visuel local](http://127.0.0.1:8765/probe/physics.html) permet de choisir un
-scénario, lire les deux replays ou parcourir les étapes avec le curseur. Il
-affiche des résultats enregistrés des essais, pas une simulation interactive
-du match complet.
-
-Depuis la racine du projet :
+## Relancer
 
 ```sh
 python3 scripts/build-core.py
 python3 -m http.server 8765 --bind 127.0.0.1
-```
-
-Puis, dans un autre terminal :
-
-```sh
+# Dans un autre terminal, avec Playwright et Chrome installés :
 node scripts/physics-parity.cjs
+node scripts/match-parity.cjs
 ```
 
-La construction exécute les tests natifs et Clippy, puis produit
-`probe/physics-core.wasm`. Les outils utilisent Rust installé sur la machine, ou la chaîne locale
-`tools/rust/` si elle existe. Les références SWF sont préparées avec `scripts/setup-reference.py`.
+Les essais Flash nécessitent la référence locale préparée avec
+`scripts/setup-reference.py`. Elle n'est pas distribuée dans le dépôt.
+Le [banc public](https://pierre-lebihan.github.io/sportheads/physics.html) affiche
+les enregistrements de ces essais ; le [match](https://pierre-lebihan.github.io/sportheads/)
+exécute le moteur WASM en direct.
 
-## Limite et prochaine étape
+## Périmètre
 
-La détection continue des collisions et la mise en veille sont **désactivées
-dans les deux moteurs** pour ces essais. C'est un port du solveur discret,
-pas encore un remplacement de toute la physique du match original.
+Le moteur couvre les formes et articulations nécessaires au match. Les limites
+d'angle des articulations, inutilisées par le jeu, ne sont pas implémentées.
+Le parcours des paires reprend le broadphase quantifié historique (sweep-and-prune)
+et l'ordre des événements de création des contacts. La première mise à jour d'un
+contact conserve aussi l'éligibilité continue temporaire du moteur original. Les scénarios
+validés ne constituent donc pas une preuve d'identité pour tous les mondes Box2D
+possibles ni pour toutes les futures configurations de bonus.
 
-Il reste en particulier à porter la détection continue, l'ordre de traitement
-des îlots et contacts dans les mondes complexes, puis la mise en veille et les
-formes supplémentaires des terrains. Ces points devront passer de nouveaux
-scénarios avant de brancher ce moteur sur la totalité du match.
-
-Les limites d'angle des articulations ne sont pas portées : le joint créé par le
-jeu n'en active pas. Les contrôles, bonus, IA, menus, animations et ressources
-du match restent à intégrer ensuite. Les rooms et le réseau restent en phase 2.
+Les bonus sont désormais intégrés et comparés séparément. Les autres terrains
+nécessiteront leurs propres scénarios. L'IA est exclue à la demande de l'utilisateur. Les ressources graphiques et sonores nécessaires sont désormais publiées avec le match.

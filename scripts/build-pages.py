@@ -1,4 +1,4 @@
-"""Package only the comparison bench and its recorded numeric test results."""
+"""Package the playable WASM match and the recorded comparison bench."""
 import json
 from pathlib import Path
 import shutil
@@ -26,7 +26,19 @@ for old, new in replacements.items():
     if html.count(old) != 1:
         raise SystemExit(f'Expected exactly one occurrence of {old}')
     html = html.replace(old, new)
-(site / 'index.html').write_text(html)
+(site / 'physics.html').write_text(html)
+for filename in ('index.html', 'game.js', 'game.css', 'render.js'):
+    shutil.copyfile(root / 'web' / filename, site / filename)
+manifest=json.loads((root/'web/assets/manifest.json').read_text())
+for sprite in manifest['sprites'].values():
+    for frame in sprite['frames']:
+        if not (root/'web/assets'/frame['file']).is_file():
+            raise SystemExit(f"Missing sprite frame: {frame['file']}")
+for sound in manifest['sounds'].values():
+    if not (root/'web/assets'/sound).is_file():
+        raise SystemExit(f"Missing sound: {sound}")
+shutil.copytree(root / 'web/assets', site / 'assets')
+shutil.copyfile(root / 'probe/physics-core.wasm', site / 'physics-core.wasm')
 # Omit runtime diagnostics; publish only numeric scenes and measured results.
 public_report = {key: report[key] for key in ('scope', 'tolerance', 'cases', 'unexpectedErrors')}
 (site / 'data/physics-parity.json').write_text(json.dumps(public_report, separators=(',', ':'), allow_nan=False))

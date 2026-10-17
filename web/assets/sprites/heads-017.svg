@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg viewBox="0 0 51.25 54.25" xmlns:ffdec="https://www.free-decompiler.com/flash" xmlns:xlink="http://www.w3.org/1999/xlink" ffdec:objectType="frame" height="54.25px" width="51.25px" xmlns="http://www.w3.org/2000/svg">
+  <g transform="matrix(1.0, 0.0, 0.0, 1.0, 27.4, 29.4)">
+    <use ffdec:characterId="295" height="46.0" transform="matrix(1.0, 0.0, 0.0, 1.0, 0.0, 0.0)" width="49.0" xlink:href="#shape0"/>
+  </g>
+  <defs>
+    <g id="shape0">
+      <pattern height="46" id="PatternID_295_1" overflow="visible" patternTransform="matrix(1.0, 0.0, 0.0, 1.0, -26.0, -24.9)" patternUnits="userSpaceOnUse" viewBox="0 0 49 46" width="49">
+        <image height="46" style="image-rendering:optimizeSpeed; image-rendering:pixelated" width="49" xlink:href="data:image/PNG;base64,iVBORw0KGgoAAAANSUhEUgAAADEAAAAuCAYAAACBHPFSAAAC1UlEQVR4Xs2VwW3eMAyFs0p3aBboAr321hFy6KUbdIUOkQ06RQfpDCloiAb1iaQo/XaQBzwglkjqfbKTPD3t663gFbF3d05J5/Avnz+FtnVdt6+j7se358G6h/qHNQTOLPUVS2D2iu8CCUMyQMV641xnTTvjMp3D5Wc1D951NNOuNz8kDhuCeLbfOfe8Gr19rl31eQ3DGYau1Hj2+q4AOQE4PPJK7ao1DzKmWgYQs957rrxRPT9Yn+ocMDuIjupX120GsbOX6gzvHeCtVfaj9dme5hHjOVR6+9F6ZX93T6y5jFOFA6P1P7++n+ZepT/a4zzJxrCewrfgrdnDPIhsrbLHfc2HzJ1CgJm9A6MgWUjueTUtZ6hbACr72R5rJCeDq4a3wOGy50HyEB7uBWFdNJM1mhPZDx0bHGKfvfDRYZmz3mxP3bIOGgDkmUM9CB5QddQfrVu3vIOGcFzzAGaH3WXJRgBRF149g+Dw97LJ2KmDYFgPoALB+kpP1Mt9F8KaA3Yhfr987Zz1yRn6s9ax39a3rIOWAKIwagaIIP69/jz89vf1BNmFcAE8CD2UocX6P0TMAFEYBREIBWG9WOdGECEAIezNMQjNOXYGzbchoWd9AwQbvDUdlEHYN2FrrdlDCAVh3/RNEIBrYjsgCkMzSNRXgWBPCKEAEYQFuco2qIVgHT1AwMcaIewvV+WQqnnj4tl8ZA3lQmR/YXatl1IFEEs+BqaGz4kAOxC8FDqr4ayWMdUwhACrEJy34w8DoeJ8z+wFwBoEw++A2BAV8U+qAzFVByHPDF+BYBC7fvw5DRT1iSVL81QdgH2+AsLue2adWrP0UWOFECsgs1CrblnKstTLEHYtApE1zhF7tQZgCYJKPynCEMwD4SeUfU56PjJtqfyLTigNzefIdwGIhk9MTAiat1qFwDm36nKQO26/ooffitrO6k54RzHEAEGzvvlDieEiX6L/1ZfbFAzklaMAAAAASUVORK5CYII="/>
+      </pattern>
+      <path d="M23.0 21.1 L-26.0 21.1 -26.0 -24.9 23.0 -24.9 23.0 21.1" ffdec:fill-bitmapId="294" fill-rule="evenodd" style="fill:url(#PatternID_295_1)"/>
+    </g>
+  </defs>
+</svg>

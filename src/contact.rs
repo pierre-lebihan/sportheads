@@ -92,6 +92,9 @@ impl ContactPoint {
         self.tangent_impulse = next_t;
     }
     pub fn solve_position(&self, bodies: &mut [Body]) -> f64 {
+        self.solve_position_with(bodies, 0.5)
+    }
+    pub fn solve_position_with(&self, bodies: &mut [Body], baumgarte: f64) -> f64 {
         let (a, b) = pair(bodies, self.a, self.b);
         let n = self.manifold.normal;
         let ra = a.rot().apply(self.manifold.local_a - a.local_center);
@@ -100,7 +103,7 @@ impl ContactPoint {
         let pb = b.center + rb;
         let d = pb - pa;
         let separation = d.x * n.x + d.y * n.y + self.manifold.separation;
-        let correction = 0.5 * clamp(separation + 0.005, -0.2, 0.0);
+        let correction = baumgarte * clamp(separation + 0.005, -0.2, 0.0);
         let magnitude = -self.equalized_mass * correction;
         let p = n * magnitude;
         let ma = a.mass * a.inv_mass;
@@ -259,9 +262,12 @@ impl Contact {
         }
     }
     pub fn solve_position(&self, bodies: &mut [Body]) -> f64 {
+        self.solve_position_with(bodies, 0.5)
+    }
+    pub fn solve_position_with(&self, bodies: &mut [Body], baumgarte: f64) -> f64 {
         let mut min: f64 = 0.0;
         for point in &self.points[..self.count] {
-            min = min.min(point.solve_position(bodies));
+            min = min.min(point.solve_position_with(bodies, baumgarte));
         }
         min
     }

@@ -23,7 +23,11 @@ jobs:
           rustup default stable
       - name: Validate native core and compile WebAssembly
         run: python3 scripts/build-core.py
-      - name: Build public comparison bench
+      - name: Validate browser source
+        run: |
+          node --check web/game.js
+          node --check web/render.js
+      - name: Build playable match and comparison bench
         run: python3 scripts/build-pages.py
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4

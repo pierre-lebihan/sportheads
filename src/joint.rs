@@ -7,6 +7,7 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct Revolute {
+    pub active: bool,
     pub a: usize,
     pub b: usize,
     pub local_a: Vec2,
@@ -22,6 +23,7 @@ pub struct Revolute {
 impl Revolute {
     pub fn new(a: usize, b: usize, bodies: &[Body], anchor: Vec2, max_torque: f64) -> Self {
         Self {
+            active: true,
             a,
             b,
             local_a: bodies[a].local_point(anchor),

@@ -1,0 +1,162 @@
+# connected-sleep
+# Flash oracle; SWF SHA-256 6a8b371667a9f06da787301814f74afc7d6e80b5b8b0d9fb9b89e1982a559950
+reset 0 0
+settings 0 1
+circle 400 300 20 100 0 0.01 1 0 0 0
+flags 0 0 0 1
+box 420 300 10 5 0 2 0.5 0 0 0 0 0
+flags 1 0 0 1
+joint 0 1 400 300 100000000
+# tick 0
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 0
+expect_sleep 1 0
+expect_joint 0 0 0
+tick
+# tick 1
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 0
+expect_sleep 1 0
+expect_joint 0 0 0
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 10
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 0
+expect_sleep 1 0
+expect_joint 0 0 0
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 16
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 1
+expect_sleep 1 1
+expect_joint 0 0 0
+tick
+# tick 17
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 1
+expect_sleep 1 1
+expect_joint 0 0 0
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 29
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 1
+expect_sleep 1 1
+expect_joint 0 0 0
+tick
+# tick 30
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 1
+expect_sleep 1 1
+expect_joint 0 0 0
+tick
+# tick 31
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 1
+expect_sleep 1 1
+expect_joint 0 0 0
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 45
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 1
+expect_sleep 1 1
+expect_joint 0 0 0
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 59
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 1
+expect_sleep 1 1
+expect_joint 0 0 0
+tick
+# tick 60
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 1
+expect_sleep 1 1
+expect_joint 0 0 0
+tick
+# tick 61
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 1
+expect_sleep 1 1
+expect_joint 0 0 0
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+tick
+# tick 75
+expect 0 400 300 0 0 0 0 125663.70614359173 0
+expect 1 420 300 0 0 0 0 400 16666.666666666664
+expect_sleep 0 1
+expect_sleep 1 1
+expect_joint 0 0 0

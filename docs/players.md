@@ -6,7 +6,10 @@ boutique, monnaie, amélioration à débloquer ou sauvegarde de progression.
 
 ## Aider son adversaire
 
-Chaque camp possède un réglage indépendant, neutre par défaut :
+Un seul curseur propose sept positions, neutre au centre :
+Bleu +30 %, Bleu +20 %, Bleu +10 %, neutre, Rouge +10 %, Rouge +20 %, Rouge +30 %.
+Un seul camp peut être aidé à la fois, y compris dans le moteur et dans les
+états acceptés par l'invité. Les trois intensités sont :
 
 - Niveau 1 : accélération et vitesse de course, impulsion de saut et vitesse
   du mouvement de frappe multipliées par 1,10.
@@ -18,7 +21,7 @@ pourcentage de buts ou une trajectoire identique. La physique, les contacts
 et la gravité restent inchangés. Les aides se combinent aux bonus ramassés
 et ne contournent ni le gel ni le pied cassé. Elles restent actives après
 les remises en jeu. Elles sont choisies avant le match, puis verrouillées
-jusqu'à la fin. En ligne, le créateur les choisit pour les deux camps et
+jusqu'à la fin. En ligne, le créateur choisit la position du curseur et
 transmet leur valeur avec l'état du moteur. La revanche conserve le choix
 des réglages de la page ; un rechargement revient aux valeurs par défaut.
 
@@ -51,3 +54,10 @@ et la conservation après un but. Les captures historiques sans aide
 restent vérifiées. `tests/pitches.test.mjs` vérifie les 19 géométries du WASM.
 `scripts/check-setup.cjs URL` vérifie les portraits distincts, les réglages
 et le partage des aides dans une vraie salle WebRTC.
+
+La préparation du match (mode, salle, joueurs, terrain, objectif, bonus et
+curseur) est regroupée dans un menu au-dessus du terrain. Le score est
+superposé au ciel du stade. La bande des 60 pixels sous le sol accueille
+réglages, son, pause et redémarrage ; elle s'agrandit sur petit écran pour
+conserver des cibles tactiles lisibles. La physique conserve le même repère
+800 × 540.

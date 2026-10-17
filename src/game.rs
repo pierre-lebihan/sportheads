@@ -169,6 +169,9 @@ impl Game {
     pub fn set_assistance(&mut self, side: usize, level: u32) {
         if side < 2 {
             self.assistance[side] = level.min(3);
+            if self.assistance[side] > 0 {
+                self.assistance[1 - side] = 0;
+            }
         }
     }
     fn apply_goal_style(&mut self) {

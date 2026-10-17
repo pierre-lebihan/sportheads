@@ -13,11 +13,11 @@ de 1 à 99, sans limite de temps. Choisissez parmi **19 terrains**, les **18 bon
 et **12 joueurs récents** avec aperçu. Les portraits des joueurs sont des caricatures originales ; les autres sprites, animations et sons viennent du
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
-Un match simple entre deux humains, en local ou à distance. Chaque joueur
-peut recevoir une aide de niveau 1, 2 ou 3 : **+10 %, +20 % ou +30 %** sur
-la vitesse de déplacement, le saut et la frappe. « Aucune aide » est le
-réglage par défaut. Les aides sont choisies avant le match et restent fixes
-jusqu'à sa fin ; à distance, le créateur les choisit pour les deux camps.
+Un match simple entre deux humains, en local ou à distance. Un **curseur à sept
+positions** équilibre le duel : Bleu +30 / +20 / +10 %, neutre, Rouge +10 / +20 /
++30 %. Un seul joueur est aidé à la fois, sur la vitesse, le saut et la frappe.
+Le centre est le réglage par défaut. L'aide est choisie avant le match puis
+verrouillée ; à distance, le créateur la règle pour la salle.
 Les personnages ont tous les mêmes caractéristiques de base.
 
 - Sur mobile : flèches tactiles, Saut et Tir ; plusieurs boutons peuvent être maintenus ensemble.
@@ -28,8 +28,8 @@ Les personnages ont tous les mêmes caractéristiques de base.
 Sur téléphone, le match ouvre une vue qui occupe l’écran. En paysage, les
 commandes entourent le terrain ; en portrait, elles sont dessous. À distance,
 chaque téléphone contrôle son joueur. En local, Bleu et Rouge ont chacun leur
-manette tactile. « Réglages » met en pause et revient aux menus ; « Vue jeu »
-ramène au terrain. Voir [commandes mobiles](docs/mobile.md).
+manette tactile. Les réglages sont dans le jeu ; la roue dentée dans la bande
+sous le sol ouvre le menu et met en pause. « Retour au match » ferme le menu. Voir [commandes mobiles](docs/mobile.md).
 
 À distance : choisir **À distance**, créer une salle et partager son code de
 huit caractères ou son lien. L'autre joueur clique sur **Rejoindre**, puis

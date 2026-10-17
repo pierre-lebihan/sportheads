@@ -70,7 +70,7 @@ fn assistance_survives_goals_and_is_not_persistent_progression() {
         game.step(0);
     }
     assert_eq!(game.phase, Phase::Countdown);
-    assert_eq!(game.assistance, [1, 3]);
+    assert_eq!(game.assistance, [0, 3]);
     assert_eq!(Game::score_match(123, 7, false).assistance, [0, 0]);
 }
 
@@ -83,4 +83,16 @@ fn assistance_bounds_are_safe_and_cosmetic_roster_uses_equal_default_heights() {
     assert_eq!(game.assistance, [3, 0]);
     game.set_assistance(0, 0);
     assert_eq!(game.assistance, [0, 0]);
+}
+
+#[test]
+fn helping_one_camp_removes_the_other_camps_assistance() {
+    let mut game = ready();
+    game.set_assistance(0, 1);
+    assert_eq!(game.assistance, [1, 0]);
+    game.set_assistance(1, 2);
+    assert_eq!(game.assistance, [0, 2]);
+    game.set_assistance(0, 3);
+    game.set_assistance(1, 0);
+    assert_eq!(game.assistance, [3, 0]);
 }

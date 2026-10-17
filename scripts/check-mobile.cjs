@@ -54,6 +54,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     const local = await mobile({ width: 390, height: 844 }), p = local.page;
     await p.setViewportSize({ width: 320, height: 568 });
     assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'small-phone menus fit');
+    assert.ok(await p.locator('#start').evaluate(button => { const r = button.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }), 'small-phone start stays visible');
     await p.screenshot({ path: 'evidence/mobile-settings-small.png', fullPage: true });
     await p.setViewportSize({ width: 390, height: 844 });
     await p.locator('#bonuses').uncheck(); await p.locator('#start').tap();
@@ -92,9 +93,10 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     assert.equal(await p.locator('.touch-pad .pressed').count(), 0); assert.equal((await state(p)).paused, true);
     await local.release(); await p.locator('#resume').tap();
     await p.locator('#play-view').tap();
-    assert.equal(await p.evaluate(() => document.body.classList.contains('play-view')), false);
+    assert.equal(await p.locator('#welcome').isVisible(), true);
+    assert.equal(await p.locator('.arena #balance').count(), 1);
     assert.equal((await state(p)).paused, true, 'returning to settings pauses');
-    await p.locator('#play-view').tap(); await fits(p); await p.locator('#resume').tap();
+    await p.locator('#close-settings').tap(); await fits(p); await p.locator('#resume').tap();
     // A fresh match cannot inherit held fingers.
     await local.hold([[0, 2]]); await p.locator('#restart').click(); await local.release();
     assert.equal(await p.locator('.touch-pad .pressed').count(), 0);

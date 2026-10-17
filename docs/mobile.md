@@ -1,8 +1,8 @@
 # Jouer sur téléphone ou tablette
 
 Ouvrir le site dans le navigateur du téléphone. Les réglages, les 12 joueurs récents,
-les terrains, les aides individuelles et les salles restent accessibles. Le match ouvre
-automatiquement une vue qui occupe le viewport ; aucune installation ni
+les terrains, les aides individuelles et les salles restent accessibles. Le jeu et ses menus occupent
+le viewport dès l'ouverture ; aucune installation ni
 autorisation de plein écran n'est nécessaire.
 
 - Maintenir les flèches pour se déplacer. Saut et Tir peuvent être combinés
@@ -10,9 +10,10 @@ autorisation de plein écran n'est nécessaire.
 - En local, les deux joueurs disposent de leur manette : Bleu et Rouge.
 - À distance, seules les commandes de son propre joueur sont visibles.
 - En paysage, les commandes entourent le terrain. En portrait, elles sont
-  placées dessous. Les zones sûres de l'écran sont conservées.
-- Pause arrête le match. Réglages met en pause puis revient à la page ;
-  Vue jeu permet de revenir au terrain et de reprendre.
+  placées dans la bande sous le terrain. Les zones sûres de l'écran sont conservées.
+- Pause arrête le match. La roue dentée sous le sol ouvre les réglages
+  dans le jeu et met en pause ; Retour au match ferme le menu. Reprendre
+  relance ensuite la partie.
 
 Chaque doigt garde son action jusqu'au relâchement, même s'il sort du bouton.
 Les interruptions du navigateur, la perte de focus, les pauses et le démarrage

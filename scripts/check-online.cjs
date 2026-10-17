@@ -138,7 +138,7 @@ assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
     await host.waitForFunction(() => !sportheads.snapshot().started);
     assert.equal(await host.locator('#start').isEnabled(), true);
     await host.click('#start'); await replacement.waitForFunction(() => sportheads.snapshot().started);
-    await host.click('#leave-room');
+    await host.click('#play-view'); await host.click('#leave-room');
     await replacement.waitForFunction(() => !sportheads.snapshot().connected);
     assert.match(await replacement.locator('#room-status').innerText(), /quitté|perdue/);
     await host.click('#play-local'); await host.click('#start'); assert.equal((await state(host)).mode, 'local');

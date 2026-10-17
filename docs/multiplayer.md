@@ -18,11 +18,13 @@ le match et est conservé pour la revanche.
 Un troisième navigateur est refusé. Le créateur peut proposer une nouvelle
 partie avec le bouton Rejouer ; l'invité attend ce lancement.
 
-Le créateur choisit aussi un niveau d'aide indépendant pour Bleu et Rouge :
-aucune aide, ou +10 %, +20 %, +30 % sur la vitesse, le saut et la frappe.
-Les réglages sont partagés dès le salon et verrouillés pendant le match.
-L'invité ne peut pas modifier ces aides par ses commandes. Le choix d'un
-personnage est purement visuel.
+Le créateur règle un curseur à sept positions : Bleu +30 / +20 / +10 %,
+neutre, Rouge +10 / +20 / +30 % sur la vitesse, le saut et la frappe. Un seul
+camp reçoit une aide. Le moteur neutralise l'autre camp et l'invité rejette
+les états où les deux camps seraient aidés. Le curseur est partagé dès le
+salon et verrouillé pendant le match. Le choix d'un personnage est visuel.
+Les réglages et le partage du code sont accessibles dans le menu du jeu,
+ouvert avec la roue dentée sous le sol.
 
 Le code est tiré avec `crypto.getRandomValues`, sur un alphabet de 32 caractères
 sans 0, 1, I ou O : 40 bits aléatoires. Les collisions d'identifiant sont reprises
@@ -39,7 +41,7 @@ salles, aucun compte ni historique. Il faut partager le code avec son adversaire
 - Le créateur transmet les corps actifs, animations, bonus, score, terrain, objectif de victoire et niveaux d'aide.
   L'invité utilise une façade de lecture pour le même renderer. Il ne recalcule
   pas la physique et ne peut pas modifier le camp adverse par ses commandes.
-- Les messages sont validés : version du protocole (4), ordre des états/commandes,
+- Les messages sont validés : version du protocole (5), ordre des états/commandes,
   schéma et limites numériques, bornes des collections et fréquence entrante.
   Les états périmés sont ignorés ; les corps remplacés ne grossissent pas les
   messages. Une file d'envoi saturée abandonne les vues obsolètes.

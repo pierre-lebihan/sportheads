@@ -41,27 +41,41 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     }
     assert.equal(new Set(hashes).size, 12, 'twelve distinct transparent portraits');
     await local.selectOption('#skin-left', '1'); await local.selectOption('#skin-right', '2');
-    await local.selectOption('#assist-left', '1'); await local.selectOption('#assist-right', '3');
+    assert.equal(await local.locator('#assist-left,#assist-right').count(), 0);
+    assert.deepEqual(await local.locator('#balance').evaluate(input => [input.min, input.max, input.step, input.value]), ['-3', '3', '1', '0']);
+    await local.locator('#balance').fill('-3'); await local.locator('#balance').focus();
+    for (let position = -3; position <= 3; position++) {
+      if (position > -3) await local.keyboard.press('ArrowRight');
+      assert.deepEqual((await state(local)).assists, [Math.max(0, -position), Math.max(0, position)]);
+    }
+    await local.locator('#balance').fill('-1');
     await local.selectOption('#pitch', '6'); await local.fill('#target-score', '1');
     await local.screenshot({ path: 'evidence/players-and-assistance.png', fullPage: true });
-    await local.click('#start'); assert.deepEqual((await state(local)).assists, [1, 3]);
+    await local.click('#start'); assert.deepEqual((await state(local)).assists, [1, 0]);
     assert.equal(await local.evaluate(() => sportheads.engine.game_body_count()), 23);
-    assert.equal(await local.locator('#assist-left').isEnabled(), false);
-    assert.equal(await local.locator('#assist-right').isEnabled(), false);
+    assert.ok(await local.evaluate(() => {
+      const surface = document.querySelector('#game-surface').getBoundingClientRect();
+      const canvas = document.querySelector('#field').getBoundingClientRect();
+      const dock = document.querySelector('.ground-bar').getBoundingClientRect();
+      return dock.top >= canvas.top + canvas.width * .6 - 1 && dock.bottom <= surface.bottom + 1
+        && [...document.querySelectorAll('button,input,select')].every(control => control.closest('.arena'));
+    }), 'controls belong to the arena and the toolbar occupies the below-ground band');
+    assert.equal(await local.locator('#balance').isEnabled(), false);
+
     await finish(local); await local.click('#again');
-    assert.deepEqual((await state(local)).assists, [1, 3]);
+    assert.deepEqual((await state(local)).assists, [1, 0]);
     await local.setViewportSize({ width: 390, height: 844 });
     assert.ok(await local.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
 
     const host = await pageAt(); await host.click('#play-online');
-    await host.selectOption('#assist-right', '3'); await host.selectOption('#pitch', '3');
+    await host.locator('#balance').fill('3'); await host.selectOption('#pitch', '3');
     await host.fill('#target-score', '1'); await host.click('#create-room');
     await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
     const share = new URL(url); share.searchParams.set('room', await host.locator('#room-code').innerText());
     const guest = await pageAt(share.href); await guest.click('#join-room');
-    await guest.waitForFunction(() => sportheads.snapshot().connected && document.querySelector('#assist-right').value === '3');
-    assert.equal(await guest.locator('#assist-left').isEnabled(), false);
-    assert.equal(await guest.locator('#assist-right').isEnabled(), false);
+    await guest.waitForFunction(() => sportheads.snapshot().connected && document.querySelector('#balance').value === '3');
+    assert.equal(await guest.locator('#balance').isEnabled(), false);
+
     await guest.selectOption('#skin-right', '12');
     await host.waitForFunction(() => document.querySelector('#skin-right').value === '12');
     await host.click('#start'); await guest.waitForFunction(() => sportheads.snapshot().started);
@@ -69,14 +83,14 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     assert.deepEqual((await state(host)).assists, [0, 3]);
     await finish(host); await guest.waitForFunction(() => sportheads.snapshot().phase === 3);
     assert.deepEqual((await state(guest)).assists, [0, 3]);
-    await host.selectOption('#assist-right', '2'); await host.click('#again');
-    await guest.waitForFunction(() => sportheads.snapshot().matchId === 2 && sportheads.snapshot().assists[1] === 2);
-    assert.deepEqual((await state(host)).assists, [0, 2]);
-    assert.deepEqual((await state(guest)).assists, [0, 2]);
-    await host.click('#leave-room');
+    await host.click('#play-view'); await host.locator('#balance').fill('-2'); await host.click('#close-settings'); await host.click('#again');
+    await guest.waitForFunction(() => sportheads.snapshot().matchId === 2 && sportheads.snapshot().assists[0] === 2);
+    assert.deepEqual((await state(host)).assists, [2, 0]);
+    assert.deepEqual((await state(guest)).assists, [2, 0]);
+    await host.click('#play-view'); await host.click('#leave-room');
     await guest.waitForFunction(() => !sportheads.snapshot().connected);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, url, checks: ['simple matches only', '19 pitches', '12 distinct modern transparent portraits', 'neutral default', 'independent assists', 'locked match settings', 'replay retains choice', 'real WebRTC assistance sharing', 'host owns handicap', 'modern guest player selection', 'mobile layout'] }));
+    console.log(JSON.stringify({ passed: true, url, checks: ['simple matches only', '19 pitches', '12 distinct modern transparent portraits', 'neutral default', 'seven-position keyboard slider', 'in-game settings and below-ground toolbar', 'locked match settings', 'replay retains choice', 'real WebRTC assistance sharing', 'host owns handicap', 'modern guest player selection', 'mobile layout'] }));
   } catch (error) {
     for (const [index, page] of pages.entries()) if (!page.isClosed()) {
       console.error(index, await state(page).catch(() => null));

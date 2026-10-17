@@ -10,16 +10,43 @@
   <link rel="stylesheet" href="./game.css">
   <script type="module" src="./game.js"></script>
 </head>
-<body>
+<body class="play-view">
   <main>
-    <header class="masthead">
-      <div><a class="wordmark" href="./">Sportheads<span class="ball-mark" aria-hidden="true">⚽</span></a><p>Le duel de football, ici ou à distance.</p></div>
-      <nav aria-label="Projet"><a href="./physics.html">Comparaisons physiques</a><a href="https://github.com/pierre-lebihan/sportheads">GitHub</a></nav>
-    </header>
-    <div class="play-modes" role="group" aria-label="Où jouez-vous ?">
-      <button id="play-local" aria-pressed="true"><strong>Sur le même écran</strong><span>Deux joueurs, un écran tactile ou clavier</span></button>
-      <button id="play-online" aria-pressed="false"><strong>À distance</strong><span>Une salle, un code à partager</span></button>
-    </div>
+    <section class="arena" aria-label="Sportheads, match de football à deux">
+      <div class="field-wrap">
+        <div id="game-surface" class="game-surface">
+          <canvas id="field" width="800" height="540" tabindex="0" aria-label="Terrain. Bleu : Q ou A, D, Z ou W et espace. Rouge : flèches et P."></canvas>
+          <div class="scoreboard" aria-label="Score et objectif de buts">
+            <div class="team blue"><span>Bleu</span><strong id="score-left">0</strong></div>
+            <div class="clock"><span>Premier à</span><strong id="clock">7 buts</strong></div>
+            <div class="team red"><strong id="score-right">0</strong><span>Rouge</span></div>
+          </div>
+          <p id="bonus-notice" class="bonus-notice" role="status" hidden></p>
+          <div class="ground-bar">
+      <div id="touch-controls" class="touch-controls" aria-label="Commandes tactiles">
+        <div class="touch-pad blue" data-side="0" role="group" aria-label="Commandes Bleu">
+          <span class="touch-name">Bleu</span>
+          <div class="touch-move"><button type="button" data-action="1" aria-label="Bleu : aller à gauche" disabled>◀</button><button type="button" data-action="2" aria-label="Bleu : aller à droite" disabled>▶</button></div>
+          <div class="touch-actions"><button type="button" data-action="4" aria-label="Bleu : sauter" disabled><span aria-hidden="true">↑</span><small>Saut</small></button><button type="button" data-action="8" aria-label="Bleu : frapper" disabled><span aria-hidden="true">⚽</span><small>Tir</small></button></div>
+        </div>
+        <div class="touch-pad red" data-side="1" role="group" aria-label="Commandes Rouge">
+          <span class="touch-name">Rouge</span>
+          <div class="touch-move"><button type="button" data-action="1" aria-label="Rouge : aller à gauche" disabled>◀</button><button type="button" data-action="2" aria-label="Rouge : aller à droite" disabled>▶</button></div>
+          <div class="touch-actions"><button type="button" data-action="4" aria-label="Rouge : sauter" disabled><span aria-hidden="true">↑</span><small>Saut</small></button><button type="button" data-action="8" aria-label="Rouge : frapper" disabled><span aria-hidden="true">⚽</span><small>Tir</small></button></div>
+        </div>
+      </div>
+            <div class="match-bar">
+              <div class="bar-tools"><button id="play-view" aria-label="Réglages" title="Réglages" aria-expanded="true">⚙</button><button id="sound" aria-label="Couper le son" title="Couper le son" aria-pressed="true">♫</button></div>
+              <span id="status" role="status" aria-live="polite">Préparez votre match</span>
+              <div class="bar-tools"><button id="pause" disabled>Pause</button><button id="restart" aria-label="Recommencer" title="Recommencer" disabled>↻</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="welcome" class="cover setup-cover">
+        <section id="setup-panel" class="setup-panel" role="dialog" aria-label="Préparation du match">
+          <header class="setup-heading"><a class="wordmark" href="./">Sportheads<span aria-hidden="true">⚽</span></a><button id="close-settings" hidden>Retour au match</button></header>
+          <div class="play-modes" role="group" aria-label="Où jouez-vous ?"><button id="play-local" aria-pressed="true">Sur le même écran</button><button id="play-online" aria-pressed="false">À distance</button></div>
     <section id="online-panel" class="room-panel" aria-label="Salle privée" hidden>
       <div id="room-actions" class="room-actions">
         <button id="create-room" class="primary" disabled>Créer une salle</button>
@@ -33,49 +60,32 @@
       <p id="room-status" role="status" aria-live="polite">Créez une salle ou saisissez le code de votre adversaire.</p>
       <p class="room-help">Deux joueurs maximum. Le créateur garde cet onglet ouvert pendant la partie.</p>
     </section>
-    <fieldset class="settings"><legend id="settings-legend">Votre partie</legend>
-      <label>Buts pour gagner <input id="target-score" type="number" min="1" max="99" step="1" value="7" title="Entre 1 et 99 buts"></label>
-      <label>Terrain <select id="pitch"></select></label>
-      <label class="check"><input id="bonuses" type="checkbox" checked> Bonus</label>
-      <button id="sound" type="button" aria-pressed="true">Son activé</button>
-    </fieldset>
-    <fieldset class="settings assistance"><legend>Un coup de pouce</legend><label>Bleu <select id="assist-left" aria-label="Aide du joueur bleu"></select></label><label>Rouge <select id="assist-right" aria-label="Aide du joueur rouge"></select></label><p>Pour aider le joueur moins fort : vitesse, saut et frappe renforcés pendant le match.</p><p id="assist-status" role="status"></p></fieldset>
-    <div class="pitch-choice"><canvas id="pitch-preview" width="320" height="216" aria-label="Aperçu du terrain sélectionné"></canvas><p><strong id="pitch-caption">Terrain libre</strong><span>Les obstacles font partie du jeu. Choisissez votre terrain avant le match.</span></p></div>
-    <section class="arena" aria-label="Match de football à deux">
-      <div class="scoreboard" aria-label="Score et objectif de buts">
-        <div class="team blue"><span>Bleu</span><strong id="score-left">0</strong></div>
-        <div class="clock"><span>Objectif</span><strong id="clock">7 buts</strong></div>
-        <div class="team red"><strong id="score-right">0</strong><span>Rouge</span></div>
-      </div>
-      <div class="field-wrap">
-        <p id="bonus-notice" class="bonus-notice" role="status" hidden></p>
-        <canvas id="field" width="800" height="540" tabindex="0" aria-label="Terrain. Bleu : Q ou A, D, Z ou W et espace. Rouge : flèches et P."></canvas>
-        <div id="welcome" class="cover">
-          <div class="cover-panel"><p class="fixture">Bleu contre Rouge</p><h1 id="welcome-title">À vous de jouer.</h1><p id="welcome-detail">Marquez plus de buts que votre adversaire.<br>Jouez à deux avec les commandes tactiles ou le clavier.</p><button id="start" class="primary" disabled>Chargement…</button></div>
-        </div>
-        <div id="paused" class="cover" hidden><div class="cover-panel"><h2>Pause</h2><p id="pause-detail">Le temps vous attend.</p><button id="resume" class="primary">Reprendre</button></div></div>
-        <div id="finished" class="cover" hidden><div class="cover-panel"><p class="fixture">Coup de sifflet final</p><h2 id="result">Fin du match</h2><p id="final-score"></p><button id="again" class="primary">Rejouer</button></div></div>
-      </div>
-      <div id="touch-controls" class="touch-controls" aria-label="Commandes tactiles">
-        <div class="touch-pad blue" data-side="0" role="group" aria-label="Commandes Bleu">
-          <span class="touch-name">Bleu</span>
-          <div class="touch-move"><button type="button" data-action="1" aria-label="Bleu : aller à gauche" disabled>◀</button><button type="button" data-action="2" aria-label="Bleu : aller à droite" disabled>▶</button></div>
-          <div class="touch-actions"><button type="button" data-action="4" aria-label="Bleu : sauter" disabled><span aria-hidden="true">↑</span><small>Saut</small></button><button type="button" data-action="8" aria-label="Bleu : frapper" disabled><span aria-hidden="true">⚽</span><small>Tir</small></button></div>
-        </div>
-        <div class="touch-pad red" data-side="1" role="group" aria-label="Commandes Rouge">
-          <span class="touch-name">Rouge</span>
-          <div class="touch-move"><button type="button" data-action="1" aria-label="Rouge : aller à gauche" disabled>◀</button><button type="button" data-action="2" aria-label="Rouge : aller à droite" disabled>▶</button></div>
-          <div class="touch-actions"><button type="button" data-action="4" aria-label="Rouge : sauter" disabled><span aria-hidden="true">↑</span><small>Saut</small></button><button type="button" data-action="8" aria-label="Rouge : frapper" disabled><span aria-hidden="true">⚽</span><small>Tir</small></button></div>
-        </div>
-      </div>
-      <div class="match-bar"><span id="status" role="status" aria-live="polite">Terrain libre · Deux joueurs en local</span><div><button id="play-view" hidden aria-pressed="false">Vue jeu</button><button id="pause" disabled>Pause</button><button id="restart" disabled>Recommencer</button></div></div>
-    </section>
     <section class="controls" aria-label="Commandes">
-      <div class="control-side blue"><canvas id="player-preview-0" width="72" height="72" aria-label="Personnage bleu"></canvas><div><h2><i aria-hidden="true"></i>Bleu <label class="skin-label">Personnage <select id="skin-left" aria-label="Personnage bleu"></select></label></h2><p><kbd>Q / A</kbd><kbd>D</kbd> se déplacer <span><kbd>Z / W</kbd> sauter</span><span><kbd>Espace</kbd> frapper</span></p></div></div>
-      <div class="control-side red"><canvas id="player-preview-1" width="72" height="72" aria-label="Personnage rouge"></canvas><div><h2><i aria-hidden="true"></i>Rouge <label class="skin-label">Personnage <select id="skin-right" aria-label="Personnage rouge"></select></label></h2><p><kbd>←</kbd><kbd>→</kbd> se déplacer <span><kbd>↑</kbd> sauter</span><span><kbd>P</kbd> frapper</span></p></div></div>
+      <div class="control-side blue"><canvas id="player-preview-0" width="72" height="72" aria-label="Personnage bleu"></canvas><div><h2><i aria-hidden="true"></i>Bleu <label class="skin-label">Personnage <select id="skin-left" aria-label="Personnage bleu"></select></label></h2></div></div>
+      <div class="control-side red"><canvas id="player-preview-1" width="72" height="72" aria-label="Personnage rouge"></canvas><div><h2><i aria-hidden="true"></i>Rouge <label class="skin-label">Personnage <select id="skin-right" aria-label="Personnage rouge"></select></label></h2></div></div>
     </section>
-    <p id="online-controls" class="online-controls" hidden>À distance, utilisez les boutons tactiles, les flèches et <kbd>P</kbd>, ou <kbd>Q / A</kbd> <kbd>D</kbd> <kbd>Z / W</kbd> et <kbd>Espace</kbd>. Vous contrôlez uniquement votre joueur.</p>
-    <footer><p>Le premier à atteindre l’objectif de buts gagne, sans limite de temps. Choisissez votre personnage et entrez sur le terrain.</p><p class="touch-hint">Sur mobile : maintenez les flèches pour courir, combinez saut et tir. Le mode paysage laisse plus de place aux commandes.</p><p><kbd>Échap</kbd> pour mettre en pause. À distance, la pause arrête le match pour les deux joueurs.</p></footer>
+          <fieldset class="settings"><legend id="settings-legend">Votre partie</legend>
+            <label>Buts pour gagner <input id="target-score" type="number" min="1" max="99" step="1" value="7" title="Entre 1 et 99 buts"></label>
+            <label>Terrain <select id="pitch"></select></label>
+            <label class="check"><input id="bonuses" type="checkbox" checked> Bonus</label>
+            <div class="pitch-choice"><canvas id="pitch-preview" width="320" height="216" aria-label="Aperçu du terrain sélectionné"></canvas><strong id="pitch-caption">Terrain libre</strong></div>
+          </fieldset>
+          <fieldset class="assistance"><legend>Équilibrage</legend>
+            <output id="balance-status" for="balance">Équilibré</output>
+            <label class="sr-only" for="balance">Aide au joueur moins fort</label>
+            <input id="balance" type="range" min="-3" max="3" step="1" value="0" list="balance-steps" aria-valuetext="Équilibré">
+            <datalist id="balance-steps"><option value="-3"></option><option value="-2"></option><option value="-1"></option><option value="0"></option><option value="1"></option><option value="2"></option><option value="3"></option></datalist>
+            <div class="balance-ticks" aria-hidden="true"><span class="blue">+30 %</span><span class="blue">+20</span><span class="blue">+10</span><span>0</span><span class="red">+10</span><span class="red">+20</span><span class="red">+30 %</span></div>
+            <div class="balance-sides"><span class="blue">Aider Bleu</span><span class="red">Aider Rouge</span></div>
+            <p>Vitesse, saut et frappe renforcés pour un seul joueur.</p>
+          </fieldset>
+          <div class="launch"><h1 id="welcome-title">À vous de jouer.</h1><p id="welcome-detail">Le premier à atteindre l’objectif gagne.</p><button id="start" class="primary" disabled>Chargement…</button></div>
+          <details class="help"><summary>Commandes et projet</summary><p>Bleu : Q/A, D, Z/W et Espace. Rouge : flèches et P. Échap : pause.</p><p id="online-controls" hidden>À distance : flèches et P, ou Q/A, D, Z/W et Espace. Vous contrôlez uniquement votre joueur.</p><p>Sur mobile : maintenez les flèches, combinez Saut et Tir. Essayez le mode paysage.</p><nav aria-label="Projet"><a href="./physics.html">Comparaisons physiques</a><a href="https://github.com/pierre-lebihan/sportheads">GitHub</a></nav></details>
+        </section>
+      </div>
+      <div id="paused" class="cover" hidden><div class="cover-panel"><h2>Pause</h2><p id="pause-detail">Le temps vous attend.</p><button id="resume" class="primary">Reprendre</button></div></div>
+      <div id="finished" class="cover" hidden><div class="cover-panel"><p class="fixture">Coup de sifflet final</p><h2 id="result">Fin du match</h2><p id="final-score"></p><button id="again" class="primary">Rejouer</button></div></div>
+    </section>
   </main>
 </body>
 </html>

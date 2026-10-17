@@ -3,7 +3,9 @@ import './vendor/peerjs-1.5.5.min.js';
 import { Room, normalizeCode, validCode } from './rooms.js';
 import { captureState, createRemoteEngine } from './net-state.js';
 import { PLAYER_NAMES, PITCHES, updateSelectionPreviews } from './selection.js';
-import { ASSISTS, PLAYER_COUNT } from './players.js';
+import { PLAYER_COUNT } from './players.js';
+import { balanceToAssists, assistsToBalance, balanceLabel } from './balance.js';
+import { layoutArena } from './arena-ui.js';
 import { createTouchControls } from './touch-controls.js';
 
 const $ = selector => document.querySelector(selector);
@@ -16,7 +18,7 @@ let started = false, paused = false, pauseFlags = [false, false], soundEnabled =
 let last = 0, accumulator = 0, previousPhase = -1, lastBroadcast = 0;
 let matchId = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, receivedInput = -1;
 let remoteInput = 0, lastInputAt = 0, soundTick = -1, soundMatch = -1, busy = false;
-let playView = false;
+let settingsOpen = false;
 const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
 const touch = createTouchControls($('#touch-controls'), sendInput);
 function clearInput() { keys.clear(); touch.clear(); }
@@ -26,8 +28,7 @@ for (const [id, selected] of [['skin-left', 1], ['skin-right', 2]]) {
 }
 for (const pitch of PITCHES) { const option = new Option(pitch.name, pitch.id); option.selected = pitch.id === 8; $('#pitch').add(option); }
 const engine = () => mode === 'online' && role === 'guest' ? remote.engine : core;
-for (const id of ['assist-left', 'assist-right']) ASSISTS.forEach((label, level) => $('#' + id).add(new Option(label, level)));
-const assists = () => [+$('#assist-left').value, +$('#assist-right').value];
+const assists = () => balanceToAssists(+$('#balance').value);
 const applyAssists = () => assists().forEach((level, side) => core?.game_set_assistance(side, level));
 const skins = () => [+$('#skin-left').value, +$('#skin-right').value];
 const ownSide = () => role === 'guest' ? 1 : 0;
@@ -86,13 +87,13 @@ function reset() {
   audio.unlock();
   core.game_start_on_pitch(crypto.getRandomValues(new Uint32Array(1))[0], targetScore(), +$('#bonuses').checked, +$('#pitch').value);
   applyAssists();
-  if (hasTouch()) playView = true;
+  settingsOpen = false;
   started = true; paused = false; pauseFlags = [false, false]; previousPhase = -1;
   remoteInput = 0; matchId++; clearInput(); accumulator = 0; last = 0;
   canvas.focus({ preventScroll: true }); music(); update(); broadcast();
 }
 function clearMatch() {
-  playView = false;
+  settingsOpen = false;
   started = false; paused = false; pauseFlags = [false, false]; clearInput(); remoteInput = 0;
   last = 0; accumulator = 0; previousPhase = -1; receivedSequence = -1; receivedInput = -1;
   remote = createRemoteEngine(); audio.stopAll(); core?.game_reset(1); applyAssists();
@@ -134,11 +135,11 @@ function onMessage(message) {
   pauseFlags = message.pauseFlags; paused = pauseFlags.some(Boolean);
   // Preserve the guest's desired skin while an older snapshot is still in flight.
   $('#skin-left').value = message.state.skins[0];
-  for (const side of [0, 1]) $('#' + ['assist-left', 'assist-right'][side]).value = message.state.players[side][6];
+  $('#balance').value = assistsToBalance(message.state.players.map(player => player[6]));
   $('#bonuses').checked = message.bonuses;
   $('#target-score').value = message.state.values[14];
   $('#pitch').value = message.state.values[15];
-  if (newMatch) { if (started && hasTouch()) playView = true; previousPhase = -1; clearInput(); music(); if (started && document.hidden) pause(true); else if (started) canvas.focus({ preventScroll: true }); }
+  if (newMatch) { if (started) settingsOpen = false; previousPhase = -1; clearInput(); music(); if (started && document.hidden) pause(true); else if (started) canvas.focus({ preventScroll: true }); }
   if (oldPaused !== paused) { clearInput(); music(); if (!paused) canvas.focus({ preventScroll: true }); }
   if (started && !paused && (soundTick !== engine().game_value(6) || soundMatch !== matchId)) {
     soundTick = engine().game_value(6); soundMatch = matchId; playSounds(engine().game_value(7));
@@ -207,11 +208,15 @@ $('#join-form').addEventListener('submit', event => { event.preventDefault(); co
 $('#leave-room').addEventListener('click', leaveRoom);
 $('#copy-code').addEventListener('click', () => copyRoom(false)); $('#copy-link').addEventListener('click', () => copyRoom(true));
 $('#target-score').addEventListener('input', () => { update(); broadcast(); });
-for (const id of ['pitch', 'assist-left', 'assist-right']) $('#' + id).addEventListener('change', () => { applyAssists(); update(); broadcast(); });
+$('#pitch').addEventListener('change', () => { update(); broadcast(); });
+$('#balance').addEventListener('input', () => { applyAssists(); update(); broadcast(); });
+function closeSettings() {
+  settingsOpen = false; update(); canvas.focus({ preventScroll: true });
+}
 $('#play-view').addEventListener('click', () => {
-  if (playView) pause();
-  playView = !playView; update(); canvas.focus({ preventScroll: true });
+  if (started) { pause(); settingsOpen = true; update(); $('#close-settings').focus({ preventScroll: true }); }
 });
+$('#close-settings').addEventListener('click', closeSettings);
 $('#pause').addEventListener('click', () => pause(!pauseFlags[ownSide()]));
 $('#resume').addEventListener('click', () => { pause(false); if (mode === 'local') canvas.focus({ preventScroll: true }); });
 for (const [side, id] of ['skin-left', 'skin-right'].entries()) $('#' + id).addEventListener('change', () => {
@@ -220,12 +225,15 @@ for (const [side, id] of ['skin-left', 'skin-right'].entries()) $('#' + id).addE
   update();
 });
 $('#sound').addEventListener('click', () => {
-  soundEnabled = !soundEnabled; $('#sound').textContent = soundEnabled ? 'Son activé' : 'Son coupé';
+  soundEnabled = !soundEnabled; $('#sound').textContent = soundEnabled ? '♫' : '∅';
+  $('#sound').setAttribute('aria-label', soundEnabled ? 'Couper le son' : 'Activer le son');
+  $('#sound').title = soundEnabled ? 'Couper le son' : 'Activer le son';
   $('#sound').setAttribute('aria-pressed', String(soundEnabled)); audio.unlock(); music();
   if (started && !paused) canvas.focus({ preventScroll: true });
 });
 window.addEventListener('keydown', event => {
   if (['SELECT', 'INPUT', 'BUTTON'].includes(event.target.tagName) && event.code !== 'Escape') return;
+  if (event.code === 'Escape' && settingsOpen) { event.preventDefault(); closeSettings(); return; }
   if (event.code === 'Escape') { if (started) { event.preventDefault(); pause(!pauseFlags[ownSide()]); } return; }
   if (bindings[event.code] && started && !paused && engine().game_value(0) !== 3 && (mode === 'local' || room?.connected)) {
     event.preventDefault(); keys.add(event.code); sendInput();
@@ -254,9 +262,9 @@ function update() {
   const e = engine(), state = snapshot(), phase = state.phase;
   const names = ['Bleu', 'Rouge'];
   document.body.classList.toggle('touch-device', hasTouch());
-  document.body.classList.toggle('play-view', playView && started);
-  $('#play-view').hidden = !started; $('#play-view').textContent = playView ? 'Réglages' : 'Vue jeu';
-  $('#play-view').setAttribute('aria-pressed', String(playView));
+  $('#play-view').disabled = !started;
+  $('#play-view').setAttribute('aria-expanded', String(!started || settingsOpen));
+  $('#close-settings').hidden = !started;
   $('#touch-controls').hidden = !started;
   touch.update({ mode, side: ownSide(), names, enabled: started && !paused && phase !== 3 && (mode === 'local' || !!room?.connected) });
   const teamNames = names.map((name, side) => `${name}${state.assists[side] ? ' +' + state.assists[side] * 10 + '%' : ''}`);
@@ -267,8 +275,8 @@ function update() {
   $('#clock').textContent = Number.isInteger(target) && target >= 1 && target <= 99 ? `${target} ${target === 1 ? 'but' : 'buts'}` : '—';
   const notice = e?.game_value(11) > 0 ? bonusNames[e.game_value(10)] : '';
   $('#bonus-notice').textContent = notice; $('#bonus-notice').hidden = !notice;
-  $('#welcome').hidden = started; $('#finished').hidden = !started || phase !== 3; $('#paused').hidden = !started || !paused || phase === 3;
-  $('#start').disabled = !canStart(); $('#start').hidden = mode === 'online' && role === 'guest';
+  $('#welcome').hidden = started && !settingsOpen; $('#finished').hidden = !started || phase !== 3 || settingsOpen; $('#paused').hidden = !started || !paused || phase === 3 || settingsOpen;
+  $('#start').disabled = !canStart(); $('#start').hidden = started || (mode === 'online' && role === 'guest');
   $('#start').textContent = !core ? 'Chargement…' : mode === 'local' ? 'Commencer' : room?.connected ? 'Lancer le match' : 'En attente d’un adversaire';
   $('#welcome-title').textContent = mode === 'local' ? 'À vous de jouer.' : room?.connected ? 'Vous êtes deux !' : 'Invitez un adversaire.';
   $('#welcome-detail').textContent = mode === 'local' ? 'Marquez plus de buts que votre adversaire. Jouez à deux avec les commandes tactiles ou le clavier.'
@@ -286,8 +294,11 @@ function update() {
   $('#create-room').disabled = !core || busy; $('#join-room').disabled = !core || busy;
   $('#bonuses').disabled = mode === 'online' && (role === 'guest' || started);
   const settingsLocked = (started && phase !== 3) || (mode === 'online' && role === 'guest');
-  for (const id of ['target-score', 'pitch', 'assist-left', 'assist-right']) $('#' + id).disabled = !!settingsLocked;
-  $('#assist-status').textContent = assists().map((level, side) => `${names[side]} : ${ASSISTS[level].toLowerCase()}`).join(' · ');
+  for (const id of ['target-score', 'pitch', 'balance']) $('#' + id).disabled = !!settingsLocked;
+  const balance = +$('#balance').value;
+  $('#balance-status').textContent = balanceLabel(balance);
+  $('#balance').setAttribute('aria-valuetext', balanceLabel(balance));
+  $('#balance').style.accentColor = balance < 0 ? '#286bbe' : balance > 0 ? '#c14d51' : '#526c81';
   updateSelectionPreviews(state.pitch, skins());
   $('#settings-legend').textContent = 'Votre partie';
   for (const side of [0, 1]) {
@@ -329,4 +340,5 @@ try {
   $('#start').textContent = 'Recharger la page'; $('#start').disabled = false; $('#start').addEventListener('click', () => location.reload());
   $('#status').textContent = 'Le jeu n’a pas pu se charger. Rechargez la page pour réessayer.'; window.loadError = error.message;
 }
+layoutArena($('.field-wrap'), $('#game-surface'), $('#touch-controls'));
 requestAnimationFrame(animate);

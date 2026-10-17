@@ -32,6 +32,8 @@ jobs:
           node --check web/selection.js
           node --check web/players.js
           node --check web/touch-controls.js
+          node --check web/balance.js
+          node --check web/arena-ui.js
           node --test tests/*.test.mjs
       - name: Build playable match and comparison bench
         run: python3 scripts/build-pages.py

@@ -1,5 +1,6 @@
 """Package the playable WASM match and the recorded comparison bench."""
 import json
+import hashlib
 from pathlib import Path
 import shutil
 
@@ -27,8 +28,18 @@ for old, new in replacements.items():
         raise SystemExit(f'Expected exactly one occurrence of {old}')
     html = html.replace(old, new)
 (site / 'physics.html').write_text(html)
-for filename in ('index.html', 'game.js', 'game.css', 'render.js', 'rooms.js', 'net-state.js', 'selection.js', 'players.js', 'touch-controls.js', 'balance.js', 'arena-ui.js', 'setup-ui.js'):
-    shutil.copyfile(root / 'web' / filename, site / filename)
+browser_files = ('index.html', 'game.js', 'game.css', 'render.js', 'rooms.js', 'net-state.js', 'selection.js', 'players.js', 'touch-controls.js', 'balance.js', 'arena-ui.js', 'setup-ui.js')
+# Every app module uses the same revision, including its transitive imports.
+# A refreshed page must not mix a new UI with cached networking code.
+revision = hashlib.sha256(b''.join((root / 'web' / name).read_bytes() for name in browser_files)).hexdigest()[:12]
+for filename in browser_files:
+    source = (root / 'web' / filename).read_text()
+    if filename.endswith(('.js', '.html')):
+        for dependency in browser_files:
+            if dependency.endswith(('.js', '.css')):
+                for quote in ("'", '"'):
+                    source = source.replace(f'{quote}./{dependency}{quote}', f'{quote}./{dependency}?v={revision}{quote}')
+    (site / filename).write_text(source)
 manifest=json.loads((root/'web/assets/manifest.json').read_text())
 for sprite in manifest['sprites'].values():
     for frame in sprite['frames']:

@@ -89,6 +89,13 @@ Si le téléphone détruit ou recharge entièrement la page, il faut recréer la
 
 ## Réseaux et dépendances
 
+En cas d'échec, « Détails de connexion » permet de copier un diagnostic local :
+version du réseau du jeu, navigateur, étapes de connexion, états ICE et codes
+d'erreur. Il ne contient ni code de salle, ni adresse IP, ni SDP, et n'est pas
+envoyé automatiquement. Un échec de connexion initiale n'est plus présenté
+comme un match arrêté. Les modules du site utilisent une révision commune dans
+leurs URL afin qu'une page actualisée charge aussi le nouveau code réseau.
+
 GitHub Pages continue d'héberger l'ensemble du site. Aucun serveur applicatif
 personnel ni abonnement payant n'a été créé. La découverte des salles dépend
 du service public PeerServer, sans garantie de disponibilité.
@@ -110,6 +117,8 @@ node scripts/check-online.cjs http://127.0.0.1:8765/_site/
 node scripts/check-setup.cjs http://127.0.0.1:8765/_site/
 node scripts/check-mobile.cjs http://127.0.0.1:8765/_site/
 node scripts/check-background.cjs http://127.0.0.1:8765/_site/
+node scripts/check-background.cjs http://127.0.0.1:8765/_site/ --join-during-background
+node scripts/check-cross-browser.cjs http://127.0.0.1:8765/_site/
 # Diagnostic séparé, ne pas confondre avec un test validé :
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/ --relay
 ```
@@ -123,6 +132,9 @@ de cycle de connexion. Les régressions physiques Flash/Rust restent inchangées
 Le test d'arrière-plan coupe réellement le WebSocket de signalisation, gèle des
 pages Chrome pendant 12 à 15 secondes, puis vérifie le même lien, l'arrivée d'un
 invité et la pause/reprise d'un match. Il ne remplace pas un essai sur téléphone physique.
+Le test croisé utilise Chrome et WebKit dans deux processus et inverse les rôles.
+Il vérifie aussi l'affichage d'un diagnostic sur une erreur de transport injectée.
+Ces essais ne prouvent pas la compatibilité de deux téléphones sur un autre réseau.
 
 Le test de réglages vérifie les 12 portraits, les terrains, les aides individuelles,
 leur transmission dans une vraie salle et leur maintien lors de la revanche.

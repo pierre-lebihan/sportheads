@@ -265,6 +265,21 @@ test('return reconnects signalling immediately with the existing peer and cancel
   assert.deepEqual(events.errors, []);
 });
 
+test('diagnostics retain the actual ICE failure without room codes, addresses or descriptions', async t => {
+  const { createRoom } = setup(t);
+  const { room, events } = createRoom();
+  await room.join('ABCD2345');
+  const connection = room.connection;
+  connection.peerConnection = { iceConnectionState: 'failed' };
+  connection.emit('error', Object.assign(new Error('SDP 192.0.2.14 room ABCD2345'), { type: 'negotiation-failed' }));
+  const diagnostic = room.diagnostic();
+  assert.ok(diagnostic.events.some(event => event.event === 'channel-error' && event.type === 'negotiation-failed' && event.ice === 'failed'));
+  assert.doesNotMatch(JSON.stringify(diagnostic), /192\.0\.2\.14|ABCD2345|SDP/);
+  assert.match(events.errors[0], /liaison réseau/);
+  assert.doesNotMatch(events.errors[0], /match/);
+  assert.equal(room.closed, true);
+});
+
 test('a fatal peer error closes the waiting room before calling onError', async t => {
   const { peers, createRoom } = setup(t);
   let room;

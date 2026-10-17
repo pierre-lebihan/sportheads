@@ -58,7 +58,10 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-backgroun
     assert.equal(await h.locator('#room-code').innerText(), code);
     assert.equal((await state(h)).setupStep, 'pitch');
     assert.equal(await h.locator('#pitch').inputValue(), '6');
+    const joinInBackground = process.argv.includes('--join-during-background');
+    if (joinInBackground) await freeze(host);
     const guest = await mobile(share), g = guest.page; await g.click('#join-room');
+    if (joinInBackground) { await sleep(25000); await resume(host); }
     await Promise.all([h, g].map(page => page.waitForFunction(() => sportheads.snapshot().connected)));
     await g.waitForFunction(() => document.querySelector('#pitch').value === '6');
     // An established channel must also tolerate a phone sleeping for >8 seconds.

@@ -2,6 +2,7 @@ export const PROTOCOL = 'sportheads-rooms-6';
 const PREFIX = 'sportheads-room-v6-';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SILENCE_TIMEOUT = 120000;
+export const NETWORK_REVISION = 2;
 export function normalizeCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }
 export function validCode(code) { return /^[A-HJ-NP-Z2-9]{8}$/.test(code); }
 function randomCode() { return Array.from(crypto.getRandomValues(new Uint8Array(8)), n => ALPHABET[n & 31]).join(''); }
@@ -14,6 +15,19 @@ export class Room {
     this.closed = false; this.connected = false; this.peer = null; this.connection = null;
     this.timer = null; this.heartbeat = null; this.code = ''; this.role = null;
     this.suspended = false; this.lastSeen = 0;
+    this.events = []; this.createdAt = performance.now();
+  }
+
+  record(event, details = {}) {
+    const pc = this.connection?.peerConnection;
+    this.events.push({ ms: Math.round(performance.now() - this.createdAt), event, ...details,
+      ice: pc?.iceConnectionState, channel: this.connection?.dataChannel?.readyState });
+    if (this.events.length > 40) this.events.shift();
+  }
+  diagnostic() {
+    return { revision: NETWORK_REVISION, protocol: PROTOCOL, role: this.role,
+      browser: globalThis.navigator?.userAgent, online: globalThis.navigator?.onLine,
+      connected: this.connected, events: this.events.map(event => ({ ...event })) };
   }
 
   async create() {
@@ -53,7 +67,7 @@ export class Room {
       const timeout = setTimeout(() => finish(new Error('Le service de salles ne répond pas. Réessayez.')), 15000);
       this.cancelOpen = () => finish(new Error('Connexion annulée.'));
       let opened = false;
-      peer.on('open', () => { opened = true; if (this.closed) { peer.destroy(); return; } finish(); });
+      peer.on('open', () => { this.record('signalling-open'); opened = true; if (this.closed) { peer.destroy(); return; } finish(); });
       peer.on('connection', connection => {
         if (this.closed || this.role !== 'host' || connection.metadata?.protocol !== PROTOCOL || this.connection) {
           connection.on('error', () => {});
@@ -66,6 +80,7 @@ export class Room {
         this.attach(connection);
       });
       peer.on('disconnected', () => {
+        this.record('signalling-disconnected');
         // An established data channel survives signalling outages.
         if (!this.closed && !peer.destroyed && !this.reconnectTimer) this.reconnectTimer = setTimeout(() => {
           this.reconnectTimer = null;
@@ -74,6 +89,7 @@ export class Room {
       });
       peer.on('error', error => {
         if (this.closed) return;
+        this.record('signalling-error', { type: error.type });
         if (!opened) finish(error);
         // PeerJS reports a transient network error BEFORE emitting disconnected.
         // Keep the host's ID alive while its signalling socket reconnects.
@@ -87,11 +103,19 @@ export class Room {
 
   attach(connection) {
     this.connection = connection;
+    this.record('channel-attempt');
+    const pc = connection.peerConnection;
+    pc?.addEventListener('iceconnectionstatechange', () => this.record('ice-state'));
+    pc?.addEventListener('icecandidate', event => {
+      if (event.candidate) this.record('candidate', { type: event.candidate.type, protocol: event.candidate.protocol });
+    });
+    pc?.addEventListener('icecandidateerror', event => this.record('ice-server-error', { code: event.errorCode }));
     let welcomed = false, rateStart = performance.now(), messages = 0;
     this.lastSeen = rateStart;
     this.timer = setTimeout(() => this.lost('La connexion a expiré. Essayez une nouvelle salle ou un autre réseau.'), 18000);
     connection.on('open', () => {
       if (this.closed || this.connection !== connection) { connection.close(); return; }
+      this.record('channel-open');
       this.lastSeen = performance.now();
       this.heartbeat = setInterval(() => {
         if (this.suspended) return;
@@ -121,10 +145,14 @@ export class Room {
       if (message.type !== 'pong') this.onMessage(message);
     });
     connection.on('close', () => { if (this.connection === connection) this.lost('Votre adversaire a quitté la salle.'); });
-    connection.on('error', () => { if (this.connection === connection) this.lost('Connexion perdue. Le match est arrêté.'); });
+    connection.on('error', error => {
+      if (this.connection !== connection) return;
+      this.record('channel-error', { type: error?.type, detail: error?.error?.errorDetail });
+      this.lost(this.connected ? 'Connexion perdue. Le match est arrêté.' : 'La liaison réseau entre les deux appareils a échoué. Réessayez de rejoindre la salle.');
+    });
   }
 
-  markReady() { clearTimeout(this.timer); this.connected = true; this.onReady(this.role); }
+  markReady() { this.record('ready'); clearTimeout(this.timer); this.connected = true; this.onReady(this.role); }
   suspend() { this.suspended = true; }
   resume() {
     if (this.closed) return;
@@ -137,9 +165,12 @@ export class Room {
     if (!this.connection?.open) return false;
     // Drop obsolete views instead of building seconds of delay on a slow link.
     if (message.type === 'frame' && this.connection.dataChannel?.bufferedAmount > 65536) return false;
-    try { this.connection.send(message); return true; } catch { this.lost('Connexion perdue. Le match est arrêté.'); return false; }
+    try { this.connection.send(message); return true; } catch (error) {
+      this.record('send-error', { type: error?.name }); this.lost('Connexion perdue. Le match est arrêté.'); return false;
+    }
   }
   lost(message) {
+    this.record('connection-lost');
     clearTimeout(this.timer); clearInterval(this.heartbeat);
     const connection = this.connection; this.connection = null;
     const wasConnected = this.connected; this.connected = false;

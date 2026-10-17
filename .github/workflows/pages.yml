@@ -28,6 +28,7 @@ jobs:
           node --check web/game.js
           node --check web/render.js
           node --check web/rooms.js
+          node --check web/ice-diagnostics.js
           node --check web/net-state.js
           node --check web/selection.js
           node --check web/players.js

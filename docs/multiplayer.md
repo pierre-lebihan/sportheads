@@ -91,7 +91,11 @@ Si le téléphone détruit ou recharge entièrement la page, il faut recréer la
 
 En cas d'échec, « Détails de connexion » permet de copier un diagnostic local :
 version du réseau du jeu, navigateur, étapes de connexion, états ICE et codes
-d'erreur. Il ne contient ni code de salle, ni adresse IP, ni SDP, et n'est pas
+d'erreur. La révision 3 ajoute les types de candidats locaux et distants, les
+routes essayées et leurs compteurs de requêtes/réponses. Elle indique si des
+adresses réflexives sont identiques, sans exposer ces adresses. Les statistiques
+sont conservées avant la fermeture du canal. Un compteur absent reste absent :
+il n'est pas transformé en zéro. Le rapport ne contient ni code de salle, ni adresse IP, ni SDP, et n'est pas
 envoyé automatiquement. Un échec de connexion initiale n'est plus présenté
 comme un match arrêté. Les modules du site utilisent une révision commune dans
 leurs URL afin qu'une page actualisée charge aussi le nouveau code réseau.
@@ -119,6 +123,7 @@ node scripts/check-mobile.cjs http://127.0.0.1:8765/_site/
 node scripts/check-background.cjs http://127.0.0.1:8765/_site/
 node scripts/check-background.cjs http://127.0.0.1:8765/_site/ --join-during-background
 node scripts/check-cross-browser.cjs http://127.0.0.1:8765/_site/
+node scripts/check-cross-browser.cjs http://127.0.0.1:8765/_site/ --lan-only
 # Diagnostic séparé, ne pas confondre avec un test validé :
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/ --relay
 ```
@@ -134,6 +139,9 @@ pages Chrome pendant 12 à 15 secondes, puis vérifie le même lien, l'arrivée 
 invité et la pause/reprise d'un match. Il ne remplace pas un essai sur téléphone physique.
 Le test croisé utilise Chrome et WebKit dans deux processus et inverse les rôles.
 Il vérifie aussi l'affichage d'un diagnostic sur une erreur de transport injectée.
+Avec `--lan-only`, tous les serveurs ICE sont retirés et le test exige une route
+host-vers-host avec des octets reçus. Il valide le chemin direct sur l'ordinateur
+de test, sans reproduire le routeur ni les téléphones du joueur.
 Ces essais ne prouvent pas la compatibilité de deux téléphones sur un autre réseau.
 
 Le test de réglages vérifie les 12 portraits, les terrains, les aides individuelles,

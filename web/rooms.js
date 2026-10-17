@@ -1,8 +1,10 @@
+import { summarizeIce, iceServerLabel } from './ice-diagnostics.js';
+
 export const PROTOCOL = 'sportheads-rooms-6';
 const PREFIX = 'sportheads-room-v6-';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SILENCE_TIMEOUT = 120000;
-export const NETWORK_REVISION = 2;
+export const NETWORK_REVISION = 3;
 export function normalizeCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }
 export function validCode(code) { return /^[A-HJ-NP-Z2-9]{8}$/.test(code); }
 function randomCode() { return Array.from(crypto.getRandomValues(new Uint8Array(8)), n => ALPHABET[n & 31]).join(''); }
@@ -27,7 +29,23 @@ export class Room {
   diagnostic() {
     return { revision: NETWORK_REVISION, protocol: PROTOCOL, role: this.role,
       browser: globalThis.navigator?.userAgent, online: globalThis.navigator?.onLine,
-      connected: this.connected, events: this.events.map(event => ({ ...event })) };
+      connected: this.connected, connectivity: this.connectivity, events: this.events.map(event => ({ ...event })) };
+  }
+
+  async captureConnectivity(connection) {
+    const pc = connection.peerConnection;
+    if (!pc?.getStats || this.collectingStats || this.connection !== connection) return;
+    this.collectingStats = true;
+    try {
+      const report = await pc.getStats();
+      if (this.connection === connection) this.connectivity = {
+        ms: Math.round(performance.now() - this.createdAt),
+        signaling: pc.signalingState, gathering: pc.iceGatheringState,
+        localDescription: pc.localDescription?.type, remoteDescription: pc.remoteDescription?.type,
+        ...summarizeIce(report),
+      };
+    } catch { /* Some browsers stop providing stats while closing or suspended. */ }
+    finally { this.collectingStats = false; }
   }
 
   async create() {
@@ -103,13 +121,17 @@ export class Room {
 
   attach(connection) {
     this.connection = connection;
+    this.connectivity = undefined;
     this.record('channel-attempt');
     const pc = connection.peerConnection;
-    pc?.addEventListener('iceconnectionstatechange', () => this.record('ice-state'));
+    pc?.addEventListener('iceconnectionstatechange', () => { this.record('ice-state'); this.captureConnectivity(connection); });
+    pc?.addEventListener('signalingstatechange', () => this.record('sdp-state', { signaling: pc.signalingState }));
+    pc?.addEventListener('icegatheringstatechange', () => this.record('gathering-state', { gathering: pc.iceGatheringState }));
     pc?.addEventListener('icecandidate', event => {
       if (event.candidate) this.record('candidate', { type: event.candidate.type, protocol: event.candidate.protocol });
     });
-    pc?.addEventListener('icecandidateerror', event => this.record('ice-server-error', { code: event.errorCode }));
+    pc?.addEventListener('icecandidateerror', event => this.record('ice-server-error', { code: event.errorCode, server: iceServerLabel(event.url) }));
+    if (pc?.getStats) { this.captureConnectivity(connection); this.statsTimer = setInterval(() => this.captureConnectivity(connection), 1000); }
     let welcomed = false, rateStart = performance.now(), messages = 0;
     this.lastSeen = rateStart;
     this.timer = setTimeout(() => this.lost('La connexion a expiré. Essayez une nouvelle salle ou un autre réseau.'), 18000);
@@ -171,7 +193,7 @@ export class Room {
   }
   lost(message) {
     this.record('connection-lost');
-    clearTimeout(this.timer); clearInterval(this.heartbeat);
+    clearTimeout(this.timer); clearInterval(this.heartbeat); clearInterval(this.statsTimer);
     const connection = this.connection; this.connection = null;
     const wasConnected = this.connected; this.connected = false;
     connection?.close();
@@ -184,7 +206,7 @@ export class Room {
   close() {
     this.closed = true; this.connected = false;
     this.cancelOpen?.(); clearTimeout(this.reconnectTimer);
-    clearTimeout(this.timer); clearInterval(this.heartbeat);
+    clearTimeout(this.timer); clearInterval(this.heartbeat); clearInterval(this.statsTimer);
     const connection = this.connection; this.connection = null;
     connection?.close(); this.peer?.destroy();
   }

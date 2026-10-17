@@ -280,6 +280,23 @@ test('diagnostics retain the actual ICE failure without room codes, addresses or
   assert.equal(room.closed, true);
 });
 
+test('route stats survive a lost channel and collection stops on departure', async t => {
+  const { peers, createRoom } = setup(t);
+  const { room } = createRoom(); await room.create();
+  const connection = new FakeConnection();
+  const pc = connection.peerConnection = new EventTarget();
+  Object.assign(pc, { signalingState: 'stable', iceGatheringState: 'complete', localDescription: { type: 'answer' }, remoteDescription: { type: 'offer' } });
+  pc.getStats = t.mock.fn(async () => new Map([['remote', { type: 'remote-candidate', candidateType: 'host', protocol: 'udp', address: '192.0.2.1' }]]));
+  peers[0].incoming(connection); await flush();
+  assert.equal(room.diagnostic().connectivity.remoteCandidates.length, 1);
+  connection.emit('error', { type: 'negotiation-failed' });
+  assert.equal(room.diagnostic().connectivity.remoteDescription, 'offer');
+  assert.doesNotMatch(JSON.stringify(room.diagnostic()), /192\.0\.2\.1/);
+  const samples = pc.getStats.mock.callCount();
+  t.mock.timers.tick(30000);
+  assert.equal(pc.getStats.mock.callCount(), samples);
+});
+
 test('a fatal peer error closes the waiting room before calling onError', async t => {
   const { peers, createRoom } = setup(t);
   let room;

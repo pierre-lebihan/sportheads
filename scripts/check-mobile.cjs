@@ -58,6 +58,20 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     assert.equal(await p.locator('#play-local').isVisible(), true);
     assert.equal(await p.locator('#start').isVisible(), false);
     await p.screenshot({ path: 'evidence/setup-mobile-home.png' });
+    await goToSetup(p, 'players');
+    for (const [button, select] of [['#random-player-0', '#skin-left'], ['#random-player-1', '#skin-right']]) {
+      const box = await p.locator(button).boundingBox();
+      assert.ok(box.width >= 44 && box.height >= 44 && box.x >= 0 && box.x + box.width <= 320, 'random player buttons fit small touch screens');
+      const previous = await p.locator(select).inputValue(); await p.locator(button).tap();
+      assert.notEqual(await p.locator(select).inputValue(), previous);
+    }
+    await p.screenshot({ path: 'evidence/setup-mobile-random-players.png' });
+    await goToSetup(p, 'pitch');
+    const pitchBefore = await p.locator('#pitch').inputValue(); await p.locator('#random-pitch').tap();
+    assert.notEqual(await p.locator('#pitch').inputValue(), pitchBefore);
+    assert.ok(await p.locator('.terrain-actions').evaluate(element => element.scrollWidth <= element.clientWidth), 'random terrain controls do not overflow');
+    await p.screenshot({ path: 'evidence/setup-mobile-random-pitch.png' });
+    await p.selectOption('#pitch', '8');
     await goToSetup(p, 'rules');
     assert.ok(await p.locator('#start').evaluate(button => { const r = button.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }), 'small-phone start stays visible');
     await p.screenshot({ path: 'evidence/mobile-settings-small.png', fullPage: true });

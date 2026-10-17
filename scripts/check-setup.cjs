@@ -15,6 +15,24 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
   }
   const state = page => page.evaluate(() => sportheads.snapshot());
   const waitStep = (page, step) => page.waitForFunction(step => sportheads.snapshot().setupStep === step, step);
+  async function spamRandom(page, button, select, preview) {
+    const before = await page.locator(select).inputValue();
+    await page.click(button);
+    assert.notEqual(await page.locator(select).inputValue(), before, 'random click immediately changes choice');
+    return page.evaluate(({ button, select, preview }) => {
+      const input = document.querySelector(select), image = document.querySelector(preview);
+      for (let i = 0; i < 30; i++) {
+        const previous = input.value, pixels = image.toDataURL();
+        document.querySelector(button).click();
+        if (input.value === previous || !input.selectedOptions.length) throw Error('Random click did not select another option');
+        if (select === '#pitch') {
+          if (document.querySelector('#pitch-caption').textContent !== input.selectedOptions[0].textContent) throw Error('Terrain caption lags behind random selection');
+          if (sportheads.snapshot().pitch !== +input.value) throw Error('Selected terrain differs from match configuration');
+        } else if (image.toDataURL() === pixels) throw Error('Portrait did not update immediately');
+      }
+      return input.value;
+    }, { button, select, preview });
+  }
   async function finish(page) {
     await page.evaluate(() => {
       const e = sportheads.engine; let ticks = 0;
@@ -46,12 +64,15 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
       }));
     }
     assert.equal(new Set(hashes).size, 12);
+    await spamRandom(local, '#random-player-0', '#skin-left', '#player-preview-0');
+    await spamRandom(local, '#random-player-1', '#skin-right', '#player-preview-1');
     await local.selectOption('#skin-left', '1'); await local.selectOption('#skin-right', '2');
     await local.screenshot({ path: 'evidence/setup-players.png' });
     await local.click('#setup-next'); assert.equal((await state(local)).setupStep, 'pitch');
     assert.equal(await local.locator('#player-choice').isVisible(), false);
     assert.equal(await local.locator('#target-score').isVisible(), false);
     assert.equal(await local.locator('#pitch option').count(), 19);
+    await spamRandom(local, '#random-pitch', '#pitch', '#pitch-preview');
     await local.selectOption('#pitch', '6'); await local.screenshot({ path: 'evidence/setup-pitch.png' });
     await local.click('#setup-next'); assert.equal((await state(local)).setupStep, 'rules');
     assert.equal(await local.locator('#pitch').isVisible(), false);
@@ -87,22 +108,33 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     assert.equal(await host.locator('#player-choice').isVisible(), false);
     await host.click('#create-room');
     await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
+    assert.equal(await host.locator('#random-player-1').isEnabled(), false);
+    await spamRandom(host, '#random-player-0', '#skin-left', '#player-preview-0');
     await goToSetup(host, 'pitch'); await host.selectOption('#pitch', '3');
     const share = new URL(url); share.searchParams.set('room', await host.locator('#room-code').innerText());
     const guest = await pageAt(share.href); await guest.click('#join-room');
     await guest.waitForFunction(() => sportheads.snapshot().connected); await waitStep(guest, 'pitch');
     assert.equal(await guest.locator('#pitch').inputValue(), '3', 'late join receives current terrain');
     assert.equal(await guest.locator('#pitch').isEnabled(), false);
+    assert.equal(await guest.locator('#random-pitch').isEnabled(), false);
+    const guestPitch = await guest.locator('#pitch').inputValue();
+    await guest.evaluate(() => document.querySelector('#random-pitch').dispatchEvent(new MouseEvent('click')));
+    assert.equal(await guest.locator('#pitch').inputValue(), guestPitch, 'read-only random handler rejects synthetic clicks');
     assert.equal(await guest.locator('#skin-right').isVisible(), true);
     assert.equal(await guest.locator('#skin-right').isEnabled(), true);
     assert.equal(await guest.locator('#setup-next').isVisible(), false);
     assert.equal(await guest.locator('#setup-back').isVisible(), false);
+    const randomRed = await spamRandom(guest, '#random-player-1', '#skin-right', '#player-preview-1');
+    await host.waitForFunction(value => document.querySelector('#skin-right').value === value, randomRed);
+    const randomPitch = await spamRandom(host, '#random-pitch', '#pitch', '#pitch-preview');
+    await guest.waitForFunction(value => document.querySelector('#pitch').value === value && document.querySelector('#pitch-caption').textContent === document.querySelector('#pitch').selectedOptions[0].textContent, randomPitch);
     await guest.selectOption('#skin-right', '12');
     await host.waitForFunction(() => document.querySelector('#skin-right').value === '12');
     await host.selectOption('#pitch', '6'); await guest.waitForFunction(() => document.querySelector('#pitch').value === '6');
     await guest.screenshot({ path: 'evidence/setup-online-guest-pitch.png' });
     await goToSetup(host, 'players'); await waitStep(guest, 'players');
     assert.equal(await guest.locator('#skin-left').isEnabled(), false);
+    assert.equal(await guest.locator('#random-player-0').isEnabled(), false);
     assert.equal(await guest.locator('#skin-right').inputValue(), '12');
     await goToSetup(host, 'rules'); await waitStep(guest, 'rules');
     await host.locator('#balance').fill('3'); await host.fill('#target-score', '1'); await host.locator('#bonuses').uncheck();
@@ -122,7 +154,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     assert.deepEqual((await state(host)).assists, [2, 0]);
     await host.click('#play-view'); await host.click('#leave-room'); await guest.waitForFunction(() => !sportheads.snapshot().connected);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '12 distinct portraits', '19 terrains', 'seven-position slider', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'replay', 'mobile layout'] }));
+    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '12 distinct portraits', '19 terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'seven-position slider', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'replay', 'mobile layout'] }));
   } catch (error) {
     for (const [index, page] of pages.entries()) if (!page.isClosed()) {
       console.error(index, await state(page).catch(() => null));

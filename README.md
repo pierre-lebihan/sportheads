@@ -32,6 +32,7 @@ manette tactile. Les réglages sont dans le jeu ; la roue dentée dans la bande
 sous le sol ouvre le menu et met en pause. « Retour au match » ferme le menu. Voir [commandes mobiles](docs/mobile.md).
 
 La préparation se déroule dans le jeu : **mode → joueurs → terrain → paramètres**.
+Les boutons **Aléatoire** choisissent immédiatement un autre joueur ou terrain et actualisent son aperçu. Recliquez autant que vous voulez avant de continuer ; en ligne, chacun garde les mêmes droits que pour le choix manuel.
 En local, les deux personnages sont choisis sur le même écran.
 
 À distance : choisir **En ligne**, créer une salle et partager son code de

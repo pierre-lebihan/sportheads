@@ -68,12 +68,12 @@
           <p id="setup-readonly" class="readonly-notice" role="status" hidden></p>
           <div data-setup-screen="players" hidden class="step-heading"><h1 id="players-title">Choisissez vos joueurs</h1><p id="players-detail">Chacun sa tête, chacun son camp.</p></div>
     <section id="player-choice" hidden class="controls" aria-label="Choix des joueurs">
-      <div class="control-side blue"><canvas id="player-preview-0" width="72" height="72" aria-label="Personnage bleu"></canvas><div><h2><i aria-hidden="true"></i>Bleu <label class="skin-label">Personnage <select id="skin-left" aria-label="Personnage bleu"></select></label></h2></div></div>
-      <div class="control-side red"><canvas id="player-preview-1" width="72" height="72" aria-label="Personnage rouge"></canvas><div><h2><i aria-hidden="true"></i>Rouge <label class="skin-label">Personnage <select id="skin-right" aria-label="Personnage rouge"></select></label></h2></div></div>
+      <div class="control-side blue"><canvas id="player-preview-0" width="72" height="72" aria-label="Personnage bleu"></canvas><div><h2><i aria-hidden="true"></i>Bleu <label class="skin-label">Personnage <select id="skin-left" aria-label="Personnage bleu"></select></label></h2><button id="random-player-0" class="random-choice" aria-label="Joueur bleu aléatoire">⚄ Aléatoire</button></div></div>
+      <div class="control-side red"><canvas id="player-preview-1" width="72" height="72" aria-label="Personnage rouge"></canvas><div><h2><i aria-hidden="true"></i>Rouge <label class="skin-label">Personnage <select id="skin-right" aria-label="Personnage rouge"></select></label></h2><button id="random-player-1" class="random-choice" aria-label="Joueur rouge aléatoire">⚄ Aléatoire</button></div></div>
     </section>
           <section data-setup-screen="pitch" hidden class="pitch-screen">
             <h1 id="pitch-title">Choisissez le terrain</h1>
-            <label class="terrain-label" for="pitch">Terrain <select id="pitch"></select></label>
+            <div class="terrain-actions"><label class="terrain-label" for="pitch">Terrain <select id="pitch"></select></label><button id="random-pitch" aria-label="Terrain aléatoire">⚄ Aléatoire</button></div>
             <div class="pitch-choice"><canvas id="pitch-preview" width="320" height="216" aria-label="Aperçu du terrain sélectionné"></canvas><strong id="pitch-caption">Terrain libre</strong></div>
           </section>
           <section data-setup-screen="rules" hidden class="rules-screen">

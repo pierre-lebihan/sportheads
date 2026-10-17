@@ -10,6 +10,7 @@ import { layoutArena } from './arena-ui.js';
 import { createTouchControls } from './touch-controls.js';
 
 const $ = selector => document.querySelector(selector);
+const randomChoices = [['random-player-0', 'skin-left'], ['random-player-1', 'skin-right'], ['random-pitch', 'pitch']];
 const canvas = $('#field'), ctx = canvas.getContext('2d'), keys = new Set(), audio = createAudio();
 const bindings = { KeyA: 1, KeyQ: 1, KeyD: 2, KeyW: 4, KeyZ: 4, Space: 8, ArrowLeft: 16, ArrowRight: 32, ArrowUp: 64, KeyP: 128 };
 const bonusNames = ['', 'Vitesse augmentée', 'Vitesse réduite', 'Super saut', 'Petit saut', 'Gel adverse', 'Gel', 'Grand but', 'Petit but', 'Bombes', 'Grand ballon', 'Ballon rebondissant', 'Petit ballon', 'Ballon sans rebond', 'Grande tête', 'Petite tête', 'Pied adverse cassé', 'Pied cassé', 'Intrus sur le terrain'];
@@ -213,6 +214,14 @@ $('#copy-code').addEventListener('click', () => copyRoom(false)); $('#copy-link'
 $('#target-score').addEventListener('input', () => { if (validTarget()) lastValidTarget = targetScore(); update(); broadcast(); });
 $('#bonuses').addEventListener('change', () => { update(); broadcast(); });
 $('#pitch').addEventListener('change', () => { update(); broadcast(); });
+for (const [buttonId, selectId] of randomChoices) $('#' + buttonId).addEventListener('click', () => {
+  const select = $('#' + selectId);
+  if (select.disabled) return;
+  const choices = [...select.options].filter(option => !option.disabled && option.value !== select.value);
+  if (!choices.length) return;
+  select.value = choices[Math.floor(Math.random() * choices.length)].value;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+});
 $('#balance').addEventListener('input', () => { applyAssists(); update(); broadcast(); });
 function closeSettings() {
   settingsOpen = false; update(); canvas.focus({ preventScroll: true });
@@ -321,6 +330,7 @@ function update() {
     $('#' + ['skin-left', 'skin-right'][side]).disabled = (mode === 'online' && (role === null || side !== ownSide()));
     $('.control-side.' + (side === 0 ? 'blue' : 'red')).dataset.own = String(mode === 'online' && role !== null && side === ownSide());
   }
+  for (const [buttonId, selectId] of randomChoices) $('#' + buttonId).disabled = $('#' + selectId).disabled;
   $('#status').textContent = mode === 'online' && !room?.connected ? 'Salle privée · En attente d’un adversaire'
     : !started ? 'Choisissez vos joueurs et votre terrain' : phase === 0 ? 'Préparez-vous…' : phase === 2 ? `But pour ${names[e.game_value(5)]} !`
       : phase === 3 ? 'Match terminé' : mode === 'online' ? `Duel à distance · Vous jouez ${role === 'host' ? 'Bleu' : 'Rouge'}` : 'Duel local · À vous de jouer';

@@ -31,10 +31,17 @@ chaque téléphone contrôle son joueur. En local, Bleu et Rouge ont chacun leur
 manette tactile. Les réglages sont dans le jeu ; la roue dentée dans la bande
 sous le sol ouvre le menu et met en pause. « Retour au match » ferme le menu. Voir [commandes mobiles](docs/mobile.md).
 
-À distance : choisir **À distance**, créer une salle et partager son code de
+La préparation se déroule dans le jeu : **mode → joueurs → terrain → paramètres**.
+En local, les deux personnages sont choisis sur le même écran.
+
+À distance : choisir **En ligne**, créer une salle et partager son code de
 huit caractères ou son lien. L'autre joueur clique sur **Rejoindre**, puis
-le créateur choisit l’objectif et lance le match. Le créateur joue Bleu, l'invité Rouge ; chacun peut
+le créateur choisit son joueur, le terrain, puis les paramètres et lance le match. Le créateur joue Bleu, l'invité Rouge ; chacun peut
 utiliser les flèches et P ou les touches Q/A, D, Z/W et espace.
+
+L'invité ne choisit que son joueur rouge. Ses écrans Terrain et Paramètres
+suivent ceux du créateur, en lecture seule, avec les choix mis à jour en direct.
+Il garde son sélecteur de personnage accessible sur ces écrans.
 
 La salle accueille deux joueurs. Les pauses sont partagées, et chaque joueur
 doit reprendre sa propre pause. Le créateur peut lancer une revanche. Fermer

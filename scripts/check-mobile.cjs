@@ -1,5 +1,6 @@
 // Real multi-finger gestures against the WASM game and WebRTC room, via Chrome.
 const assert = require('node:assert/strict');
+const { goToSetup } = require('./setup-browser.cjs');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cjs URL');
 (async () => {
@@ -54,6 +55,10 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     const local = await mobile({ width: 390, height: 844 }), p = local.page;
     await p.setViewportSize({ width: 320, height: 568 });
     assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'small-phone menus fit');
+    assert.equal(await p.locator('#play-local').isVisible(), true);
+    assert.equal(await p.locator('#start').isVisible(), false);
+    await p.screenshot({ path: 'evidence/setup-mobile-home.png' });
+    await goToSetup(p, 'rules');
     assert.ok(await p.locator('#start').evaluate(button => { const r = button.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }), 'small-phone start stays visible');
     await p.screenshot({ path: 'evidence/mobile-settings-small.png', fullPage: true });
     await p.setViewportSize({ width: 390, height: 844 });
@@ -119,12 +124,17 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     await fits(p); await p.close();
 
     const host = await mobile({ width: 390, height: 844 }), h = host.page;
-    await h.locator('#play-online').tap(); await h.locator('#bonuses').uncheck();
+    await h.locator('#play-online').tap();
     await h.locator('#create-room').tap();
     await h.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
     const link = new URL(url); link.searchParams.set('room', await h.locator('#room-code').innerText());
     const guest = await mobile({ width: 844, height: 390 }, link.href), g = guest.page;
     await g.locator('#join-room').tap(); await h.waitForFunction(() => sportheads.snapshot().connected);
+    await goToSetup(h, 'rules'); await h.locator('#bonuses').uncheck();
+    await g.waitForFunction(() => sportheads.snapshot().setupStep === 'rules');
+    assert.equal(await g.locator('#balance').isEnabled(), false);
+    assert.equal(await g.locator('#skin-right').isEnabled(), true);
+    await g.screenshot({ path: 'evidence/setup-mobile-guest-rules.png' });
     await h.locator('#start').tap();
     await Promise.all([h, g].map(page => page.waitForFunction(() => sportheads.snapshot().phase === 1 && sportheads.snapshot().started)));
     await fits(h); await fits(g);

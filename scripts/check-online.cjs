@@ -1,5 +1,6 @@
 // Real PeerServer + WebRTC integration: independent browser contexts, no mocks.
 const assert = require('node:assert/strict');
+const { goToSetup } = require('./setup-browser.cjs');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const url = process.argv[2];
 assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
@@ -60,6 +61,7 @@ assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
     assert.equal(await guest.locator('#start').isVisible(), false);
     assert.equal(await guest.locator('#skin-left').isEnabled(), false);
     assert.equal(await host.locator('#skin-right').isEnabled(), false);
+    await goToSetup(host, 'rules');
     await host.fill('#target-score', '3');
     await guest.waitForFunction(() => document.querySelector('#target-score').value === '3');
     assert.equal(await guest.locator('#target-score').isEnabled(), false);
@@ -137,11 +139,11 @@ assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
     await Promise.all([waitConnected(host), waitConnected(replacement)]);
     await host.waitForFunction(() => !sportheads.snapshot().started);
     assert.equal(await host.locator('#start').isEnabled(), true);
-    await host.click('#start'); await replacement.waitForFunction(() => sportheads.snapshot().started);
+    await goToSetup(host, 'rules'); await host.click('#start'); await replacement.waitForFunction(() => sportheads.snapshot().started);
     await host.click('#play-view'); await host.click('#leave-room');
     await replacement.waitForFunction(() => !sportheads.snapshot().connected);
     assert.match(await replacement.locator('#room-status').innerText(), /quitté|perdue/);
-    await host.click('#play-local'); await host.click('#start'); assert.equal((await state(host)).mode, 'local');
+    await host.click('#setup-back'); assert.equal(await host.locator('#online-panel').isVisible(), false); await host.click('#play-local'); await goToSetup(host, 'rules'); await host.click('#start'); assert.equal((await state(host)).mode, 'local');
     await replacement.setViewportSize({ width: 390, height: 844 });
     assert.ok(await replacement.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await replacement.screenshot({ path: 'evidence/online-mobile.png', fullPage: true });

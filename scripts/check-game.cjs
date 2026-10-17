@@ -1,5 +1,6 @@
 // Functional smoke test of the actual WASM match through its public browser UI.
 const assert=require('node:assert/strict');
+const { goToSetup } = require('./setup-browser.cjs');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 (async()=>{
   const browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-proxy-server']});
@@ -13,6 +14,9 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     assert.equal((await page.goto(url)).status(),200);
     await page.waitForFunction(()=>window.ready||window.loadError);
     assert.equal(await page.evaluate(()=>window.loadError),undefined);
+    assert.equal(await page.locator('#play-local').isVisible(),true);
+    assert.equal(await page.locator('#start').isVisible(),false);
+    await goToSetup(page, 'rules');
     assert.equal(await page.locator('#start').isEnabled(),true);
     assert.equal(await page.locator('#target-score').inputValue(),'7');
     assert.equal(await page.locator('#clock').innerText(),'7 buts');

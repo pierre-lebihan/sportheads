@@ -5,6 +5,9 @@ les terrains, les aides individuelles et les salles restent accessibles. Le jeu 
 le viewport dès l'ouverture ; aucune installation ni
 autorisation de plein écran n'est nécessaire.
 
+- Le menu propose 2 joueurs ou En ligne, puis la préparation passe par
+  Joueurs, Terrain et Paramètres. Dans une salle, l’invité suit le créateur
+  et ne modifie que son propre personnage.
 - Maintenir les flèches pour se déplacer. Saut et Tir peuvent être combinés
   avec le déplacement, avec plusieurs doigts.
 - En local, les deux joueurs disposent de leur manette : Bleu et Rouge.

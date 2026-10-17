@@ -1,5 +1,5 @@
-export const PROTOCOL = 'sportheads-rooms-5';
-const PREFIX = 'sportheads-room-v5-';
+export const PROTOCOL = 'sportheads-rooms-6';
+const PREFIX = 'sportheads-room-v6-';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export function normalizeCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }
 export function validCode(code) { return /^[A-HJ-NP-Z2-9]{8}$/.test(code); }

@@ -55,8 +55,11 @@ restent vérifiées. `tests/pitches.test.mjs` vérifie les 19 géométries du WA
 `scripts/check-setup.cjs URL` vérifie les portraits distincts, les réglages
 et le partage des aides dans une vraie salle WebRTC.
 
-La préparation du match (mode, salle, joueurs, terrain, objectif, bonus et
-curseur) est regroupée dans un menu au-dessus du terrain. Le score est
+La préparation du match est découpée en écrans : choix du mode, puis joueurs,
+terrain, et enfin paramètres (objectif, bonus et curseur). Le mode en ligne
+intercale la création ou la jonction à une salle. Le créateur décide des étapes ;
+l’invité suit les écrans et voit leurs valeurs en lecture seule, tout en gardant
+son seul choix de personnage modifiable. Le score est
 superposé au ciel du stade. La bande des 60 pixels sous le sol accueille
 réglages, son, pause et redémarrage ; elle s'agrandit sur petit écran pour
 conserver des cibles tactiles lisibles. La physique conserve le même repère

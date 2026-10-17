@@ -5,6 +5,7 @@ import { captureState, createRemoteEngine } from './net-state.js';
 import { PLAYER_NAMES, PITCHES, updateSelectionPreviews } from './selection.js';
 import { PLAYER_COUNT } from './players.js';
 import { balanceToAssists, assistsToBalance, balanceLabel } from './balance.js';
+import { PREPARATION_STEPS, validSetupStep, renderSetup } from './setup-ui.js';
 import { layoutArena } from './arena-ui.js';
 import { createTouchControls } from './touch-controls.js';
 
@@ -18,7 +19,7 @@ let started = false, paused = false, pauseFlags = [false, false], soundEnabled =
 let last = 0, accumulator = 0, previousPhase = -1, lastBroadcast = 0;
 let matchId = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, receivedInput = -1;
 let remoteInput = 0, lastInputAt = 0, soundTick = -1, soundMatch = -1, busy = false;
-let settingsOpen = false;
+let settingsOpen = false, setupStep = 'home', lastValidTarget = 7;
 const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
 const touch = createTouchControls($('#touch-controls'), sendInput);
 function clearInput() { keys.clear(); touch.clear(); }
@@ -42,7 +43,7 @@ function input() {
 }
 function snapshot() {
   const e = engine();
-  return { started, paused, mode, role, connected: !!room?.connected, code: room?.code || '', matchId,
+  return { started, paused, mode, role, connected: !!room?.connected, code: room?.code || '', matchId, setupStep,
     phase: e?.game_value(0), targetScore: started ? e?.game_value(14) : targetScore(), pitch: started ? e?.game_value(15) : +$('#pitch').value,
     assists: started ? [0, 1].map(side => e?.game_player_value(side, 6)) : assists(), remainingTicks: e?.game_value(1), score: [e?.game_value(2), e?.game_value(3)], countdown: e?.game_value(4), tick: e?.game_value(6) };
 }
@@ -61,12 +62,11 @@ function sendInput() {
 }
 function broadcast() {
   if (mode !== 'online' || role !== 'host' || !room?.connected) return;
-  if (!started && !validTarget()) return;
   const state = captureState(core, skins());
-  if (!started && validTarget()) state.values[14] = targetScore();
+  if (!started) state.values[14] = validTarget() ? targetScore() : lastValidTarget;
   if (!started) { state.values[15] = +$('#pitch').value; state.players.forEach((player, side) => { player[6] = assists()[side]; }); }
   room.send({ type: 'frame', sequence: ++frameSequence, matchId, started, bonuses: $('#bonuses').checked,
-    pauseFlags: [...pauseFlags], state });
+    setupStep: validSetupStep(setupStep) ? setupStep : 'players', pauseFlags: [...pauseFlags], state });
   lastBroadcast = performance.now();
 }
 function pause(value = true) {
@@ -87,7 +87,7 @@ function reset() {
   audio.unlock();
   core.game_start_on_pitch(crypto.getRandomValues(new Uint32Array(1))[0], targetScore(), +$('#bonuses').checked, +$('#pitch').value);
   applyAssists();
-  settingsOpen = false;
+  settingsOpen = false; setupStep = 'rules';
   started = true; paused = false; pauseFlags = [false, false]; previousPhase = -1;
   remoteInput = 0; matchId++; clearInput(); accumulator = 0; last = 0;
   canvas.focus({ preventScroll: true }); music(); update(); broadcast();
@@ -99,13 +99,13 @@ function clearMatch() {
   remote = createRemoteEngine(); audio.stopAll(); core?.game_reset(1); applyAssists();
 }
 function leaveRoom() {
+  setupStep = mode === 'online' ? 'room' : 'home';
   room?.close(); room = null; role = null; busy = false; clearMatch();
   $('#room-details').hidden = true; $('#room-actions').hidden = false;
   roomStatus('Créez une salle ou saisissez le code de votre adversaire.'); update();
 }
 function selectMode(next) {
-  if (mode === next) return;
-  leaveRoom(); mode = next;
+  leaveRoom(); mode = next; setupStep = next === 'local' ? 'players' : 'room';
   $('#online-panel').hidden = mode !== 'online'; $('#online-controls').hidden = mode !== 'online';
   $('#play-local').setAttribute('aria-pressed', String(mode === 'local'));
   $('#play-online').setAttribute('aria-pressed', String(mode === 'online'));
@@ -127,17 +127,19 @@ function onMessage(message) {
   }
   if (role !== 'guest' || message.type !== 'frame' || !Number.isSafeInteger(message.sequence) || message.sequence <= receivedSequence
     || !Number.isSafeInteger(message.matchId) || message.matchId < matchId || typeof message.started !== 'boolean' || typeof message.bonuses !== 'boolean'
+    || !validSetupStep(message.setupStep)
     || !Array.isArray(message.pauseFlags) || message.pauseFlags.length !== 2 || !message.pauseFlags.every(v => typeof v === 'boolean')
     || !remote.update(message.state)) return;
   const newMatch = message.matchId !== matchId || started !== message.started;
   const oldPaused = paused;
   receivedSequence = message.sequence; matchId = message.matchId; started = message.started;
+  setupStep = message.setupStep;
   pauseFlags = message.pauseFlags; paused = pauseFlags.some(Boolean);
   // Preserve the guest's desired skin while an older snapshot is still in flight.
   $('#skin-left').value = message.state.skins[0];
   $('#balance').value = assistsToBalance(message.state.players.map(player => player[6]));
   $('#bonuses').checked = message.bonuses;
-  $('#target-score').value = message.state.values[14];
+  $('#target-score').value = message.state.values[14]; lastValidTarget = message.state.values[14];
   $('#pitch').value = message.state.values[15];
   if (newMatch) { if (started) settingsOpen = false; previousPhase = -1; clearInput(); music(); if (started && document.hidden) pause(true); else if (started) canvas.focus({ preventScroll: true }); }
   if (oldPaused !== paused) { clearInput(); music(); if (!paused) canvas.focus({ preventScroll: true }); }
@@ -151,13 +153,14 @@ async function connectRoom(create) {
   const code = normalizeCode($('#join-code').value);
   if (!create && !validCode(code)) { roomStatus('Entrez les 8 caractères du code de la salle.', true); $('#join-code').focus(); return; }
   room?.close(); clearMatch(); busy = true; role = create ? 'host' : 'guest';
+  setupStep = create ? 'players' : 'room';
   const candidate = new Room({
     onReady: () => {
       if (room !== candidate) return;
       remoteInput = 0; receivedInput = -1; busy = false;
       roomStatus(role === 'host' ? 'Votre adversaire est là. Vous êtes Bleu : lancez le match quand vous êtes prêts.' : 'Vous êtes Rouge. Le créateur de la salle va lancer le match.');
       $('#room-details').hidden = false; $('#room-actions').hidden = true; $('#room-code').textContent = candidate.code;
-      if (role === 'host') { clearMatch(); broadcast(); } else sendInput();
+      if (role === 'host') { const wasPlaying = started; clearMatch(); if (wasPlaying) setupStep = 'players'; broadcast(); } else { setupStep = 'players'; sendInput(); }
       update();
     },
     onMessage: message => { if (room === candidate) onMessage(message); },
@@ -166,13 +169,13 @@ async function connectRoom(create) {
       busy = false; clearInput(); remoteInput = 0;
       if (started) { pauseFlags = [true, true]; paused = true; audio.stopAll(); }
       roomStatus(message + (role === 'host' ? ' Partagez le code pour accueillir un nouvel adversaire.' : ' Rejoignez une salle pour rejouer.'), true);
-      if (role === 'guest') { $('#room-details').hidden = true; $('#room-actions').hidden = false; }
+      if (role === 'guest') { $('#room-details').hidden = true; $('#room-actions').hidden = false; setupStep = 'room'; if (started) settingsOpen = true; }
       update();
     },
     onError: message => {
       if (room !== candidate) return;
       busy = false; roomStatus(message, true);
-      if (role === 'guest' || !candidate.code || candidate.closed) { $('#room-details').hidden = true; $('#room-actions').hidden = false; }
+      if (role === 'guest' || !candidate.code || candidate.closed) { $('#room-details').hidden = true; $('#room-actions').hidden = false; if (!started) setupStep = 'room'; }
       update();
     },
   });
@@ -187,7 +190,7 @@ async function connectRoom(create) {
     }
   } catch (error) {
     if (room !== candidate) return;
-    candidate.close(); busy = false; role = null;
+    candidate.close(); busy = false; role = null; setupStep = 'room';
     roomStatus(error.message || 'Impossible de créer la connexion. Réessayez.', true);
     $('#room-actions').hidden = false; $('#room-details').hidden = true;
   }
@@ -207,7 +210,8 @@ $('#create-room').addEventListener('click', () => connectRoom(true));
 $('#join-form').addEventListener('submit', event => { event.preventDefault(); connectRoom(false); });
 $('#leave-room').addEventListener('click', leaveRoom);
 $('#copy-code').addEventListener('click', () => copyRoom(false)); $('#copy-link').addEventListener('click', () => copyRoom(true));
-$('#target-score').addEventListener('input', () => { update(); broadcast(); });
+$('#target-score').addEventListener('input', () => { if (validTarget()) lastValidTarget = targetScore(); update(); broadcast(); });
+$('#bonuses').addEventListener('change', () => { update(); broadcast(); });
 $('#pitch').addEventListener('change', () => { update(); broadcast(); });
 $('#balance').addEventListener('input', () => { applyAssists(); update(); broadcast(); });
 function closeSettings() {
@@ -217,6 +221,17 @@ $('#play-view').addEventListener('click', () => {
   if (started) { pause(); settingsOpen = true; update(); $('#close-settings').focus({ preventScroll: true }); }
 });
 $('#close-settings').addEventListener('click', closeSettings);
+function navigateSetup(direction) {
+  if (mode === 'online' && role === 'guest' && room?.connected) return;
+  const index = PREPARATION_STEPS.indexOf(setupStep);
+  if (direction > 0 && index >= 0 && index < 2) setupStep = PREPARATION_STEPS[index + 1];
+  else if (direction < 0 && index > 0) setupStep = PREPARATION_STEPS[index - 1];
+  else if (direction < 0 && setupStep === 'players' && mode === 'online') { leaveRoom(); setupStep = 'room'; }
+  else if (direction < 0) setupStep = 'home';
+  update(); broadcast(); $('#setup-panel').scrollTop = 0;
+}
+$('#setup-next').addEventListener('click', () => navigateSetup(1));
+$('#setup-back').addEventListener('click', () => navigateSetup(-1));
 $('#pause').addEventListener('click', () => pause(!pauseFlags[ownSide()]));
 $('#resume').addEventListener('click', () => { pause(false); if (mode === 'local') canvas.focus({ preventScroll: true }); });
 for (const [side, id] of ['skin-left', 'skin-right'].entries()) $('#' + id).addEventListener('change', () => {
@@ -276,7 +291,7 @@ function update() {
   const notice = e?.game_value(11) > 0 ? bonusNames[e.game_value(10)] : '';
   $('#bonus-notice').textContent = notice; $('#bonus-notice').hidden = !notice;
   $('#welcome').hidden = started && !settingsOpen; $('#finished').hidden = !started || phase !== 3 || settingsOpen; $('#paused').hidden = !started || !paused || phase === 3 || settingsOpen;
-  $('#start').disabled = !canStart(); $('#start').hidden = started || (mode === 'online' && role === 'guest');
+  $('#start').disabled = !canStart();
   $('#start').textContent = !core ? 'Chargement…' : mode === 'local' ? 'Commencer' : room?.connected ? 'Lancer le match' : 'En attente d’un adversaire';
   $('#welcome-title').textContent = mode === 'local' ? 'À vous de jouer.' : room?.connected ? 'Vous êtes deux !' : 'Invitez un adversaire.';
   $('#welcome-detail').textContent = mode === 'local' ? 'Marquez plus de buts que votre adversaire. Jouez à deux avec les commandes tactiles ou le clavier.'
@@ -301,6 +316,7 @@ function update() {
   $('#balance').style.accentColor = balance < 0 ? '#286bbe' : balance > 0 ? '#c14d51' : '#526c81';
   updateSelectionPreviews(state.pitch, skins());
   $('#settings-legend').textContent = 'Votre partie';
+  renderSetup({ screen: setupStep, mode, role, started, ready: !!core, busy, connected: !!room?.connected });
   for (const side of [0, 1]) {
     $('#' + ['skin-left', 'skin-right'][side]).disabled = (mode === 'online' && (role === null || side !== ownSide()));
     $('.control-side.' + (side === 0 ? 'blue' : 'red')).dataset.own = String(mode === 'online' && role !== null && side === ownSide());

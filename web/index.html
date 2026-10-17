@@ -46,12 +46,16 @@
       <div id="welcome" class="cover setup-cover">
         <section id="setup-panel" class="setup-panel" role="dialog" aria-label="Préparation du match">
           <header class="setup-heading"><a class="wordmark" href="./">Sportheads<span aria-hidden="true">⚽</span></a><button id="close-settings" hidden>Retour au match</button></header>
-          <div class="play-modes" role="group" aria-label="Où jouez-vous ?"><button id="play-local" aria-pressed="true">Sur le même écran</button><button id="play-online" aria-pressed="false">À distance</button></div>
+          <section data-setup-screen="home" class="mode-screen">
+            <h1>Comment jouez-vous ?</h1>
+            <div class="play-modes" role="group" aria-label="Où jouez-vous ?"><button id="play-local"><strong>2 joueurs</strong><span>Sur le même écran</span></button><button id="play-online"><strong>En ligne</strong><span>Créer ou rejoindre une salle</span></button></div>
+          </section>
     <section id="online-panel" class="room-panel" aria-label="Salle privée" hidden>
-      <div id="room-actions" class="room-actions">
+      <div data-setup-screen="room"><h1>Votre salle privée</h1><div id="room-actions" class="room-actions">
         <button id="create-room" class="primary" disabled>Créer une salle</button>
         <span>ou</span>
         <form id="join-form"><label for="join-code">Code de la salle</label><div><input id="join-code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="ABCD 2345" required><button id="join-room" type="submit" disabled>Rejoindre</button></div></form>
+      </div>
       </div>
       <div id="room-details" class="room-details" hidden>
         <div><span class="room-label">Code de la salle</span><strong id="room-code"></strong></div>
@@ -60,16 +64,24 @@
       <p id="room-status" role="status" aria-live="polite">Créez une salle ou saisissez le code de votre adversaire.</p>
       <p class="room-help">Deux joueurs maximum. Le créateur garde cet onglet ouvert pendant la partie.</p>
     </section>
-    <section class="controls" aria-label="Commandes">
+          <ol id="setup-steps" class="setup-steps" aria-label="Préparation du match" hidden><li>Joueurs</li><li>Terrain</li><li>Paramètres</li></ol>
+          <p id="setup-readonly" class="readonly-notice" role="status" hidden></p>
+          <div data-setup-screen="players" hidden class="step-heading"><h1 id="players-title">Choisissez vos joueurs</h1><p id="players-detail">Chacun sa tête, chacun son camp.</p></div>
+    <section id="player-choice" hidden class="controls" aria-label="Choix des joueurs">
       <div class="control-side blue"><canvas id="player-preview-0" width="72" height="72" aria-label="Personnage bleu"></canvas><div><h2><i aria-hidden="true"></i>Bleu <label class="skin-label">Personnage <select id="skin-left" aria-label="Personnage bleu"></select></label></h2></div></div>
       <div class="control-side red"><canvas id="player-preview-1" width="72" height="72" aria-label="Personnage rouge"></canvas><div><h2><i aria-hidden="true"></i>Rouge <label class="skin-label">Personnage <select id="skin-right" aria-label="Personnage rouge"></select></label></h2></div></div>
     </section>
-          <fieldset class="settings"><legend id="settings-legend">Votre partie</legend>
-            <label>Buts pour gagner <input id="target-score" type="number" min="1" max="99" step="1" value="7" title="Entre 1 et 99 buts"></label>
-            <label>Terrain <select id="pitch"></select></label>
-            <label class="check"><input id="bonuses" type="checkbox" checked> Bonus</label>
+          <section data-setup-screen="pitch" hidden class="pitch-screen">
+            <h1 id="pitch-title">Choisissez le terrain</h1>
+            <label class="terrain-label" for="pitch">Terrain <select id="pitch"></select></label>
             <div class="pitch-choice"><canvas id="pitch-preview" width="320" height="216" aria-label="Aperçu du terrain sélectionné"></canvas><strong id="pitch-caption">Terrain libre</strong></div>
-          </fieldset>
+          </section>
+          <section data-setup-screen="rules" hidden class="rules-screen">
+            <h1 id="rules-title">Réglez le match</h1>
+            <fieldset class="settings"><legend id="settings-legend">Votre partie</legend>
+              <label>Buts pour gagner <input id="target-score" type="number" min="1" max="99" step="1" value="7" title="Entre 1 et 99 buts"></label>
+              <label class="check"><input id="bonuses" type="checkbox" checked> Bonus</label>
+            </fieldset>
           <fieldset class="assistance"><legend>Équilibrage</legend>
             <output id="balance-status" for="balance">Équilibré</output>
             <label class="sr-only" for="balance">Aide au joueur moins fort</label>
@@ -79,7 +91,9 @@
             <div class="balance-sides"><span class="blue">Aider Bleu</span><span class="red">Aider Rouge</span></div>
             <p>Vitesse, saut et frappe renforcés pour un seul joueur.</p>
           </fieldset>
-          <div class="launch"><h1 id="welcome-title">À vous de jouer.</h1><p id="welcome-detail">Le premier à atteindre l’objectif gagne.</p><button id="start" class="primary" disabled>Chargement…</button></div>
+            <div class="launch"><h2 id="welcome-title">À vous de jouer.</h2><p id="welcome-detail">Le premier à atteindre l’objectif gagne.</p><p id="guest-wait" hidden>Le créateur lancera le match lorsque vous serez prêts.</p></div>
+          </section>
+          <div id="setup-navigation" hidden class="setup-navigation"><button id="setup-back">Précédent</button><button id="setup-next" class="primary">Continuer</button><button id="start" class="primary" disabled hidden>Chargement…</button></div>
           <details class="help"><summary>Commandes et projet</summary><p>Bleu : Q/A, D, Z/W et Espace. Rouge : flèches et P. Échap : pause.</p><p id="online-controls" hidden>À distance : flèches et P, ou Q/A, D, Z/W et Espace. Vous contrôlez uniquement votre joueur.</p><p>Sur mobile : maintenez les flèches, combinez Saut et Tir. Essayez le mode paysage.</p><nav aria-label="Projet"><a href="./physics.html">Comparaisons physiques</a><a href="https://github.com/pierre-lebihan/sportheads">GitHub</a></nav></details>
         </section>
       </div>

@@ -6,10 +6,23 @@ distance. Les deux utilisent le même cœur Rust/WASM, sans IA. Le premier à at
 
 ## Créer et rejoindre
 
-1. Le créateur choisit « À distance », puis « Créer une salle ».
+1. Le créateur choisit « En ligne », puis « Créer une salle ».
 2. Il partage le code de huit caractères ou le lien qui contient `?room=CODE`.
 3. L'invité saisit le code, ou ouvre le lien et clique sur « Rejoindre ».
-4. Le créateur lance la partie. Il joue Bleu ; l'invité joue Rouge.
+4. Le créateur prépare les écrans Joueurs, Terrain, puis Paramètres et lance
+   la partie. Il joue Bleu ; l'invité joue Rouge.
+
+Le menu principal propose uniquement « 2 joueurs » et « En ligne ». En local,
+la préparation passe par Joueurs → Terrain → Paramètres. En ligne, le créateur
+suit ce même parcours après la création de la salle.
+
+L'invité rejoint l'écran courant du créateur, même s'il arrive après les premiers
+choix. Sa seule action de configuration est de choisir son personnage rouge.
+Il suit les changements d'étape du créateur, dans les deux sens ; Terrain et
+Paramètres sont en lecture seule et leurs valeurs sont actualisées en direct.
+Son sélecteur de joueur reste disponible sous forme compacte sur ces écrans.
+Il ne peut ni naviguer à la place du créateur, ni lancer le match. Le choix
+des deux personnages, du terrain et des règles est conservé lors des retours.
 
 Chaque joueur contrôle uniquement son camp, avec les boutons tactiles sur
 mobile, ou avec les flèches et P ou Q/A, D, Z/W et espace au clavier. Chacun choisit parmi 12 joueurs récents avec aperçu ; le créateur
@@ -38,10 +51,10 @@ salles, aucun compte ni historique. Il faut partager le code avec son adversaire
   relation ; un canal WebRTC chiffré transporte ensuite les messages.
 - Le navigateur du créateur est l'autorité : un seul moteur fait avancer le
   match à 30 Hz. L'invité envoie uniquement ses commandes et son personnage.
-- Le créateur transmet les corps actifs, animations, bonus, score, terrain, objectif de victoire et niveaux d'aide.
+- Le créateur transmet les corps actifs, animations, bonus, score, terrain, objectif de victoire et niveaux d'aide, ainsi que l'étape de préparation.
   L'invité utilise une façade de lecture pour le même renderer. Il ne recalcule
   pas la physique et ne peut pas modifier le camp adverse par ses commandes.
-- Les messages sont validés : version du protocole (5), ordre des états/commandes,
+- Les messages sont validés : version du protocole (6), ordre des états/commandes,
   schéma et limites numériques, bornes des collections et fréquence entrante.
   Les états périmés sont ignorés ; les corps remplacés ne grossissent pas les
   messages. Une file d'envoi saturée abandonne les vues obsolètes.
@@ -101,3 +114,7 @@ de cycle de connexion. Les régressions physiques Flash/Rust restent inchangées
 
 Le test de réglages vérifie les 12 portraits, les terrains, les aides individuelles,
 leur transmission dans une vraie salle et leur maintien lors de la revanche.
+
+Le test de préparation vérifie aussi l'accueil, l'ordre des écrans, les retours,
+l'arrivée tardive d'un invité, le suivi synchronisé des écrans, les paramètres
+en lecture seule et le maintien du choix de personnage de l'invité.

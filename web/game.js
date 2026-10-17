@@ -361,7 +361,7 @@ function update() {
   $('#pause').setAttribute('aria-label', pauseLabel); $('#pause').title = pauseLabel;
   const mayResume = mode === 'local' || (!!room?.connected && pauseFlags[ownSide()]);
   $('#resume').disabled = !mayResume; $('#resume').textContent = mayResume ? 'Reprendre' : 'Adversaire en pause';
-  $('#pause-detail').textContent = mode === 'local' ? 'Le temps vous attend.' : !room?.connected ? 'Votre adversaire est déconnecté. Rejoignez une salle pour rejouer.'
+  $('#pause-detail').textContent = mode === 'local' ? 'Le temps vous attend.' : !room?.connected ? 'Votre adversaire est déconnecté. Il peut revenir avec le même code.'
     : pauseFlags[ownSide()] ? 'Vous avez mis le match en pause. Chaque joueur doit reprendre pour continuer.' : 'Votre adversaire a mis le match en pause.';
   $('#restart').hidden = mode === 'online'; $('#restart').disabled = !started;
   $('#again').disabled = !canStart(); $('#again').textContent = mode === 'online' && role === 'guest' ? 'Le créateur peut relancer'

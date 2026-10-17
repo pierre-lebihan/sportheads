@@ -19,6 +19,12 @@ fn compare(fixture: &str) {
         }
         let words: Vec<_> = line.split_whitespace().collect();
         match words[0] {
+            "pitch" => {
+                game = Game::score_match_on(123, 7, false, words[1].parse().unwrap());
+                game.mode = 0;
+                game.phase = Phase::Playing;
+                game.countdown = 0;
+            }
             "tolerances" => {
                 position_tolerance = words[1].parse().unwrap();
                 velocity_tolerance = words[2].parse().unwrap();

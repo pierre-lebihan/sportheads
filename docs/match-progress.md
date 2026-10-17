@@ -1,8 +1,8 @@
-# Match local à deux joueurs
+# Match à deux joueurs
 
 La version publique exécute le cœur Rust/WASM en direct, sans Flash ni Ruffle.
-Elle propose le terrain libre correspondant à un blueprint vide du jeu original
-(notamment le numéro 8), avec les 18 bonus originaux, sans améliorations ni IA. L’IA est volontairement exclue.
+Elle propose les 19 terrains du sélecteur original, dont le terrain libre
+(numéro 8), avec les 18 bonus originaux, sans améliorations ni IA.
 
 ## Comportement
 
@@ -56,17 +56,18 @@ L'interface expose seulement deux modes : sur le même clavier et à distance
 avec code de salle. Les matchs se gagnent au nombre de buts, sans chronomètre,
 avec buts classiques. Les variantes historiques chronométrées restent testées
 dans le noyau pour les comparaisons Flash mais ne sont plus proposées. Les bonus peuvent toujours modifier temporairement les buts.
-Les 26 têtes sont sélectionnables.
+Les 26 personnages sont sélectionnables avec leur nom et un aperçu.
 
 Les 18 bonus, le rendu des sprites, les animations et les sons sont intégrés.
-Les menus de tournoi, la sélection des autres terrains, les améliorations et la
-sauvegarde restent hors de cette version. Les salles et le réseau sont décrits
+Les 19 terrains et les tournois humains sont intégrés : coupe à deux en local
+ou à distance, tableau à 4 ou 8 en local. Voir [terrains et tournois](selection-tournament.md).
+Les améliorations et la sauvegarde restent hors de cette version. Les salles et le réseau sont décrits
 dans [multiplayer.md](multiplayer.md).
 
 Le rendu utilise les ressources originales exportées en SVG/PNG et les sons en MP3.
 La page et ses réglages sont une interface web ; ils ne reproduisent pas encore
 tous les menus Flash. L'affichage s'adapte aux petits écrans,
-mais les commandes de cette version nécessitent un clavier partagé.
+mais les commandes nécessitent un clavier, partagé en local ou propre à chaque joueur à distance.
 
 ## Preuves des blocs 3 et 4
 

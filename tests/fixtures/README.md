@@ -45,3 +45,22 @@ Capture volontaire depuis Flash, après reconstruction du WASM :
 ```sh
 node scripts/match-parity.cjs --big-player --capture
 ```
+
+## Terrains
+
+`pitches/original.json` contient les corps statiques des 19 blueprints jouables
+(frames 2 à 20), capturés depuis le Flash instrumenté. Il conserve l'empreinte
+du SWF et les paramètres des formes, notamment les troncatures int/uint de Flash.
+Les tests WASM comparent positions, angles, dimensions et rayons à cette référence.
+
+```sh
+# Capture volontaire depuis Flash préparé et servi sur le port 8765 :
+node scripts/capture-pitches.cjs
+# Régénérer le code à partir de la référence versionnée :
+python3 scripts/generate-pitches.py
+cargo fmt
+```
+
+La capture complète est écrite dans `evidence/pitches.json`. La référence
+versionnée en conserve uniquement les métadonnées et obstacles ; elle ne doit
+jamais être régénérée depuis Rust. Les builds ne la modifient pas.

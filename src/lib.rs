@@ -8,6 +8,7 @@ pub mod continuous;
 pub mod game;
 pub mod joint;
 pub mod math;
+pub mod pitches;
 mod polygon;
 pub mod powerups;
 pub mod world;
@@ -237,6 +238,7 @@ pub extern "C" fn game_value(field: u32) -> f64 {
             12 => g.mode as f64,
             13 => g.powerups.bounce as f64,
             14 => g.target_score as f64,
+            15 => g.pitch as f64,
             _ => f64::NAN,
         }
     })
@@ -310,9 +312,15 @@ pub extern "C" fn game_vertex_value(i: u32, j: u32, axis: u32) -> f64 {
 /// Deterministic setup used only by the original-game differential harness.
 #[no_mangle]
 pub extern "C" fn game_probe_start(x: f64, y: f64, vx: f64, vy: f64) {
+    game_probe_pitch_start(x, y, vx, vy, 8);
+}
+
+#[no_mangle]
+pub extern "C" fn game_probe_pitch_start(x: f64, y: f64, vx: f64, vy: f64, pitch: u32) {
     GAME.with(|g| {
         let mut g = g.borrow_mut();
-        *g = game::Game::new(123);
+        *g = game::Game::score_match_on(123, 7, false, pitch);
+        g.mode = 0;
         g.phase = game::Phase::Playing;
         g.countdown = 0;
         let i = g.ball;
@@ -402,6 +410,10 @@ pub extern "C" fn game_start(seed: u32, mode: u32, goals: u32, bonus: u32) {
 #[no_mangle]
 pub extern "C" fn game_start_match(seed: u32, target: u32, bonus: u32) {
     GAME.with(|g| *g.borrow_mut() = game::Game::score_match(seed, target, bonus != 0));
+}
+#[no_mangle]
+pub extern "C" fn game_start_on_pitch(seed: u32, target: u32, bonus: u32, pitch: u32) {
+    GAME.with(|g| *g.borrow_mut() = game::Game::score_match_on(seed, target, bonus != 0, pitch));
 }
 #[no_mangle]
 pub extern "C" fn game_set_skin(side: u32, skin: u32) {

@@ -13,10 +13,14 @@ const toleranceFor = field => ['vx', 'vy', 'omega'].includes(field) ? velocityTo
 const fields = ['x', 'y', 'vx', 'vy', 'angle', 'omega'];
 const controls = new Map([[65, 1], [68, 2], [87, 4], [32, 8], [37, 16], [39, 32], [38, 64], [80, 128]]);
 const base = process.env.PROBE_URL || 'http://127.0.0.1:8765';
+const pitchArgument = process.argv.find(arg => arg.startsWith('--pitch='));
+const pitch = pitchArgument ? Number(pitchArgument.slice('--pitch='.length)) : 8;
+assert.ok(Number.isInteger(pitch) && pitch >= 2 && pitch <= 20, '--pitch must be an integer from 2 through 20');
 const center=bigPlayer || process.argv.includes('--center');
 const roof=process.argv.includes('--roof');
 const launch=roof?[40,330,0,0]:[400,200,0,-100];
-const caseName=bigPlayer?'big-player':roof?'roof':center?'center':'neutral';
+const caseName=(bigPlayer?'big-player':roof?'roof':center?'center':'neutral')+(pitch===8?'':`-pitch-${pitch}`);
+const reportPath=`evidence/match-parity${caseName==='neutral'?'':'-'+caseName}.json`;
 assert.ok(!(roof && bigPlayer), '--roof and --big-player are separate scenarios');
 function keysAt(tick) {
   if(center){const keys=[37,68];if(tick%43<8)keys.push(38,87);if(tick%29<14)keys.push(80,32);return keys;}
@@ -35,7 +39,7 @@ function keysAt(tick) {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   const errors = [];
   const report = {
-    scope: `180 active ${caseName} two-player frames, empty original blueprint 8, fixed launch; original match rules vs Rust/WASM`,
+    scope: `180 active ${caseName} two-player frames, original blueprint ${pitch}, fixed launch; original match rules vs Rust/WASM`,
     tolerance, velocityTolerance, flash: [], rust: [], checks: [], maxima: {}, firstMismatch: null, firstRuleMismatch: null,
   };
   try {
@@ -49,7 +53,7 @@ function keysAt(tick) {
     await call('probeCall', 'gotoAndPlay', [3]);
     await page.waitForTimeout(200);
     await call('probeCall', 'gotoAndStop', ['menu']);
-    await call('probeSet', 'tpPitch', 8);
+    await call('probeSet', 'tpPitch', pitch);
     await call('probeCall', 'new2PlayerGame', []);
     await page.waitForTimeout(200);
     await page.evaluate(() => window.player.ruffle().suspend());
@@ -64,11 +68,11 @@ function keysAt(tick) {
     for (const [key, value] of Object.entries({ timer: 0, PUTimer: 0, pauseGame: false, timeLeft: 60, timeLeftBitch: 0, xspeed: 0, oppxspeed: 0, inGoal: false })) {
       await call('probeSet', key, value);
     }
-    await page.evaluate(async (launch) => {
+    await page.evaluate(async ({launch,pitch}) => {
       const { instance } = await WebAssembly.instantiateStreaming(fetch('/probe/physics-core.wasm'));
       const e = window.matchCore = instance.exports;
-      if (typeof e.game_probe_start !== 'function') throw new Error('Missing game_probe_start; rebuild the core');
-      e.game_probe_start(...launch);
+      if (typeof e.game_probe_pitch_start !== 'function') throw new Error('Missing game_probe_pitch_start; rebuild the core');
+      e.game_probe_pitch_start(...launch,pitch);
       window.matchSnapshot = () => ({
         phase: e.game_value(0), remaining: e.game_value(1), scoreLeft: e.game_value(2), scoreRight: e.game_value(3),
         bodies: Array.from({ length: e.game_body_count() }, (_, i) => {
@@ -78,7 +82,7 @@ function keysAt(tick) {
           return { name: names[role], ...Object.fromEntries(['x', 'y', 'vx', 'vy', 'angle', 'omega'].map((key, field) => [key, e.game_body_value(i, field)])) };
         }).filter(Boolean),
       });
-    },launch);
+    },{launch,pitch});
     if (bigPlayer) {
       await call('probePowerup', 14, 1);
       await page.evaluate(() => window.matchCore.game_collect(14, 1));
@@ -128,14 +132,14 @@ function keysAt(tick) {
     await call('probeCall', 'checkWinPoint', []);
     assert.equal(after.scoreRight, before.scoreRight + 1);
     assert.equal((await call('probeState')).scoreRight, after.scoreRight);
-    const rustGoal = await page.evaluate(() => {
+    const rustGoal = await page.evaluate(pitch => {
       const e = window.matchCore;
-      e.game_probe_start(40, 400, 0, 0);
+      e.game_probe_pitch_start(40, 400, 0, 0,pitch);
       e.game_tick(0);
       const once = window.matchSnapshot();
       e.game_tick(0);
       return { once, twice: window.matchSnapshot() };
-    });
+    },pitch);
     assert.equal(rustGoal.once.scoreRight, 1);
     assert.equal(rustGoal.twice.scoreRight, 1);
     report.checks.push({ name: 'both-engines-left-goal-and-no-double-score', passed: true });
@@ -143,13 +147,14 @@ function keysAt(tick) {
     assert.deepEqual(report.unexpectedErrors, []);
     report.passed = report.firstMismatch === null && report.firstRuleMismatch === null && report.checks.every(check => check.passed);
     console.log(JSON.stringify({ passed: report.passed, firstMismatch: report.firstMismatch, firstRuleMismatch: report.firstRuleMismatch, maxima: report.maxima, checks: report.checks }, null, 2));
-    assert.equal(report.firstRuleMismatch, null, 'Match rules differ: see evidence/match-parity.json');
-    assert.equal(report.firstMismatch, null, 'Match differs: see evidence/match-parity.json');
+    assert.equal(report.firstRuleMismatch, null, `Match rules differ: see ${reportPath}`);
+    assert.equal(report.firstMismatch, null, `Match differs: see ${reportPath}`);
     if (process.argv.includes('--capture')) {
       // Explicit capture only: normal tests must never update their expectations.
-      const lines = [`# Captured original Flash ${caseName} match, empty blueprint 8.`,
+      const lines = [`# Captured original Flash ${caseName} match, blueprint ${pitch}.`,
         '# Initial block does not advance the simulation; each mask advances one active 30 Hz frame.',
         `tolerances ${tolerance} ${velocityTolerance}`, `ball ${launch.join(' ')}`];
+      if(pitch!==8)lines.splice(3,0,`pitch ${pitch}`);
       if (bigPlayer) {
         lines.unshift('# Native regression: first 120 frames; browser report still compares all 180.',
           '# Native and WASM floating-point paths accumulate different rounding after repeated contacts.');
@@ -168,7 +173,7 @@ function keysAt(tick) {
     }
   } finally {
     report.errors = errors;
-    fs.writeFileSync(`evidence/match-parity${caseName==='neutral'?'':'-'+caseName}.json`, JSON.stringify(report, null, 2) + '\n');
+    fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n');
     await browser.close();
   }
 })().catch(error => { console.error(error); process.exitCode = 1; });

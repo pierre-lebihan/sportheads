@@ -55,7 +55,7 @@ score et chronomètre : voir [match local](match-progress.md).
 
 ```sh
 python3 scripts/build-core.py
-python3 -m http.server 8765 --bind 127.0.0.1
+python3 scripts/serve.py --port 8765 --directory .
 # Dans un autre terminal, avec Playwright et Chrome installés :
 node scripts/physics-parity.cjs
 node scripts/match-parity.cjs
@@ -77,5 +77,9 @@ contact conserve aussi l'éligibilité continue temporaire du moteur original. L
 validés ne constituent donc pas une preuve d'identité pour tous les mondes Box2D
 possibles ni pour toutes les futures configurations de bonus.
 
-Les bonus sont désormais intégrés et comparés séparément. Les autres terrains
-nécessiteront leurs propres scénarios. L'IA est exclue à la demande de l'utilisateur. Les ressources graphiques et sonores nécessaires sont désormais publiées avec le match.
+Les bonus sont intégrés et comparés séparément. Les 19 terrains jouables sont
+capturés dans Flash et leurs formes vérifiées dans le WASM. Les terrains 3 et 20
+sont identiques sur 180 étapes ; le terrain 6 diffère au maximum de 4,08e-12.
+Le terrain 2 est identique pendant les 94 premières étapes ; à la remise en jeu,
+le banc Flash suspendu ne déclenche pas son callback différé de célébration,
+ce qui empêche de conclure au-delà avec ce scénario. L'IA est exclue à la demande de l'utilisateur. Les ressources graphiques et sonores nécessaires sont désormais publiées avec le match.

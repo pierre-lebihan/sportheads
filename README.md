@@ -4,17 +4,19 @@
 
 Reconstruction web de Sports Heads Football European Edition. Le cœur du match
 est écrit en Rust et compilé en WebAssembly. Le navigateur gère l'affichage et
-les entrées ; la physique, les commandes, le score, les remises en jeu et le
-objectif de buts sont dans le cœur indépendant du navigateur.
+les entrées ; la physique, les commandes, le score, les remises en jeu et
+l’objectif de buts sont dans le cœur indépendant du navigateur.
 
 Deux choix : **sur le même clavier** ou **à distance dans une salle privée**.
 Le premier à atteindre l’objectif de buts gagne : **7 par défaut**, réglable
-de 1 à 99, sans limite de temps. Sur terrain libre, avec les **18 bonus** et
-26 personnages. Le rendu utilise les sprites, animations et sons du
+de 1 à 99, sans limite de temps. Choisissez parmi **19 terrains**, les **18 bonus**
+et **26 personnages** avec aperçu. Le rendu utilise les sprites, animations et sons du
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
-L'IA est volontairement exclue. Tournoi, sauvegarde et sélection de tous les terrains
-restent hors de cette version. Seule la victoire au nombre de buts est proposée.
+En local comme à distance : duel ou coupe à deux, au meilleur des 3 ou 5 matchs.
+En local, un tournoi à élimination directe accueille aussi **4 ou 8 participants
+humains** qui se relaient sur le clavier. Les résultats joués alimentent le tableau.
+L'IA, la boutique d'améliorations et la sauvegarde de progression restent exclues.
 
 - Gauche : A/Q, D, W/Z et espace.
 - Droite : flèches et P.
@@ -36,7 +38,7 @@ La connexion directe a été vérifiée ; le test forcé des relais TURN publics
 donc empêcher la connexion et nécessiteront un relais dédié.
 
 [État du match](docs/match-progress.md) · [État de la physique](docs/physics-progress.md) ·
-[Multijoueur distant](docs/multiplayer.md) ·
+[Multijoueur distant](docs/multiplayer.md) · [Terrains et tournois](docs/selection-tournament.md) ·
 [Banc de comparaison Flash/Rust](https://pierre-lebihan.github.io/sportheads/physics.html)
 
 ## Construire et lancer
@@ -48,12 +50,13 @@ rustup component add rustfmt clippy
 rustup target add wasm32-unknown-unknown
 python3 scripts/build-core.py
 python3 scripts/build-pages.py
-python3 -m http.server 8766 --directory _site --bind 127.0.0.1
+python3 scripts/serve.py
 ```
 
 Ouvrir `http://127.0.0.1:8766/`. Le build vérifie le format, les tests natifs et
 Clippy, puis compile le WASM. Une chaîne locale `tools/rust/` est utilisée si présente.
-Aucune dépendance Rust externe ni requête vers un service de jeu n'est nécessaire.
+Aucune dépendance Rust externe. Le jeu local fonctionne sans service de jeu ;
+les salles distantes utilisent PeerServer pour la mise en relation.
 
 ## Tests contre Flash
 
@@ -68,13 +71,14 @@ Pour relancer les essais navigateur, installer Playwright et Google Chrome :
 ```sh
 npm install --no-save playwright
 python3 scripts/setup-reference.py /chemin/vers/Sports_Heads_Football_European_Edition.swf
-python3 -m http.server 8765 --bind 127.0.0.1
+python3 scripts/serve.py --port 8765 --directory .
 # Dans un autre terminal :
 node scripts/physics-parity.cjs
 node scripts/match-parity.cjs
 node scripts/check-game.cjs http://127.0.0.1:8765/_site/
-node --test tests/net-state.test.mjs tests/rooms.test.mjs
+node --test tests/*.test.mjs
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
+node scripts/check-competition.cjs http://127.0.0.1:8765/_site/
 node scripts/check-pages.cjs http://127.0.0.1:8765/_site/physics.html
 ```
 

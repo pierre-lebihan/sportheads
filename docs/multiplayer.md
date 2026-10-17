@@ -12,11 +12,17 @@ distance. Les deux utilisent le même cœur Rust/WASM, sans IA. Le premier à at
 4. Le créateur lance la partie. Il joue Bleu ; l'invité joue Rouge.
 
 Chaque joueur contrôle uniquement son camp, avec les flèches et P ou Q/A, D,
-Z/W et espace. Chacun choisit son personnage ; le créateur choisit les bonus et le nombre
-de buts pour gagner. Cet objectif est transmis à l’invité, reste fixe pendant
+Z/W et espace. Chacun choisit parmi 26 personnages avec aperçu ; le créateur
+choisit parmi les 19 terrains, les bonus et le nombre de buts pour gagner. Cet objectif est transmis à l’invité, reste fixe pendant
 le match et est conservé pour la revanche.
 Un troisième navigateur est refusé. Le créateur peut proposer une nouvelle
 partie avec le bouton Rejouer ; l'invité attend ce lancement.
+
+Le créateur peut aussi choisir une coupe à deux au meilleur des 3 ou 5 matchs.
+Les deux humains restent dans la même salle ; chaque résultat et le vainqueur
+sont partagés. Les réglages restent fixes pendant la coupe. Les tableaux à 4 ou
+8 participants sont réservés au local. Quitter ou remplacer un joueur abandonne
+la compétition ; aucune progression ne persiste après fermeture.
 
 Le code est tiré avec `crypto.getRandomValues`, sur un alphabet de 32 caractères
 sans 0, 1, I ou O : 40 bits aléatoires. Les collisions d'identifiant sont reprises
@@ -30,10 +36,10 @@ salles, aucun compte ni historique. Il faut partager le code avec son adversaire
   relation ; un canal WebRTC chiffré transporte ensuite les messages.
 - Le navigateur du créateur est l'autorité : un seul moteur fait avancer le
   match à 30 Hz. L'invité envoie uniquement ses commandes et son personnage.
-- Le créateur transmet les corps actifs, animations, bonus, score et objectif de victoire.
+- Le créateur transmet les corps actifs, animations, bonus, score, terrain, objectif de victoire et historique de coupe.
   L'invité utilise une façade de lecture pour le même renderer. Il ne recalcule
   pas la physique et ne peut pas modifier le camp adverse par ses commandes.
-- Les messages sont validés : version du protocole, ordre des états/commandes,
+- Les messages sont validés : version du protocole (3), ordre des états/commandes,
   schéma et limites numériques, bornes des collections et fréquence entrante.
   Les états périmés sont ignorés ; les corps remplacés ne grossissent pas les
   messages. Une file d'envoi saturée abandonne les vues obsolètes.
@@ -75,9 +81,10 @@ sera nécessaire pour couvrir ces réseaux si les relais publics ne répondent p
 ## Vérifications
 
 ```sh
-node --test tests/net-state.test.mjs tests/rooms.test.mjs
+node --test tests/*.test.mjs
 node scripts/check-game.cjs http://127.0.0.1:8765/_site/
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
+node scripts/check-competition.cjs http://127.0.0.1:8765/_site/
 # Diagnostic séparé, ne pas confondre avec un test validé :
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/ --relay
 ```
@@ -88,3 +95,6 @@ salle complète, commandes séparées, identité des états à l'arrêt, pause d
 joueurs, bonus, buts, fin de partie, revanche, fermeture et remplacement d'invité.
 Les tests sans réseau vérifient les paquets contre le WASM réel et les erreurs
 de cycle de connexion. Les régressions physiques Flash/Rust restent inchangées.
+
+Le test de compétition joue aussi les finales des tableaux locaux à 4 et 8,
+la coupe distante complète, le partage du terrain et du champion, et le retour au salon.

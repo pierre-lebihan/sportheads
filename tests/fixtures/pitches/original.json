@@ -1,0 +1,2465 @@
+{
+  "sourceSha256": "6a8b371667a9f06da787301814f74afc7d6e80b5b8b0d9fb9b89e1982a559950",
+  "source": "original SWF through instrumented KeyPoll; original gameplay/physics classes unchanged",
+  "capture": "probePitchLoad(frame): initLevel, allow original render to materialize the blueprint and spawnProps, then suspend during countdown before physics starts",
+  "pitches": [
+    {
+      "frame": 2,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 1.5733903546989312,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 25,
+            "scaleX": 0.8166666666666668,
+            "scaleY": 0.41666666666666674,
+            "width": 49
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -24.5,
+                  -12.5
+                ],
+                [
+                  24.5,
+                  -12.5
+                ],
+                [
+                  24.5,
+                  12.5
+                ],
+                [
+                  -24.5,
+                  12.5
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 410,
+          "y": 133
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 38,
+            "scaleX": 0.5428571428571428,
+            "scaleY": 0.5428571428571428,
+            "width": 38
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 19,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 410,
+          "y": 99
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 38,
+            "scaleX": 0.5428571428571428,
+            "scaleY": 0.5428571428571428,
+            "width": 38
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 19,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 410,
+          "y": 165
+        }
+      ]
+    },
+    {
+      "frame": 3,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 80,
+            "scaleX": 1.1428571428571428,
+            "scaleY": 1.1428571428571428,
+            "width": 80
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 40,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 400,
+          "y": 140
+        }
+      ]
+    },
+    {
+      "frame": 4,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 80,
+            "scaleX": 1.1428571428571428,
+            "scaleY": 1.1428571428571428,
+            "width": 80
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 40,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 590,
+          "y": 200
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 80,
+            "scaleX": 1.1428571428571428,
+            "scaleY": 1.1428571428571428,
+            "width": 80
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 40,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 230,
+          "y": 200
+        }
+      ]
+    },
+    {
+      "frame": 5,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 41,
+            "scaleX": 0.6833333333333332,
+            "scaleY": 0.6833333333333332,
+            "width": 41
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -20.5,
+                  -20.5
+                ],
+                [
+                  20.5,
+                  -20.5
+                ],
+                [
+                  20.5,
+                  20.5
+                ],
+                [
+                  -20.5,
+                  20.5
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 400,
+          "y": 30
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 50,
+            "scaleX": 0.7142857142857143,
+            "scaleY": 0.7142857142857143,
+            "width": 50
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 25,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 400,
+          "y": 55
+        }
+      ]
+    },
+    {
+      "frame": 6,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 670,
+          "y": 120
+        },
+        {
+          "allowSleep": true,
+          "angle": 0.5235840914210356,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 206,
+          "y": 160
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 533,
+          "y": 198
+        },
+        {
+          "allowSleep": true,
+          "angle": 2.6179822516015756,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 600,
+          "y": 160
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 276,
+          "y": 200
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 136,
+          "y": 120
+        }
+      ]
+    },
+    {
+      "frame": 7,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 50,
+            "scaleX": 0.7142857142857143,
+            "scaleY": 0.7142857142857143,
+            "width": 50
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 25,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 400,
+          "y": 80
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 50,
+            "scaleX": 0.7142857142857143,
+            "scaleY": 0.7142857142857143,
+            "width": 50
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 25,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 580,
+          "y": 200
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 50,
+            "scaleX": 0.7142857142857143,
+            "scaleY": 0.7142857142857143,
+            "width": 50
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 25,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 220,
+          "y": 200
+        }
+      ]
+    },
+    {
+      "frame": 8,
+      "obstacles": []
+    },
+    {
+      "frame": 9,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 400,
+          "y": 120
+        },
+        {
+          "allowSleep": true,
+          "angle": 0.5235840914210356,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 469,
+          "y": 160
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 538,
+          "y": 200
+        },
+        {
+          "allowSleep": true,
+          "angle": 2.6179822516015756,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 330,
+          "y": 160
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 261,
+          "y": 200
+        }
+      ]
+    },
+    {
+      "frame": 10,
+      "obstacles": []
+    },
+    {
+      "frame": 11,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 300,
+            "scaleX": 4.285714285714286,
+            "scaleY": 4.285714285714286,
+            "width": 300
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 150,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 400,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "frame": 12,
+      "obstacles": []
+    },
+    {
+      "frame": 13,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 400,
+          "y": 120
+        },
+        {
+          "allowSleep": true,
+          "angle": 0.5235840914210356,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 400,
+          "y": 190
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 538,
+          "y": 200
+        },
+        {
+          "allowSleep": true,
+          "angle": 2.6179822516015756,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 260,
+          "y": 110
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 261,
+          "y": 200
+        }
+      ]
+    },
+    {
+      "frame": 14,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 1.573388462166497,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 25,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.41666666666666674,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12.5
+                ],
+                [
+                  66.5,
+                  -12.5
+                ],
+                [
+                  66.5,
+                  12.5
+                ],
+                [
+                  -66.5,
+                  12.5
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 550,
+          "y": 179
+        },
+        {
+          "allowSleep": true,
+          "angle": 1.573388462166497,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 25,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.41666666666666674,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12.5
+                ],
+                [
+                  66.5,
+                  -12.5
+                ],
+                [
+                  66.5,
+                  12.5
+                ],
+                [
+                  -66.5,
+                  12.5
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 255,
+          "y": 171
+        }
+      ]
+    },
+    {
+      "frame": 15,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 400,
+          "y": 120
+        },
+        {
+          "allowSleep": true,
+          "angle": 0.5235840914210356,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 653,
+          "y": 214
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 530,
+          "y": 140
+        },
+        {
+          "allowSleep": true,
+          "angle": 2.6179822516015756,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 159,
+          "y": 213
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 280,
+          "y": 140
+        }
+      ]
+    },
+    {
+      "frame": 16,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 390,
+          "y": 60
+        },
+        {
+          "allowSleep": true,
+          "angle": 0.5235840914210356,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 653,
+          "y": 214
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 610,
+          "y": 270
+        },
+        {
+          "allowSleep": true,
+          "angle": 2.6179822516015756,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 159,
+          "y": 213
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 200,
+          "y": 270
+        }
+      ]
+    },
+    {
+      "frame": 17,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 450,
+          "y": 214
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 510,
+          "y": 290
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 390,
+          "y": 132
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 330,
+          "y": 214
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 280,
+          "y": 290
+        }
+      ]
+    },
+    {
+      "frame": 18,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 390,
+          "y": 60
+        },
+        {
+          "allowSleep": true,
+          "angle": 0.5235840914210356,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 510,
+          "y": 140
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 390,
+          "y": 180
+        },
+        {
+          "allowSleep": true,
+          "angle": 2.6179822516015756,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 267,
+          "y": 137
+        },
+        {
+          "allowSleep": true,
+          "angle": 0,
+          "bullet": false,
+          "display": {
+            "className": "InvisCircle",
+            "height": 30,
+            "scaleX": 0.42857142857142855,
+            "scaleY": 0.42857142857142855,
+            "width": 30
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "localPosition": [
+                0,
+                0
+              ],
+              "radius": 15,
+              "restitution": 0,
+              "type": 0
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 390,
+          "y": 120
+        }
+      ]
+    },
+    {
+      "frame": 19,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 2.6179822516015756,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 390,
+          "y": 110
+        }
+      ]
+    },
+    {
+      "frame": 20,
+      "obstacles": [
+        {
+          "allowSleep": true,
+          "angle": 0.5669407551885389,
+          "bullet": false,
+          "display": {
+            "className": "InvisBlock",
+            "height": 24,
+            "scaleX": 2.216666666666667,
+            "scaleY": 0.4,
+            "width": 133
+          },
+          "fixed": false,
+          "frozen": false,
+          "inertia": 0,
+          "localCenter": [
+            0,
+            0
+          ],
+          "mass": 0,
+          "name": "static",
+          "omega": 0,
+          "shapes": [
+            {
+              "density": 0,
+              "friction": 0.5,
+              "group": 0,
+              "restitution": 0,
+              "type": 1,
+              "vertices": [
+                [
+                  -66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  -12
+                ],
+                [
+                  66.5,
+                  12
+                ],
+                [
+                  -66.5,
+                  12
+                ]
+              ]
+            }
+          ],
+          "sleeping": false,
+          "vx": 0,
+          "vy": 0,
+          "x": 394,
+          "y": 111
+        }
+      ]
+    }
+  ]
+}

@@ -35,10 +35,16 @@
     </section>
     <fieldset class="settings"><legend id="settings-legend">Votre partie</legend>
       <label>Buts pour gagner <input id="target-score" type="number" min="1" max="99" step="1" value="7" title="Entre 1 et 99 buts"></label>
-      <span>Buts classiques</span>
+      <label>Terrain <select id="pitch"></select></label>
+      <label>Format <select id="competition"><option value="duel">Match simple</option><option value="series">Coupe à deux</option><option value="bracket4">Tournoi à 4 · local</option><option value="bracket8">Tournoi à 8 · local</option></select></label>
+      <label id="series-options" hidden>Manches <select id="best-of"><option value="3">2 victoires (3 matchs max.)</option><option value="5">3 victoires (5 matchs max.)</option></select></label>
       <label class="check"><input id="bonuses" type="checkbox" checked> Bonus</label>
       <button id="sound" type="button" aria-pressed="true">Son activé</button>
     </fieldset>
+    <div class="pitch-choice"><canvas id="pitch-preview" width="320" height="216" aria-label="Aperçu du terrain sélectionné"></canvas><p><strong id="pitch-caption">Terrain libre</strong><span>Les obstacles font partie du jeu. Choisissez votre terrain avant le match.</span></p></div>
+    <section id="tournament-setup" class="tournament-box" hidden aria-label="Participants au tournoi"><h2>Les participants</h2><p>Chaque match se joue à deux sur le clavier. Passez la place aux joueurs du match suivant.</p><div id="entrant-fields" class="entrant-fields"></div></section>
+    <p id="competition-error" role="alert" hidden></p>
+    <section id="tournament-panel" class="tournament-box" hidden aria-label="Progression du tournoi"><div class="tournament-heading"><h2 id="tournament-title">Tournoi</h2><button id="cancel-tournament">Quitter le tournoi</button></div><p id="tournament-status" role="status"></p><ol id="tournament-results"></ol></section>
     <section class="arena" aria-label="Match de football à deux">
       <div class="scoreboard" aria-label="Score et objectif de buts">
         <div class="team blue"><span>Bleu</span><strong id="score-left">0</strong></div>
@@ -57,8 +63,8 @@
       <div class="match-bar"><span id="status" role="status" aria-live="polite">Terrain libre · Deux joueurs en local</span><div><button id="pause" disabled>Pause</button><button id="restart" disabled>Recommencer</button></div></div>
     </section>
     <section class="controls" aria-label="Commandes">
-      <div class="control-side blue"><h2><i aria-hidden="true"></i>Bleu <label class="skin-label">Personnage <select id="skin-left" aria-label="Personnage bleu"></select></label></h2><p><kbd>Q / A</kbd><kbd>D</kbd> se déplacer <span><kbd>Z / W</kbd> sauter</span><span><kbd>Espace</kbd> frapper</span></p></div>
-      <div class="control-side red"><h2><i aria-hidden="true"></i>Rouge <label class="skin-label">Personnage <select id="skin-right" aria-label="Personnage rouge"></select></label></h2><p><kbd>←</kbd><kbd>→</kbd> se déplacer <span><kbd>↑</kbd> sauter</span><span><kbd>P</kbd> frapper</span></p></div>
+      <div class="control-side blue"><canvas id="player-preview-0" width="72" height="72" aria-label="Personnage bleu"></canvas><div><h2><i aria-hidden="true"></i>Bleu <label class="skin-label">Personnage <select id="skin-left" aria-label="Personnage bleu"></select></label></h2><p><kbd>Q / A</kbd><kbd>D</kbd> se déplacer <span><kbd>Z / W</kbd> sauter</span><span><kbd>Espace</kbd> frapper</span></p></div></div>
+      <div class="control-side red"><canvas id="player-preview-1" width="72" height="72" aria-label="Personnage rouge"></canvas><div><h2><i aria-hidden="true"></i>Rouge <label class="skin-label">Personnage <select id="skin-right" aria-label="Personnage rouge"></select></label></h2><p><kbd>←</kbd><kbd>→</kbd> se déplacer <span><kbd>↑</kbd> sauter</span><span><kbd>P</kbd> frapper</span></p></div></div>
     </section>
     <p id="online-controls" class="online-controls" hidden>À distance, utilisez les flèches et <kbd>P</kbd>, ou <kbd>Q / A</kbd> <kbd>D</kbd> <kbd>Z / W</kbd> et <kbd>Espace</kbd>. Vous contrôlez uniquement votre joueur.</p>
     <footer><p>Le premier à atteindre l’objectif de buts gagne, sans limite de temps. Choisissez votre personnage et entrez sur le terrain.</p><p><kbd>Échap</kbd> pour mettre en pause. À distance, la pause arrête le match pour les deux joueurs.</p></footer>

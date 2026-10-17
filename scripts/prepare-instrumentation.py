@@ -16,6 +16,7 @@ source = source.replace('import flash.display.DisplayObject;', '''import Box2D.C
    import flash.display.DisplayObject;
    import flash.display.DisplayObjectContainer;
    import flash.utils.getDefinitionByName;
+   import flash.utils.getQualifiedClassName;
    import flash.external.ExternalInterface;''')
 source = source.replace('   public class KeyPoll', '   use namespace b2internal;\n\n   public class KeyPoll')
 anchor = 'dispObj = param1;'
@@ -42,6 +43,8 @@ source = source.replace(anchor, anchor + '''
             ExternalInterface.addCallback("probePowerup", probePowerup);
             ExternalInterface.addCallback("probePowerupStep", probePowerupStep);
             ExternalInterface.addCallback("probePowerupState", probePowerupState);
+            ExternalInterface.addCallback("probePitch", probePitch);
+            ExternalInterface.addCallback("probePitchLoad", probePitchLoad);
          }
 ''')
 anchor = '      public function isDown(param1:uint) : Boolean'
@@ -119,6 +122,54 @@ source = source.replace(anchor, '''      private static var randomState:uint = 1
          var r:Object=probeRoot();var p:Object=r.PUHandler;
          var v:Array=[r.oppPUSpeed,r.heroPUSpeed,r.oppPUJump,r.heroPUJump,r.oppPUFreeze?1:0,r.heroPUFreeze?1:0,r.oppLegBroken?1:0,r.heroLegBroken?1:0,r.oppBombed?1:0,r.heroBombed?1:0,r.PUSize,r.PUBouncy,r.goal1Hit.height,r.goal2Hit.height,r.Heads.scaleX,r.YourHead.scaleX,r.PUFire?1:0,r.streakerAlive?1:0,p.oppPUSpeedTimer,p.heroPUSpeedTimer,p.oppPUJumpTimer,p.heroPUJumpTimer,p.oppPUIceTimer,p.heroPUIceTimer,p.oppPUBombsTimer,p.heroPUBombsTimer,p.oppPUSizeTimer,p.heroPUSizeTimer,p.oppPUBreakTimer,p.heroPUBreakTimer,p.PUFireTimer,p.PUSizeTimer,p.PUBouncyTimer,p.PUStreakerTimer,r.oppPUBombs?1:0,r.heroPUBombs?1:0];
          return {values:v};
+      }
+      public function probePitchLoad(frame:int) : Object {
+         var r:Object=probeRoot();
+         r.PITCH_levelNum=frame-1;
+         r.initLevel();
+         // Ruffle materializes the new MovieClip display list at the next render.
+         // The caller briefly resumes its timeline; original onRender then spawns
+         // the props once. Capture only after suspending again, before unpause.
+         return {requestedFrame:frame};
+      }
+      public function probePitch() : Object {
+         var r:Object=probeRoot();
+         var result:Object={frame:r.blueprints.currentFrame,totalFrames:r.blueprints.totalFrames,props:[],bodies:[]};
+         for(var i:int=0;i<r.blueprints.numChildren;i++){
+            var prop:Object=r.blueprints.getChildAt(i);
+            result.props.push({className:getQualifiedClassName(prop),name:prop.name,x:prop.x,y:prop.y,
+               width:prop.width,height:prop.height,scaleX:prop.scaleX,scaleY:prop.scaleY,angle:prop.rotation,
+               visible:prop.visible,alpha:prop.alpha});
+         }
+         var body:b2Body=r.m_world.GetBodyList();
+         while(body){
+            var data:Object=body.GetUserData();
+            var record:Object={name:probeBodyName(body),x:body.GetPosition().x,y:body.GetPosition().y,
+               angle:body.GetAngle(),vx:body.GetLinearVelocity().x,vy:body.GetLinearVelocity().y,omega:body.GetAngularVelocity(),
+               mass:body.GetMass(),inertia:body.GetInertia(),fixed:body.IsFixedRotation(),bullet:body.IsBullet(),
+               sleeping:body.IsSleeping(),frozen:body.IsFrozen(),allowSleep:body.IsAllowSleeping(),
+               localCenter:[body.GetLocalCenter().x,body.GetLocalCenter().y],shapes:[]};
+            if(data!=null)record.display={className:getQualifiedClassName(data),width:data.width,height:data.height,
+               scaleX:data.scaleX,scaleY:data.scaleY};
+            var shape:b2Shape=body.GetShapeList();
+            while(shape){
+               var def:Object={type:shape.GetType(),density:shape.b2internal::m_density,
+                  friction:shape.GetFriction(),restitution:shape.GetRestitution(),group:shape.GetFilterData().groupIndex};
+               if(shape is b2CircleShape){
+                  var circle:b2CircleShape=shape as b2CircleShape;
+                  def.radius=circle.GetRadius();def.localPosition=[circle.GetLocalPosition().x,circle.GetLocalPosition().y];
+               }else if(shape is b2PolygonShape){
+                  var polygon:b2PolygonShape=shape as b2PolygonShape;
+                  def.vertices=[];
+                  for(var vertex:int=0;vertex<polygon.GetVertexCount();vertex++){
+                     var point:b2Vec2=polygon.GetVertices()[vertex];def.vertices.push([point.x,point.y]);
+                  }
+               }
+               record.shapes.push(def);shape=shape.GetNext();
+            }
+            result.bodies.unshift(record);body=body.GetNext();
+         }
+         return result;
       }
       private function probeBodyName(b:b2Body) : String {
          var r:Object=probeRoot();

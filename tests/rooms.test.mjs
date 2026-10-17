@@ -93,7 +93,7 @@ test('room codes normalize spaces, hyphens and case, and require eight unambiguo
   assert.equal(peers.length, 0, 'invalid codes must not open a signalling connection');
   await room.join(' abcd-2345 ');
   assert.equal(room.code, 'ABCD2345');
-  assert.equal(peers[0].target, 'sportheads-room-v2-ABCD2345');
+  assert.equal(peers[0].target, 'sportheads-room-v3-ABCD2345');
   assert.deepEqual(peers[0].connectOptions.metadata, { protocol: PROTOCOL });
 });
 
@@ -106,7 +106,7 @@ test('creation retries an unavailable ID with a new peer and destroys the failed
   assert.equal(peers[1].destroyed, false);
   assert.equal(room.peer, peers[1]);
   assert.equal(validCode(code), true);
-  assert.equal(peers[1].id, 'sportheads-room-v2-' + code);
+  assert.equal(peers[1].id, 'sportheads-room-v3-' + code);
   assert.deepEqual(events.errors, []);
   assert.deepEqual(events.ready, []);
 });

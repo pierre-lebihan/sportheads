@@ -2,7 +2,7 @@
 // cross this boundary; the guest only reads the last validated numeric state.
 const KEYS = ['values', 'skins', 'bodies', 'players', 'pickups', 'bombs', 'effects'];
 const MAX_NUMBER = 1e12;
-const DEFAULT_VALUES = [0, 1800, 0, 0, 89, -1, 0, 0, 100, 100, 0, 0, 0, 1, 7];
+const DEFAULT_VALUES = [0, 1800, 0, 0, 89, -1, 0, 0, 100, 100, 0, 0, 0, 1, 7, 8];
 const NEUTRAL_PLAYER = [1, 1, 0, 0, 0, 1];
 const finite = value => typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= MAX_NUMBER;
 const integer = (value, min, max = MAX_NUMBER) => finite(value) && Number.isInteger(value) && value >= min && value <= max;
@@ -28,12 +28,12 @@ export function isValidState(packet) {
     const keys = Object.keys(packet);
     if (keys.length !== KEYS.length || !KEYS.every(key => Object.hasOwn(packet, key))) return false;
     const { values: v, skins, bodies, players, pickups, bombs, effects } = packet;
-    if (!row(v, 15) || !row(skins, 2) || !skins.every(skin => integer(skin, 1, 26))) return false;
+    if (!row(v, 16) || !row(skins, 2) || !skins.every(skin => integer(skin, 1, 26))) return false;
     if (!integer(v[0], 0, 3) || !integer(v[1], 0) || !integer(v[2], 0) || !integer(v[3], 0)
       || !integer(v[4], 0) || !integer(v[5], -1, 1) || !integer(v[6], 0)
       || !integer(v[7], 0, 127) || !oneOf(v[8], [60, 100, 140]) || !oneOf(v[9], [60, 100, 140])
       || !integer(v[10], 0, 18) || !integer(v[11], 0, 70) || !oneOf(v[12], [0, 1]) || !integer(v[13], 0, 2)
-      || !integer(v[14], 1, 99)) return false;
+      || !integer(v[14], 1, 99) || !integer(v[15], 2, 20)) return false;
     const roles = new Set();
     if (!rows(bodies, 6, 11, body => {
       const role = body[9], radius = body[8];
@@ -80,7 +80,7 @@ export function captureState(engine, skins) {
     if (bodies.length > 6) throw new RangeError('Too many active game bodies');
   }
   const packet = {
-    values: Array.from({ length: 15 }, (_, field) => engine.game_value(field)),
+    values: Array.from({ length: 16 }, (_, field) => engine.game_value(field)),
     skins: Array.isArray(skins) ? skins.slice() : skins,
     bodies,
     players: Array.from({ length: 2 }, (_, side) => Array.from({ length: 6 }, (_, field) => engine.game_player_value(side, field))),

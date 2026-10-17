@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events';
 import { Room, PROTOCOL, normalizeCode, validCode } from '../web/rooms.js';
 
 class FakeConnection extends EventEmitter {
-  constructor(metadata = { protocol: PROTOCOL }) {
+  constructor(metadata = { protocol: PROTOCOL, role: 'guest' }) {
     super();
     this.metadata = metadata;
     this.open = false;
@@ -48,7 +48,10 @@ function setup(t, plans = []) {
       this.channels.push(connection);
       return connection;
     }
-    incoming(connection) { this.channels.push(connection); this.emit('connection', connection); }
+    incoming(connection) {
+      connection.peer ??= this.id.endsWith('-guest') ? this.id.slice(0, -6) : this.id + '-guest';
+      this.channels.push(connection); this.emit('connection', connection);
+    }
     reconnect() { this.reconnects++; }
     destroy() {
       if (this.destroyed) return;
@@ -93,8 +96,69 @@ test('room codes normalize spaces, hyphens and case, and require eight unambiguo
   assert.equal(peers.length, 0, 'invalid codes must not open a signalling connection');
   await room.join(' abcd-2345 ');
   assert.equal(room.code, 'ABCD2345');
-  assert.equal(peers[0].target, 'sportheads-room-v6-ABCD2345');
-  assert.deepEqual(peers[0].connectOptions.metadata, { protocol: PROTOCOL });
+  assert.equal(peers[0].id, 'sportheads-room-v7-ABCD2345-guest');
+  assert.equal(peers[0].target, 'sportheads-room-v7-ABCD2345');
+  assert.deepEqual(peers[0].connectOptions.metadata, { protocol: PROTOCOL, role: 'guest' });
+});
+
+test('joining an occupied guest seat reserves the vacant creator seat and connects back to the guest', async t => {
+  const { peers, createRoom } = setup(t, ['unavailable-id', 'open']);
+  const { room, events } = createRoom();
+  await room.join('ABCD2345');
+  assert.equal(peers[0].destroyed, true);
+  assert.equal(peers[1].id, 'sportheads-room-v7-ABCD2345');
+  assert.equal(peers[1].target, 'sportheads-room-v7-ABCD2345-guest');
+  assert.equal(room.role, 'host'); assert.equal(room.returningHost, true);
+  room.connection.openChannel();
+  assert.equal(room.connected, true); assert.deepEqual(events.ready, ['host']);
+});
+
+test('two occupied seats reject a third join and release both failed peers', async t => {
+  const { peers, createRoom } = setup(t, ['unavailable-id', 'unavailable-id']);
+  const { room, events } = createRoom();
+  await assert.rejects(room.join('ABCD2345'), /complète/);
+  assert.equal(peers.length, 2); assert.ok(peers.every(peer => peer.destroyed));
+  assert.equal(room.connected, false); assert.deepEqual(events.ready, []);
+});
+
+test('a failed creator return releases its new reservation so the original guest can accept a retry', async t => {
+  const { peers, createRoom } = setup(t, ['unavailable-id', 'open']);
+  const { room, events } = createRoom(); await room.join('ABCD2345');
+  room.connection.emit('error', { type: 'negotiation-failed' });
+  assert.equal(room.closed, true); assert.equal(peers[1].destroyed, true);
+  assert.equal(events.errors.length, 1); assert.deepEqual(events.ready, []);
+});
+
+test('a surviving guest retains its named seat and accepts a returning creator only after welcome', async t => {
+  const { peers, createRoom } = setup(t);
+  const { room, events } = createRoom();
+  await room.join('ABCD2345');
+  room.connection.openChannel();
+  room.connection.emit('data', { type: 'welcome', protocol: PROTOCOL, code: room.code });
+  room.connection.close();
+  assert.equal(room.closed, false); assert.equal(room.connected, false);
+  assert.equal(peers[0].destroyed, false); assert.equal(events.disconnects.length, 1);
+  const returning = new FakeConnection({ protocol: PROTOCOL, role: 'host' });
+  peers[0].incoming(returning); returning.openChannel();
+  assert.equal(room.connected, false, 'a new channel alone is not a completed handshake');
+  returning.emit('data', { type: 'welcome', protocol: PROTOCOL, code: room.code });
+  assert.equal(room.connected, true); assert.deepEqual(events.ready, ['guest', 'guest']);
+  returning.close();
+  const failed = new FakeConnection({ protocol: PROTOCOL, role: 'host' });
+  peers[0].incoming(failed); failed.emit('error', { type: 'negotiation-failed' });
+  assert.equal(room.closed, false, 'a failed return must not destroy the surviving seat');
+  assert.equal(peers[0].destroyed, false);
+});
+
+test('a guest refuses a returning connection that has not reserved the creator seat', async t => {
+  const { peers, createRoom } = setup(t);
+  const { room } = createRoom(); await room.join('ABCD2345');
+  room.connection.openChannel(); room.connection.emit('data', { type: 'welcome', protocol: PROTOCOL, code: room.code });
+  room.connection.close();
+  const impostor = new FakeConnection({ protocol: PROTOCOL, role: 'host' });
+  impostor.peer = 'unreserved-peer'; peers[0].incoming(impostor); impostor.openChannel();
+  assert.equal(room.connection, null); assert.equal(room.connected, false);
+  t.mock.timers.tick(250); assert.equal(impostor.closed, true);
 });
 
 test('creation retries an unavailable ID with a new peer and destroys the failed peer', async t => {
@@ -106,7 +170,7 @@ test('creation retries an unavailable ID with a new peer and destroys the failed
   assert.equal(peers[1].destroyed, false);
   assert.equal(room.peer, peers[1]);
   assert.equal(validCode(code), true);
-  assert.equal(peers[1].id, 'sportheads-room-v6-' + code);
+  assert.equal(peers[1].id, 'sportheads-room-v7-' + code);
   assert.deepEqual(events.errors, []);
   assert.deepEqual(events.ready, []);
 });

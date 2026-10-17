@@ -81,11 +81,23 @@ avant de libérer sa place. Le navigateur local suspendu ne déclenche pas son
 propre délai d'expiration et vérifie la présence de l'autre au retour.
 Une connexion en cours expire après 18 secondes. En cas de déconnexion, le
 match s'arrête ; il n'y a pas de reprise silencieuse avec des commandes anciennes.
-Si l'invité part, le créateur peut partager le même code à un nouvel adversaire,
-ce qui remet les joueurs dans le salon pour une nouvelle partie. Si le créateur
-ferme son onglet ou quitte la salle, le code cesse de fonctionner. Aucun état
-de partie n'est sauvegardé côté service.
-Si le téléphone détruit ou recharge entièrement la page, il faut recréer la salle.
+La salle reste ouverte tant qu'un des deux joueurs garde sa page. Deux identifiants
+PeerServer fixes réservent les places Bleu (créateur) et Rouge (invité). Rejoindre
+avec le code réserve Rouge si cette place est libre ; si Rouge est déjà occupé,
+la tentative réserve Bleu et reconnecte le créateur à l'invité encore présent.
+Les réservations sont atomiques, y compris lors de deux retours simultanés.
+Les deux places occupées refusent une troisième personne. Le code est la seule
+invitation : une personne qui le connaît peut prendre la place libérée.
+
+Si le créateur ferme son onglet ou quitte la salle, l'invité conserve le code et
+attend son retour. Celui qui revient retrouve le rôle Bleu et récupère les deux
+personnages, le terrain, l'objectif, les bonus et l'équilibrage auprès de l'invité.
+Les joueurs reviennent au salon pour un nouveau match : le score et la simulation
+en cours ne sont pas restaurés après une fermeture de page. Un invité peut aussi
+revenir tant que le créateur est présent. Si les deux pages sont fermées, il faut
+créer une nouvelle salle. Aucun état de partie n'est sauvegardé côté service.
+Cette évolution utilise le protocole `sportheads-rooms-7` : recharger les deux
+pages avant de créer une nouvelle salle après la mise à jour.
 
 ## Réseaux et dépendances
 
@@ -132,6 +144,7 @@ sera nécessaire pour couvrir ces réseaux si les relais publics ne répondent p
 node --test tests/*.test.mjs
 node scripts/check-game.cjs http://127.0.0.1:8765/_site/
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
+node scripts/check-rejoin.cjs http://127.0.0.1:8765/_site/
 node scripts/check-setup.cjs http://127.0.0.1:8765/_site/
 node scripts/check-mobile.cjs http://127.0.0.1:8765/_site/
 node scripts/check-background.cjs http://127.0.0.1:8765/_site/
@@ -171,3 +184,8 @@ leur transmission dans une vraie salle et leur maintien lors de la revanche.
 Le test de préparation vérifie aussi l'accueil, l'ordre des écrans, les retours,
 l'arrivée tardive d'un invité, le suivi synchronisé des écrans, les paramètres
 en lecture seule et le maintien du choix de personnage de l'invité.
+
+Le test de retour ferme réellement la page du créateur, garde l’invité présent,
+puis vérifie le retour par lien et par code, la récupération des réglages, deux
+retours simultanés, le refus d’un troisième joueur et le lancement du match suivant.
+Le test Chrome/WebKit ferme aussi le créateur et le reconnecte dans les deux sens.

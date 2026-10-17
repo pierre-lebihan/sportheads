@@ -21,6 +21,11 @@ autorisation de plein écran n'est nécessaire.
   dans le jeu et met en pause ; Retour au match ferme le menu. Reprendre
   relance ensuite la partie.
 
+Si le créateur ferme sa page, l’invité peut garder la salle ouverte. Revenir
+avec le lien ou le code reprend la place Bleu et retrouve les réglages ;
+le match suivant se lance depuis le salon. Les deux joueurs doivent recharger
+la page après la mise à jour vers le protocole de salles 7.
+
 Chaque doigt garde son action jusqu'au relâchement, même s'il sort du bouton.
 Les interruptions du navigateur, la perte de focus, les pauses et le démarrage
 d'un autre match relâchent les commandes. Le tactile n'annule pas une touche

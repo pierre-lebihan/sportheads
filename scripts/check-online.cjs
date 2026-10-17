@@ -142,7 +142,7 @@ assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
     await goToSetup(host, 'rules'); await host.click('#start'); await replacement.waitForFunction(() => sportheads.snapshot().started);
     await host.click('#play-view'); await host.click('#leave-room');
     await replacement.waitForFunction(() => !sportheads.snapshot().connected);
-    assert.match(await replacement.locator('#room-status').innerText(), /quitté|perdue/);
+    assert.match(await replacement.locator('#room-status').innerText(), /déconnecté.*reste ouverte/);
     await host.click('#setup-back'); assert.equal(await host.locator('#online-panel').isVisible(), false); await host.click('#play-local'); await goToSetup(host, 'rules'); await host.click('#start'); assert.equal((await state(host)).mode, 'local');
     await replacement.setViewportSize({ width: 390, height: 844 });
     assert.ok(await replacement.evaluate(() => document.documentElement.scrollWidth <= innerWidth));

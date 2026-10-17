@@ -1,11 +1,11 @@
 import { summarizeIce, iceServerLabel } from './ice-diagnostics.js';
 import { protectIceSignaling } from './ice-signaling.js';
 
-export const PROTOCOL = 'sportheads-rooms-6';
-const PREFIX = 'sportheads-room-v6-';
+export const PROTOCOL = 'sportheads-rooms-7';
+const PREFIX = 'sportheads-room-v7-';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SILENCE_TIMEOUT = 120000;
-export const NETWORK_REVISION = 4;
+export const NETWORK_REVISION = 5;
 export function normalizeCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }
 export function validCode(code) { return /^[A-HJ-NP-Z2-9]{8}$/.test(code); }
 function randomCode() { return Array.from(crypto.getRandomValues(new Uint8Array(8)), n => ALPHABET[n & 31]).join(''); }
@@ -18,6 +18,7 @@ export class Room {
     this.closed = false; this.connected = false; this.peer = null; this.connection = null;
     this.timer = null; this.heartbeat = null; this.code = ''; this.role = null;
     this.suspended = false; this.lastSeen = 0;
+    this.hasConnected = false; this.returningHost = false;
     this.events = []; this.createdAt = performance.now();
   }
 
@@ -67,10 +68,23 @@ export class Room {
     this.code = normalizeCode(value);
     if (!validCode(this.code)) throw new Error('Entrez les 8 caractères du code de la salle.');
     this.role = 'guest';
-    await this.openPeer();
+    // PeerServer atomically reserves each of the room's two named seats.
+    // The surviving guest keeps its seat when the creator's page disappears.
+    try { await this.openPeer(PREFIX + this.code + '-guest'); }
+    catch (error) {
+      this.peer?.destroy();
+      if (error.type !== 'unavailable-id' || this.closed) throw error;
+      this.role = 'host'; this.returningHost = true;
+      try { await this.openPeer(PREFIX + this.code); }
+      catch (hostError) {
+        this.peer?.destroy();
+        if (hostError.type === 'unavailable-id') throw new Error('Cette salle est complète. Créez une autre salle.');
+        throw hostError;
+      }
+    }
     if (this.closed) return;
-    const connection = this.peer.connect(PREFIX + this.code, {
-      serialization: 'json', reliable: true, metadata: { protocol: PROTOCOL },
+    const connection = this.peer.connect(PREFIX + this.code + (this.role === 'host' ? '-guest' : ''), {
+      serialization: 'json', reliable: true, metadata: { protocol: PROTOCOL, role: this.role },
     });
     this.attach(connection);
   }
@@ -92,7 +106,9 @@ export class Room {
       let opened = false;
       peer.on('open', () => { this.record('signalling-open'); opened = true; if (this.closed) { peer.destroy(); return; } finish(); });
       peer.on('connection', connection => {
-        if (this.closed || this.role !== 'host' || connection.metadata?.protocol !== PROTOCOL || this.connection) {
+        const oppositeRole = this.role === 'host' ? 'guest' : 'host';
+        const expectedPeer = PREFIX + this.code + (oppositeRole === 'guest' ? '-guest' : '');
+        if (this.closed || connection.peer !== expectedPeer || connection.metadata?.role !== oppositeRole || connection.metadata?.protocol !== PROTOCOL || this.connection) {
           connection.on('error', () => {});
           connection.on('open', () => {
             connection.send({ type: 'reject', reason: this.connection ? 'full' : 'version' });
@@ -180,7 +196,7 @@ export class Room {
     });
   }
 
-  markReady() { this.record('ready'); clearTimeout(this.timer); this.connected = true; this.onReady(this.role); }
+  markReady() { this.record('ready'); clearTimeout(this.timer); this.connected = true; this.hasConnected = true; this.onReady(this.role); }
   suspend() { this.suspended = true; }
   resume() {
     if (this.closed) return;
@@ -207,7 +223,7 @@ export class Room {
     if (this.closed) return;
     if (wasConnected) this.onDisconnect(message);
     else this.onError(message);
-    if (this.role === 'guest') this.close();
+    if (!this.hasConnected && (this.role === 'guest' || this.returningHost)) this.close();
   }
   fail(message) { if (!this.closed) { this.close(); this.onError(message); } }
   close() {

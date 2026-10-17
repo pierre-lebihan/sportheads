@@ -46,9 +46,11 @@ suivent ceux du créateur, en lecture seule, avec les choix mis à jour en direc
 Il garde son sélecteur de personnage accessible sur ces écrans.
 
 La salle accueille deux joueurs. Les pauses sont partagées, et chaque joueur
-doit reprendre sa propre pause. Le créateur peut lancer une revanche. Fermer
-son onglet ferme la salle ; une déconnexion arrête le match, sans reprise
-automatique d'une partie abandonnée.
+doit reprendre sa propre pause. Le créateur peut lancer une revanche. Si l'un
+part, l'autre garde la salle ouverte : revenir avec le même code permet de
+prendre la place libre. Le créateur retrouve Bleu et les réglages transmis par
+l'invité ; après fermeture de sa page, les joueurs reviennent au salon pour
+un nouveau match. Si les deux pages sont fermées, il faut recréer une salle.
 
 Les salles utilisent le service de mise en relation PeerServer et WebRTC.
 La connexion directe a été vérifiée ; le test forcé des relais TURN publics

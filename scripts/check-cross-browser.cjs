@@ -56,7 +56,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
   }
   try {
     for (const [hostBrowser, guestBrowser] of [[chrome, safari], [safari, chrome]]) {
-      const host = await pageAt(hostBrowser);
+      let host = await pageAt(hostBrowser);
       await host.click('#play-online'); await host.click('#create-room');
       await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
       const share = new URL(url); share.searchParams.set('room', await host.locator('#room-code').innerText());
@@ -68,6 +68,15 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
       await guest.click('#pause'); await host.waitForFunction(() => sportheads.snapshot().paused);
       assert.deepEqual(await guest.evaluate(() => sportheads.snapshot().score), await host.evaluate(() => sportheads.snapshot().score));
       await guest.click('#resume'); await host.waitForFunction(() => !sportheads.snapshot().paused);
+      await host.context().close();
+      await guest.waitForFunction(() => !sportheads.snapshot().connected);
+      host = await pageAt(hostBrowser, share.href); await host.click('#join-room');
+      await Promise.all([host, guest].map(page => page.waitForFunction(() => sportheads.snapshot().connected)));
+      assert.equal(await host.evaluate(() => sportheads.snapshot().role), 'host');
+      assert.equal(await guest.evaluate(() => sportheads.snapshot().role), 'guest');
+      await host.waitForFunction(() => document.querySelector('#target-score').value === '3');
+      await goToSetup(host, 'rules'); await host.click('#start');
+      await guest.waitForFunction(() => sportheads.snapshot().phase === 1 && sportheads.snapshot().started);
       if (process.argv.includes('--lan-only')) {
         await guest.waitForFunction(async () => {
           const stats = await window.testConnections.at(-1).peerConnection.getStats();
@@ -79,7 +88,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
       await guest.evaluate(() => window.testConnections.at(-1).emit('error', { type: 'negotiation-failed' }));
       assert.equal(await guest.locator('#network-diagnostic').isVisible(), true);
       const report = JSON.parse(await guest.locator('#network-report').textContent());
-      assert.equal(report.revision, 4);
+      assert.equal(report.revision, 5);
       assert.ok(report.candidateSignaling.incomingCandidates > 0);
       assert.ok(report.candidateSignaling.appliedCandidates > 0);
       assert.equal(report.candidateSignaling.rejectedCandidates, 0);

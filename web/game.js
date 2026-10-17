@@ -21,6 +21,7 @@ let last = 0, accumulator = 0, previousPhase = -1, lastBroadcast = 0;
 let matchId = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, receivedInput = -1;
 let remoteInput = 0, lastInputAt = 0, soundTick = -1, soundMatch = -1, busy = false;
 let settingsOpen = false, setupStep = 'home', lastValidTarget = 7;
+let restoringSettings = false, recoveryTimer;
 const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
 const touch = createTouchControls($('#touch-controls'), sendInput);
 function clearInput() { keys.clear(); touch.clear(); }
@@ -36,7 +37,7 @@ const skins = () => [+$('#skin-left').value, +$('#skin-right').value];
 const ownSide = () => role === 'guest' ? 1 : 0;
 const targetScore = () => +$('#target-score').value;
 const validTarget = () => Number.isInteger(targetScore()) && targetScore() >= 1 && targetScore() <= 99;
-const canStart = () => !!core && validTarget() && (mode === 'local' || (role === 'host' && room?.connected));
+const canStart = () => !!core && !restoringSettings && validTarget() && (mode === 'local' || (role === 'host' && room?.connected));
 function input() {
   let mask = touch.mask();
   for (const key of keys) { const bit = bindings[key] || 0; mask |= mode === 'local' || bit < 16 ? bit : bit >> 4; }
@@ -104,6 +105,7 @@ function clearMatch() {
   remote = createRemoteEngine(); audio.stopAll(); core?.game_reset(1); applyAssists();
 }
 function leaveRoom() {
+  restoringSettings = false; clearTimeout(recoveryTimer);
   setupStep = mode === 'online' ? 'room' : 'home';
   room?.close(); room = null; role = null; busy = false; clearMatch();
   $('#room-details').hidden = true; $('#room-actions').hidden = false;
@@ -118,6 +120,20 @@ function selectMode(next) {
 }
 function onMessage(message) {
   if (role === 'host') {
+    if (message.type === 'room-settings' && restoringSettings
+      && Array.isArray(message.skins) && message.skins.length === 2 && message.skins.every(skin => Number.isInteger(skin) && skin >= 1 && skin <= PLAYER_COUNT)
+      && Number.isInteger(message.pitch) && PITCHES.some(pitch => pitch.id === message.pitch)
+      && Number.isInteger(message.targetScore) && message.targetScore >= 1 && message.targetScore <= 99
+      && Number.isInteger(message.balance) && message.balance >= -3 && message.balance <= 3 && typeof message.bonuses === 'boolean') {
+      restoringSettings = false; clearTimeout(recoveryTimer); busy = false;
+      room.returningHost = false;
+      $('#skin-left').value = message.skins[0]; $('#skin-right').value = message.skins[1];
+      $('#pitch').value = message.pitch; $('#target-score').value = message.targetScore; lastValidTarget = message.targetScore;
+      $('#balance').value = message.balance; $('#bonuses').checked = message.bonuses;
+      clearMatch(); setupStep = 'players';
+      roomStatus('Salle retrouvée. Vous êtes Bleu. Vos réglages sont conservés : préparez le prochain match.');
+      update(); broadcast(); return;
+    }
     if (message.type === 'input' && Number.isSafeInteger(message.sequence) && message.sequence > receivedInput
       && Number.isInteger(message.mask) && message.mask >= 0 && message.mask <= 15
       && Number.isInteger(message.skin) && message.skin >= 1 && message.skin <= PLAYER_COUNT) {
@@ -157,30 +173,51 @@ async function connectRoom(create) {
   if (!core || busy) return;
   const code = normalizeCode($('#join-code').value);
   if (!create && !validCode(code)) { roomStatus('Entrez les 8 caractères du code de la salle.', true); $('#join-code').focus(); return; }
+  restoringSettings = false; clearTimeout(recoveryTimer);
   room?.close(); clearMatch(); busy = true; role = create ? 'host' : 'guest';
   setupStep = create ? 'players' : 'room';
   const candidate = new Room({
     onReady: () => {
       if (room !== candidate) return;
+      role = candidate.role;
       remoteInput = 0; receivedInput = -1; busy = false;
       roomStatus(role === 'host' ? 'Votre adversaire est là. Vous êtes Bleu : lancez le match quand vous êtes prêts.' : 'Vous êtes Rouge. Le créateur de la salle va lancer le match.');
       $('#room-details').hidden = false; $('#room-actions').hidden = true; $('#room-code').textContent = candidate.code;
-      if (role === 'host') { const wasPlaying = started; clearMatch(); if (wasPlaying) setupStep = 'players'; broadcast(); } else { setupStep = 'players'; sendInput(); }
+      if (role === 'host' && candidate.returningHost) {
+        restoringSettings = true; busy = true; setupStep = 'players';
+        roomStatus('Salle retrouvée. Récupération des réglages auprès de votre adversaire…');
+        recoveryTimer = setTimeout(() => {
+          if (room === candidate && restoringSettings) candidate.fail('Impossible de récupérer les réglages. Rejoignez à nouveau avec le même code.');
+        }, 10000);
+      } else if (role === 'host') {
+        const wasPlaying = started; clearMatch(); if (wasPlaying) setupStep = 'players'; broadcast();
+      } else {
+        // A creator returning from a fresh page has no simulation to resume.
+        // Keep the last settings here until it receives them, then start in the lobby.
+        receivedSequence = -1; matchId = 0; setupStep = 'players';
+        candidate.send({ type: 'room-settings', skins: skins(), pitch: +$('#pitch').value,
+          targetScore: targetScore(), balance: +$('#balance').value, bonuses: $('#bonuses').checked });
+        roomStatus('Vous êtes Rouge. Le créateur peut préparer et lancer le match.'); sendInput();
+      }
       update();
     },
     onMessage: message => { if (room === candidate) onMessage(message); },
     onDisconnect: message => {
       if (room !== candidate) return;
+      restoringSettings = false; clearTimeout(recoveryTimer);
       busy = false; clearInput(); remoteInput = 0;
       if (started) { pauseFlags = [true, true]; paused = true; audio.stopAll(); }
-      roomStatus(message + (role === 'host' ? ' Partagez le code pour accueillir un nouvel adversaire.' : ' Rejoignez une salle pour rejouer.'), true);
-      if (role === 'guest') { $('#room-details').hidden = true; $('#room-actions').hidden = false; setupStep = 'room'; if (started) settingsOpen = true; }
+      roomStatus('Votre adversaire est déconnecté. La salle reste ouverte : il peut revenir avec le même code.', true);
+      $('#room-details').hidden = false; $('#room-actions').hidden = true;
+      setupStep = 'players'; if (started) settingsOpen = true;
       update();
     },
     onError: message => {
       if (room !== candidate) return;
+      restoringSettings = false; clearTimeout(recoveryTimer);
       busy = false; roomStatus(message, true);
-      if (role === 'guest' || !candidate.code || candidate.closed) { $('#room-details').hidden = true; $('#room-actions').hidden = false; if (!started) setupStep = 'room'; }
+      const failedJoin = !candidate.hasConnected && (candidate.role === 'guest' || candidate.returningHost);
+      if (failedJoin || !candidate.code || candidate.closed) { $('#room-details').hidden = true; $('#room-actions').hidden = false; if (!started) setupStep = 'room'; }
       update();
     },
   });
@@ -189,6 +226,7 @@ async function connectRoom(create) {
   try {
     if (create) await candidate.create(); else await candidate.join(code);
     if (room !== candidate || candidate.closed) return;
+    role = candidate.role;
     if (create) {
       busy = false; $('#room-code').textContent = candidate.code; $('#room-details').hidden = false; $('#room-actions').hidden = true;
       if (!candidate.connected) roomStatus('Salle créée. Partagez le code ou le lien avec votre adversaire.');

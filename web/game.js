@@ -1,71 +1,286 @@
-import {loadAssets,drawGame,createAudio} from './render.js';
-const $=s=>document.querySelector(s),canvas=$('#field'),ctx=canvas.getContext('2d');
-const keys=new Set(),audio=createAudio();
-let engine,started=false,paused=false,last=0,accumulator=0,previousPhase=-1,soundEnabled=true;
-const bindings={KeyA:1,KeyQ:1,KeyD:2,KeyW:4,KeyZ:4,Space:8,ArrowLeft:16,ArrowRight:32,ArrowUp:64,KeyP:128};
-const bonusNames=['','Vitesse augmentée','Vitesse réduite','Super saut','Petit saut','Gel adverse','Gel','Grand but','Petit but','Bombes','Grand ballon','Ballon rebondissant','Petit ballon','Ballon sans rebond','Grande tête','Petite tête','Pied adverse cassé','Pied cassé','Intrus sur le terrain'];
-const effectNames=['ring','green-ring','red-ring','explosion','dust','trail'];
-for(const [id,selected]of [['skin-left',1],['skin-right',2]])for(let i=1;i<=26;i++){const option=new Option(`Tête ${i}`,i);option.selected=i===selected;$('#'+id).add(option);}
-function input(){let mask=0;for(const k of keys)mask|=bindings[k]||0;return mask;}
-function snapshot(){return{started,paused,phase:engine?.game_value(0),remainingTicks:engine?.game_value(1),score:[engine?.game_value(2),engine?.game_value(3)],countdown:engine?.game_value(4),tick:engine?.game_value(6)};}
-function playSounds(mask){if(!soundEnabled)return;for(const[bit,name]of [[1,'kick'],[2,'jump'],[4,'die'],[8,'whistle'],[16,'pop'],[32,'coin'],[64,'explosion']])if(mask&bit)audio.play(name,{volume:.5});if(mask&4)audio.play('cheer',{volume:.3});}
-function music(){if(soundEnabled&&started&&!paused&&engine.game_value(0)!==3)audio.play('music-match',{loop:true,volume:.14});else audio.stopAll();}
-function reset(){
-  if(!engine)return;audio.unlock();
-  engine.game_start(crypto.getRandomValues(new Uint32Array(1))[0],+$('#mode').value,+$('#goals').value,+$('#bonuses').checked);
-  engine.game_set_skin(0,+$('#skin-left').value);engine.game_set_skin(1,+$('#skin-right').value);
-  started=true;paused=false;previousPhase=-1;keys.clear();accumulator=0;last=0;
-  for(const id of ['welcome','finished','paused'])$('#'+id).hidden=true;
-  $('#pause').disabled=false;$('#pause').textContent='Pause';$('#restart').disabled=false;
-  $('#settings-legend').textContent='Réglages de la prochaine partie';canvas.focus();music();update();
+import { loadAssets, drawGame, createAudio } from './render.js';
+import './vendor/peerjs-1.5.5.min.js';
+import { Room, normalizeCode, validCode } from './rooms.js';
+import { captureState, createRemoteEngine } from './net-state.js';
+
+const $ = selector => document.querySelector(selector);
+const canvas = $('#field'), ctx = canvas.getContext('2d'), keys = new Set(), audio = createAudio();
+const bindings = { KeyA: 1, KeyQ: 1, KeyD: 2, KeyW: 4, KeyZ: 4, Space: 8, ArrowLeft: 16, ArrowRight: 32, ArrowUp: 64, KeyP: 128 };
+const bonusNames = ['', 'Vitesse augmentée', 'Vitesse réduite', 'Super saut', 'Petit saut', 'Gel adverse', 'Gel', 'Grand but', 'Petit but', 'Bombes', 'Grand ballon', 'Ballon rebondissant', 'Petit ballon', 'Ballon sans rebond', 'Grande tête', 'Petite tête', 'Pied adverse cassé', 'Pied cassé', 'Intrus sur le terrain'];
+const effectNames = ['ring', 'green-ring', 'red-ring', 'explosion', 'dust', 'trail'];
+let core, remote = createRemoteEngine(), room = null, mode = 'local', role = null;
+let started = false, paused = false, pauseFlags = [false, false], soundEnabled = true;
+let last = 0, accumulator = 0, previousPhase = -1, lastBroadcast = 0;
+let matchId = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, receivedInput = -1;
+let remoteInput = 0, lastInputAt = 0, soundTick = -1, soundMatch = -1, busy = false;
+
+for (const [id, selected] of [['skin-left', 1], ['skin-right', 2]]) {
+  for (let i = 1; i <= 26; i++) { const option = new Option(`Tête ${i}`, i); option.selected = i === selected; $('#' + id).add(option); }
 }
-function pause(value=true){if(!started||engine.game_value(0)===3)return;paused=value;keys.clear();accumulator=0;last=0;$('#paused').hidden=!value;$('#pause').textContent=value?'Reprendre':'Pause';music();if(value)$('#resume').focus();else canvas.focus();}
-for(const id of ['start','again','restart'])$('#'+id).addEventListener('click',reset);
-$('#pause').addEventListener('click',()=>pause(!paused));$('#resume').addEventListener('click',()=>pause(false));
-for(const [side,id]of ['skin-left','skin-right'].entries())$('#'+id).addEventListener('change',()=>engine?.game_set_skin(side,+$('#'+id).value));
-$('#sound').addEventListener('click',()=>{soundEnabled=!soundEnabled;$('#sound').textContent=soundEnabled?'Son activé':'Son coupé';$('#sound').setAttribute('aria-pressed',String(soundEnabled));audio.unlock();music();});
-window.addEventListener('keydown',e=>{
-  if(['SELECT','INPUT'].includes(e.target.tagName))return;
-  if(e.code==='Escape'){if(started){e.preventDefault();pause(!paused);}return;}
-  if(bindings[e.code]&&started&&!paused&&engine.game_value(0)!==3){e.preventDefault();keys.add(e.code);}
-});
-window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();pause();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();pause();}});
-function renderState(){
-  const state={started,paused,skins:[+$('#skin-left').value,+$('#skin-right').value]};if(!engine)return state;
-  state.goalFrames=[8,9].map(f=>engine.game_value(f)===140?2:engine.game_value(f)===60?3:1);
-  state.players=[0,1].map(s=>Object.fromEntries(['speed','jump','freeze','broken','bombed','scale'].map((name,f)=>[name,engine.game_player_value(s,f)])));
-  state.powerups=Array.from({length:engine.game_pickup_count()},(_,i)=>({kind:engine.game_pickup_value(i,0),x:engine.game_pickup_value(i,1),y:engine.game_pickup_value(i,2),ttl:engine.game_pickup_value(i,3)}));
-  state.bombs=Array.from({length:engine.game_bomb_count()},(_,i)=>({x:engine.game_bomb_value(i,0),y:engine.game_bomb_value(i,1)}));
-  state.effects=Array.from({length:engine.game_effect_count()},(_,i)=>{
-    const kind=engine.game_effect_value(i,0),age=engine.game_effect_value(i,3),w=engine.game_effect_value(i,4),h=engine.game_effect_value(i,5);
-    return{kind:effectNames[kind],x:engine.game_effect_value(i,1),y:engine.game_effect_value(i,2),age,width:kind===4?10+age/2:w,height:kind===4?10+age/2:h,alpha:kind===4?Math.max(0,(1-age/10)*.6):kind===5?Math.max(0,1-age/7):1};
+const engine = () => mode === 'online' && role === 'guest' ? remote.engine : core;
+const skins = () => [+$('#skin-left').value, +$('#skin-right').value];
+const ownSide = () => role === 'guest' ? 1 : 0;
+const canStart = () => !!core && (mode === 'local' || (role === 'host' && room?.connected));
+function input() {
+  let mask = 0;
+  for (const key of keys) { const bit = bindings[key] || 0; mask |= mode === 'local' || bit < 16 ? bit : bit >> 4; }
+  return mask;
+}
+function snapshot() {
+  const e = engine();
+  return { started, paused, mode, role, connected: !!room?.connected, code: room?.code || '', matchId,
+    phase: e?.game_value(0), remainingTicks: e?.game_value(1), score: [e?.game_value(2), e?.game_value(3)], countdown: e?.game_value(4), tick: e?.game_value(6) };
+}
+function playSounds(mask) {
+  if (!soundEnabled) return;
+  for (const [bit, name] of [[1, 'kick'], [2, 'jump'], [4, 'die'], [8, 'whistle'], [16, 'pop'], [32, 'coin'], [64, 'explosion']]) if (mask & bit) audio.play(name, { volume: .5 });
+  if (mask & 4) audio.play('cheer', { volume: .3 });
+}
+function music() {
+  if (soundEnabled && started && !paused && engine().game_value(0) !== 3) audio.play('music-match', { loop: true, volume: .14 });
+  else audio.stopAll();
+}
+function roomStatus(message, error = false) { $('#room-status').textContent = message; $('#room-status').classList.toggle('error', error); }
+function sendInput() {
+  if (mode === 'online' && role === 'guest' && room?.connected) room.send({ type: 'input', sequence: ++inputSequence, mask: paused ? 0 : input(), skin: +$('#skin-right').value });
+}
+function broadcast() {
+  if (mode !== 'online' || role !== 'host' || !room?.connected) return;
+  room.send({ type: 'frame', sequence: ++frameSequence, matchId, started, bonuses: $('#bonuses').checked, pauseFlags: [...pauseFlags], state: captureState(core, skins()) });
+  lastBroadcast = performance.now();
+}
+function pause(value = true) {
+  if (!started || engine().game_value(0) === 3) return;
+  keys.clear(); accumulator = 0; last = 0;
+  if (!value) canvas.focus();
+  if (mode === 'online' && role === 'guest') { room?.send({ type: 'pause', value: !!value }); sendInput(); return; }
+  pauseFlags[0] = !!value; applyPause(); broadcast();
+}
+function applyPause() {
+  const changed = paused !== pauseFlags.some(Boolean);
+  paused = pauseFlags.some(Boolean); keys.clear(); accumulator = 0; last = 0;
+  if (changed) music();
+  update();
+}
+function reset() {
+  if (!canStart()) return;
+  audio.unlock();
+  core.game_start(crypto.getRandomValues(new Uint32Array(1))[0], 0, 0, +$('#bonuses').checked);
+  skins().forEach((skin, side) => core.game_set_skin(side, skin));
+  started = true; paused = false; pauseFlags = [false, false]; previousPhase = -1;
+  remoteInput = 0; matchId++; keys.clear(); accumulator = 0; last = 0;
+  canvas.focus(); music(); update(); broadcast();
+}
+function clearMatch() {
+  started = false; paused = false; pauseFlags = [false, false]; keys.clear(); remoteInput = 0;
+  last = 0; accumulator = 0; previousPhase = -1; receivedSequence = -1; receivedInput = -1;
+  remote = createRemoteEngine(); audio.stopAll(); core?.game_reset(1);
+}
+function leaveRoom() {
+  room?.close(); room = null; role = null; busy = false; clearMatch();
+  $('#room-details').hidden = true; $('#room-actions').hidden = false;
+  roomStatus('Créez une salle ou saisissez le code de votre adversaire.'); update();
+}
+function selectMode(next) {
+  if (mode === next) return;
+  leaveRoom(); mode = next;
+  $('#online-panel').hidden = mode !== 'online'; $('#online-controls').hidden = mode !== 'online';
+  $('#play-local').setAttribute('aria-pressed', String(mode === 'local'));
+  $('#play-online').setAttribute('aria-pressed', String(mode === 'online'));
+  update();
+}
+function onMessage(message) {
+  if (role === 'host') {
+    if (message.type === 'input' && Number.isSafeInteger(message.sequence) && message.sequence > receivedInput
+      && Number.isInteger(message.mask) && message.mask >= 0 && message.mask <= 15
+      && Number.isInteger(message.skin) && message.skin >= 1 && message.skin <= 26) {
+      receivedInput = message.sequence; remoteInput = message.mask; lastInputAt = performance.now();
+      $('#skin-right').value = message.skin; core.game_set_skin(1, message.skin);
+    } else if (message.type === 'pause' && typeof message.value === 'boolean' && started && core.game_value(0) !== 3) {
+      pauseFlags[1] = message.value; applyPause(); broadcast();
+    }
+    return;
+  }
+  if (role !== 'guest' || message.type !== 'frame' || !Number.isSafeInteger(message.sequence) || message.sequence <= receivedSequence
+    || !Number.isSafeInteger(message.matchId) || message.matchId < matchId || typeof message.started !== 'boolean' || typeof message.bonuses !== 'boolean'
+    || !Array.isArray(message.pauseFlags) || message.pauseFlags.length !== 2 || !message.pauseFlags.every(v => typeof v === 'boolean')
+    || !remote.update(message.state)) return;
+  const newMatch = message.matchId !== matchId || started !== message.started;
+  const oldPaused = paused;
+  receivedSequence = message.sequence; matchId = message.matchId; started = message.started;
+  pauseFlags = message.pauseFlags; paused = pauseFlags.some(Boolean);
+  // Preserve the guest's desired skin while an older snapshot is still in flight.
+  $('#skin-left').value = message.state.skins[0];
+  $('#bonuses').checked = message.bonuses;
+  if (newMatch) { previousPhase = -1; keys.clear(); music(); if (started && document.hidden) pause(true); else if (started) canvas.focus(); }
+  if (oldPaused !== paused) { keys.clear(); music(); if (!paused) canvas.focus(); }
+  if (started && !paused && (soundTick !== engine().game_value(6) || soundMatch !== matchId)) {
+    soundTick = engine().game_value(6); soundMatch = matchId; playSounds(engine().game_value(7));
+  }
+  update();
+}
+async function connectRoom(create) {
+  if (!core || busy) return;
+  const code = normalizeCode($('#join-code').value);
+  if (!create && !validCode(code)) { roomStatus('Entrez les 8 caractères du code de la salle.', true); $('#join-code').focus(); return; }
+  room?.close(); clearMatch(); busy = true; role = create ? 'host' : 'guest';
+  const candidate = new Room({
+    onReady: () => {
+      if (room !== candidate) return;
+      remoteInput = 0; receivedInput = -1; busy = false;
+      roomStatus(role === 'host' ? 'Votre adversaire est là. Vous êtes Bleu : lancez le match quand vous êtes prêts.' : 'Vous êtes Rouge. Le créateur de la salle va lancer le match.');
+      $('#room-details').hidden = false; $('#room-actions').hidden = true; $('#room-code').textContent = candidate.code;
+      if (role === 'host') { clearMatch(); broadcast(); } else sendInput();
+      update();
+    },
+    onMessage: message => { if (room === candidate) onMessage(message); },
+    onDisconnect: message => {
+      if (room !== candidate) return;
+      busy = false; keys.clear(); remoteInput = 0;
+      if (started) { pauseFlags = [true, true]; paused = true; audio.stopAll(); }
+      roomStatus(message + (role === 'host' ? ' Partagez le code pour accueillir un nouvel adversaire.' : ' Rejoignez une salle pour rejouer.'), true);
+      if (role === 'guest') { $('#room-details').hidden = true; $('#room-actions').hidden = false; }
+      update();
+    },
+    onError: message => {
+      if (room !== candidate) return;
+      busy = false; roomStatus(message, true);
+      if (role === 'guest' || !candidate.code || candidate.closed) { $('#room-details').hidden = true; $('#room-actions').hidden = false; }
+      update();
+    },
   });
-  state.ballBounce=engine.game_value(13);state.ballFrame=state.ballBounce===0?3:state.ballBounce===2?2:1;
+  room = candidate; frameSequence = 0; matchId = 0; inputSequence = 0;
+  roomStatus(create ? 'Création de la salle…' : 'Connexion à la salle…'); update(); audio.unlock();
+  try {
+    if (create) await candidate.create(); else await candidate.join(code);
+    if (room !== candidate || candidate.closed) return;
+    if (create) {
+      busy = false; $('#room-code').textContent = candidate.code; $('#room-details').hidden = false; $('#room-actions').hidden = true;
+      if (!candidate.connected) roomStatus('Salle créée. Partagez le code ou le lien avec votre adversaire.');
+    }
+  } catch (error) {
+    if (room !== candidate) return;
+    candidate.close(); busy = false; role = null;
+    roomStatus(error.message || 'Impossible de créer la connexion. Réessayez.', true);
+    $('#room-actions').hidden = false; $('#room-details').hidden = true;
+  }
+  if (room === candidate) update();
+}
+async function copyRoom(link) {
+  if (!room?.code) return;
+  const url = new URL(location.href); url.search = ''; url.hash = ''; url.searchParams.set('room', room.code);
+  try { await navigator.clipboard.writeText(link ? url.href : room.code); roomStatus(link ? 'Lien copié. Envoyez-le à votre adversaire.' : 'Code copié. Envoyez-le à votre adversaire.'); }
+  catch { roomStatus(`Copie indisponible. Votre code : ${room.code}.`); }
+}
+
+for (const id of ['start', 'again', 'restart']) $('#' + id).addEventListener('click', reset);
+$('#play-local').addEventListener('click', () => selectMode('local'));
+$('#play-online').addEventListener('click', () => selectMode('online'));
+$('#create-room').addEventListener('click', () => connectRoom(true));
+$('#join-form').addEventListener('submit', event => { event.preventDefault(); connectRoom(false); });
+$('#leave-room').addEventListener('click', leaveRoom);
+$('#copy-code').addEventListener('click', () => copyRoom(false)); $('#copy-link').addEventListener('click', () => copyRoom(true));
+$('#pause').addEventListener('click', () => pause(!pauseFlags[ownSide()]));
+$('#resume').addEventListener('click', () => { pause(false); if (mode === 'local') canvas.focus(); });
+for (const [side, id] of ['skin-left', 'skin-right'].entries()) $('#' + id).addEventListener('change', () => {
+  if (mode === 'local' || (role === 'host' && side === 0)) { core?.game_set_skin(side, +$('#' + id).value); broadcast(); }
+  else if (role === 'guest' && side === 1) sendInput();
+});
+$('#sound').addEventListener('click', () => {
+  soundEnabled = !soundEnabled; $('#sound').textContent = soundEnabled ? 'Son activé' : 'Son coupé';
+  $('#sound').setAttribute('aria-pressed', String(soundEnabled)); audio.unlock(); music();
+  if (started && !paused) canvas.focus();
+});
+window.addEventListener('keydown', event => {
+  if (['SELECT', 'INPUT', 'BUTTON'].includes(event.target.tagName) && event.code !== 'Escape') return;
+  if (event.code === 'Escape') { if (started) { event.preventDefault(); pause(!pauseFlags[ownSide()]); } return; }
+  if (bindings[event.code] && started && !paused && engine().game_value(0) !== 3 && (mode === 'local' || room?.connected)) {
+    event.preventDefault(); keys.add(event.code); sendInput();
+  }
+});
+window.addEventListener('keyup', event => { keys.delete(event.code); sendInput(); });
+window.addEventListener('blur', () => { keys.clear(); sendInput(); pause(); });
+window.addEventListener('pagehide', () => room?.close());
+document.addEventListener('visibilitychange', () => { if (document.hidden) { keys.clear(); sendInput(); pause(); } });
+setInterval(sendInput, 50);
+
+function renderState() {
+  const e = engine(), state = { started, paused, skins: skins() }; if (!e) return state;
+  state.goalFrames = [8, 9].map(f => e.game_value(f) === 140 ? 2 : e.game_value(f) === 60 ? 3 : 1);
+  state.players = [0, 1].map(s => Object.fromEntries(['speed', 'jump', 'freeze', 'broken', 'bombed', 'scale'].map((name, f) => [name, e.game_player_value(s, f)])));
+  state.powerups = Array.from({ length: e.game_pickup_count() }, (_, i) => ({ kind: e.game_pickup_value(i, 0), x: e.game_pickup_value(i, 1), y: e.game_pickup_value(i, 2), ttl: e.game_pickup_value(i, 3) }));
+  state.bombs = Array.from({ length: e.game_bomb_count() }, (_, i) => ({ x: e.game_bomb_value(i, 0), y: e.game_bomb_value(i, 1) }));
+  state.effects = Array.from({ length: e.game_effect_count() }, (_, i) => {
+    const kind = e.game_effect_value(i, 0), age = e.game_effect_value(i, 3), w = e.game_effect_value(i, 4), h = e.game_effect_value(i, 5);
+    return { kind: effectNames[kind], x: e.game_effect_value(i, 1), y: e.game_effect_value(i, 2), age, width: kind === 4 ? 10 + age / 2 : w, height: kind === 4 ? 10 + age / 2 : h, alpha: kind === 4 ? Math.max(0, (1 - age / 10) * .6) : kind === 5 ? Math.max(0, 1 - age / 7) : 1 };
+  });
+  state.ballBounce = e.game_value(13); state.ballFrame = state.ballBounce === 0 ? 3 : state.ballBounce === 2 ? 2 : 1;
   return state;
 }
-function draw(){drawGame(ctx,engine,renderState());}
-function update(){
-  const state=snapshot();$('#score-left').textContent=state.score[0];$('#score-right').textContent=state.score[1];
-  const mode=engine.game_value(12),seconds=Math.ceil(state.remainingTicks/30);
-  $('.clock span').textContent=mode===0?'Temps restant':mode===1?'Objectif':'Premier but';
-  $('#clock').textContent=mode===0?`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`:mode===1?'7 buts':'Gagnant';
-  $('.clock').classList.toggle('urgent',mode===0&&seconds<=10);
-  const notice=engine.game_value(11)>0?bonusNames[engine.game_value(10)]:'';
-  $('#bonus-notice').textContent=notice;$('#bonus-notice').hidden=!notice;
-  if(state.phase!==previousPhase){previousPhase=state.phase;
-    $('#status').textContent=state.phase===0?'Préparez-vous…':state.phase===2?`But pour ${engine.game_value(5)===0?'Bleu':'Rouge'} !`:state.phase===3?'Match terminé':'Duel local · À vous de jouer';
-    if(state.phase===3){const[a,b]=state.score;$('#result').textContent=a===b?'Match nul !':a>b?'Bleu remporte le match !':'Rouge remporte le match !';$('#final-score').textContent=`Bleu ${a} — ${b} Rouge`;$('#finished').hidden=false;$('#paused').hidden=true;$('#pause').disabled=true;keys.clear();audio.stopAll();$('#again').focus();}
+function update() {
+  const e = engine(), state = snapshot(), phase = state.phase;
+  $('#score-left').textContent = state.score[0] ?? 0; $('#score-right').textContent = state.score[1] ?? 0;
+  const seconds = Math.ceil((state.remainingTicks ?? 1800) / 30);
+  $('#clock').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  $('.clock').classList.toggle('urgent', started && seconds <= 10);
+  const notice = e?.game_value(11) > 0 ? bonusNames[e.game_value(10)] : '';
+  $('#bonus-notice').textContent = notice; $('#bonus-notice').hidden = !notice;
+  $('#welcome').hidden = started; $('#finished').hidden = !started || phase !== 3; $('#paused').hidden = !started || !paused || phase === 3;
+  $('#start').disabled = !canStart(); $('#start').hidden = mode === 'online' && role === 'guest';
+  $('#start').textContent = !core ? 'Chargement…' : mode === 'local' ? 'Commencer' : room?.connected ? 'Lancer le match' : 'En attente d’un adversaire';
+  $('#welcome-title').textContent = mode === 'local' ? 'À vous de jouer.' : room?.connected ? 'Vous êtes deux !' : 'Invitez un adversaire.';
+  $('#welcome-detail').textContent = mode === 'local' ? 'Marquez plus de buts que votre adversaire. Le match se joue à deux sur le même clavier.'
+    : room?.connected ? role === 'host' ? 'Vous jouez Bleu. Votre adversaire joue Rouge. Lancez le match quand vous êtes prêts.' : 'Vous jouez Rouge. Le créateur de la salle va lancer le match.'
+      : 'Créez une salle, partagez son code et retrouvez-vous sur le terrain.';
+  $('#pause').disabled = !started || phase === 3 || (mode === 'online' && !room?.connected);
+  $('#pause').textContent = pauseFlags[ownSide()] ? 'Reprendre' : 'Pause';
+  const mayResume = mode === 'local' || (!!room?.connected && pauseFlags[ownSide()]);
+  $('#resume').disabled = !mayResume; $('#resume').textContent = mayResume ? 'Reprendre' : 'Adversaire en pause';
+  $('#pause-detail').textContent = mode === 'local' ? 'Le temps vous attend.' : !room?.connected ? 'Votre adversaire est déconnecté. Rejoignez une salle pour rejouer.'
+    : pauseFlags[ownSide()] ? 'Vous avez mis le match en pause. Chaque joueur doit reprendre pour continuer.' : 'Votre adversaire a mis le match en pause.';
+  $('#restart').hidden = mode === 'online'; $('#restart').disabled = !started;
+  $('#again').disabled = !canStart(); $('#again').textContent = mode === 'online' && role === 'guest' ? 'Le créateur peut relancer' : 'Rejouer';
+  $('#create-room').disabled = !core || busy; $('#join-room').disabled = !core || busy;
+  $('#bonuses').disabled = mode === 'online' && (role === 'guest' || started);
+  $('#settings-legend').textContent = started ? 'Votre partie · 60 secondes' : 'Votre partie';
+  for (const side of [0, 1]) {
+    $('#' + ['skin-left', 'skin-right'][side]).disabled = mode === 'online' && (role === null || side !== ownSide());
+    $('.control-side.' + (side === 0 ? 'blue' : 'red')).dataset.own = String(mode === 'online' && role !== null && side === ownSide());
+  }
+  $('#status').textContent = mode === 'online' && !room?.connected ? 'Salle privée · En attente d’un adversaire'
+    : !started ? 'Terrain libre · Deux joueurs' : phase === 0 ? 'Préparez-vous…' : phase === 2 ? `But pour ${e.game_value(5) === 0 ? 'Bleu' : 'Rouge'} !`
+      : phase === 3 ? 'Match terminé' : mode === 'online' ? `Duel à distance · Vous jouez ${role === 'host' ? 'Bleu' : 'Rouge'}` : 'Duel local · À vous de jouer';
+  if (phase !== previousPhase) {
+    previousPhase = phase;
+    if (started && phase === 3) {
+      const [a, b] = state.score; $('#result').textContent = a === b ? 'Match nul !' : a > b ? 'Bleu remporte le match !' : 'Rouge remporte le match !';
+      $('#final-score').textContent = `Bleu ${a} — ${b} Rouge`; keys.clear(); audio.stopAll();
+    }
   }
 }
-function animate(time){const elapsed=last?Math.min(time-last,250):0;last=time;
-  if(engine&&started&&!paused&&engine.game_value(0)!==3){accumulator+=elapsed;while(accumulator>=1000/30){engine.game_tick(input());playSounds(engine.game_value(7));accumulator-=1000/30;}update();}
-  draw();requestAnimationFrame(animate);
+function animate(time) {
+  const elapsed = last ? Math.min(time - last, 250) : 0; last = time;
+  if (core && started && !paused && engine().game_value(0) !== 3 && (mode === 'local' || (role === 'host' && room?.connected))) {
+    accumulator += elapsed;
+    while (accumulator >= 1000 / 30) {
+      const mask = mode === 'local' ? input() : input() | ((performance.now() - lastInputAt < 350 ? remoteInput : 0) << 4);
+      core.game_tick(mask); playSounds(core.game_value(7)); accumulator -= 1000 / 30; broadcast();
+    }
+    update();
+  }
+  if (role === 'host' && performance.now() - lastBroadcast > 200) broadcast();
+  drawGame(ctx, engine(), renderState()); requestAnimationFrame(animate);
 }
-window.sportheads={snapshot,renderState,get engine(){return engine;},render(){update();draw();}};
-try{
-  const response=await fetch('./physics-core.wasm');if(!response.ok)throw new Error('Chargement du moteur impossible.');
-  const[wasm]=await Promise.all([WebAssembly.instantiateStreaming(response),loadAssets()]);engine=wasm.instance.exports;engine.game_reset(1);
-  $('#start').disabled=false;$('#start').textContent='Commencer';window.ready=true;
-}catch(error){$('#start').textContent='Recharger la page';$('#start').disabled=false;$('#start').addEventListener('click',()=>location.reload());$('#status').textContent='Le jeu n’a pas pu se charger. Rechargez la page pour réessayer.';window.loadError=error.message;}
+window.sportheads = { snapshot, renderState, get engine() { return engine(); }, render() { update(); drawGame(ctx, engine(), renderState()); } };
+try {
+  const response = await fetch('./physics-core.wasm'); if (!response.ok) throw new Error('Chargement du moteur impossible.');
+  const [wasm] = await Promise.all([WebAssembly.instantiateStreaming(response), loadAssets()]);
+  core = wasm.instance.exports; core.game_reset(1); window.ready = true;
+  const code = normalizeCode(new URL(location.href).searchParams.get('room') || '');
+  if (validCode(code)) { selectMode('online'); $('#join-code').value = code; roomStatus('Code reçu. Cliquez sur Rejoindre pour entrer dans la salle.'); }
+  update();
+} catch (error) {
+  $('#start').textContent = 'Recharger la page'; $('#start').disabled = false; $('#start').addEventListener('click', () => location.reload());
+  $('#status').textContent = 'Le jeu n’a pas pu se charger. Rechargez la page pour réessayer.'; window.loadError = error.message;
+}
 requestAnimationFrame(animate);

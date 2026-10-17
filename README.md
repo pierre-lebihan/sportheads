@@ -1,25 +1,42 @@
 # Sportheads
 
-**[Jouer à deux sur le même clavier](https://pierre-lebihan.github.io/sportheads/)**
+**[Jouer à Sportheads](https://pierre-lebihan.github.io/sportheads/)**
 
 Reconstruction web de Sports Heads Football European Edition. Le cœur du match
 est écrit en Rust et compilé en WebAssembly. Le navigateur gère l'affichage et
 les entrées ; la physique, les commandes, le score, les remises en jeu et le
 chronomètre sont dans le cœur indépendant du navigateur.
 
-Cette version propose un **match local sur terrain libre**, les **18 bonus**,
-les trois modes (60 secondes, premier à sept, premier but gagnant), les tailles
-de buts et 26 personnages. Le rendu utilise les sprites, animations et sons du
+Deux choix : **sur le même clavier** ou **à distance dans une salle privée**.
+Les matchs durent 60 secondes, sur terrain libre, avec les **18 bonus** et
+26 personnages. Le rendu utilise les sprites, animations et sons du
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
-L'IA est volontairement exclue. Tournoi, sauvegarde, sélection de tous les terrains
-et multijoueur à distance restent à venir.
+L'IA est volontairement exclue. Tournoi, sauvegarde et sélection de tous les terrains
+restent hors de cette version. Les variantes premier à sept/premier but et les
+tailles de buts ne sont plus proposées dans l'interface.
 
 - Gauche : A/Q, D, W/Z et espace.
 - Droite : flèches et P.
 - Échap : pause. Le match se met aussi en pause à la perte de focus.
 
+À distance : choisir **À distance**, créer une salle et partager son code de
+huit caractères ou son lien. L'autre joueur clique sur **Rejoindre**, puis
+le créateur lance le match. Le créateur joue Bleu, l'invité Rouge ; chacun peut
+utiliser les flèches et P ou les touches Q/A, D, Z/W et espace.
+
+La salle accueille deux joueurs. Les pauses sont partagées, et chaque joueur
+doit reprendre sa propre pause. Le créateur peut lancer une revanche. Fermer
+son onglet ferme la salle ; une déconnexion arrête le match, sans reprise
+automatique d'une partie abandonnée.
+
+Les salles utilisent le service de mise en relation PeerServer et WebRTC.
+La connexion directe a été vérifiée ; le test forcé des relais TURN publics
+échoue dans l'environnement de validation. Certains réseaux restrictifs peuvent
+donc empêcher la connexion et nécessiteront un relais dédié.
+
 [État du match](docs/match-progress.md) · [État de la physique](docs/physics-progress.md) ·
+[Multijoueur distant](docs/multiplayer.md) ·
 [Banc de comparaison Flash/Rust](https://pierre-lebihan.github.io/sportheads/physics.html)
 
 ## Construire et lancer
@@ -56,6 +73,8 @@ python3 -m http.server 8765 --bind 127.0.0.1
 node scripts/physics-parity.cjs
 node scripts/match-parity.cjs
 node scripts/check-game.cjs http://127.0.0.1:8765/_site/
+node --test tests/net-state.test.mjs tests/rooms.test.mjs
+node scripts/check-online.cjs http://127.0.0.1:8765/_site/
 node scripts/check-pages.cjs http://127.0.0.1:8765/_site/physics.html
 ```
 
@@ -63,6 +82,8 @@ node scripts/check-pages.cjs http://127.0.0.1:8765/_site/physics.html
 `replay-probe.cjs` et `timeline-replay-probe.cjs` documentent l'investigation du
 Flash ; le [constat initial](docs/feasibility.md) conserve les premières preuves.
 Les fichiers non versionnés qu'il référence restent locaux.
+Les tests de salles du navigateur utilisent le vrai PeerServer public et des
+connexions WebRTC entre contextes indépendants. Ils demandent un accès Internet.
 
 ## Publication
 

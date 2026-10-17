@@ -51,13 +51,16 @@ rejouer, perte de focus et absence de débordement sur écran étroit.
 
 ## Suite de la phase 1
 
-Les trois modes locaux sont disponibles : chronométré, premier à sept et premier
-but gagnant. Les grands/petits buts reprennent la durée initiale de 600 étapes
-(20 secondes actives), comme le jeu original. Les 26 têtes sont sélectionnables.
+L'interface expose seulement deux modes : sur le même clavier et à distance
+avec code de salle. Les matchs sont chronométrés sur 60 secondes, avec buts
+classiques. Les anciennes variantes restent testées dans le noyau mais ne sont
+plus proposées. Les bonus peuvent toujours modifier temporairement les buts.
+Les 26 têtes sont sélectionnables.
 
 Les 18 bonus, le rendu des sprites, les animations et les sons sont intégrés.
 Les menus de tournoi, la sélection des autres terrains, les améliorations et la
-sauvegarde restent à porter. Les rooms et le réseau restent en phase 2.
+sauvegarde restent hors de cette version. Les salles et le réseau sont décrits
+dans [multiplayer.md](multiplayer.md).
 
 Le rendu utilise les ressources originales exportées en SVG/PNG et les sons en MP3.
 La page et ses réglages sont une interface web ; ils ne reproduisent pas encore
@@ -73,7 +76,7 @@ Le test d'intégration applique chaque bonus dans le monde physique réel et
 vérifie les corps et joints restants, puis les trois modes de victoire.
 
 Le test navigateur vérifie la lecture des sprites, les commandes, une partie
-complète, les réglages des trois modes et tailles de buts, les 18 effets et
+complète, le choix local/distant, les 18 effets et
 l'apparition automatique des objets. Le chargement des graphismes reprend les
 requêtes échouées de manière transitoire. Les fichiers audio ont été chargés et
 décodés ; l'identité auditive et la fidélité visuelle de toutes les combinaisons

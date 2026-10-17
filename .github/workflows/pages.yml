@@ -27,6 +27,9 @@ jobs:
         run: |
           node --check web/game.js
           node --check web/render.js
+          node --check web/rooms.js
+          node --check web/net-state.js
+          node --test tests/net-state.test.mjs tests/rooms.test.mjs
       - name: Build playable match and comparison bench
         run: python3 scripts/build-pages.py
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5

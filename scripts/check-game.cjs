@@ -51,17 +51,11 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     assert.equal(await page.locator('#finished').isVisible(),true);
     await page.click('#again');
     const fresh=await page.evaluate(()=>sportheads.snapshot());assert.deepEqual(fresh.score,[0,0]);assert.equal(fresh.phase,0);
-    // Settings must reach the actual core, and every original bonus must render.
+    // Only local/remote multiplayer are exposed; all games share timed rules.
     assert.equal(await page.locator('#skin-left option').count(),26);
-    await page.selectOption('#mode','1');await page.selectOption('#goals','1');
-    await page.click('#restart');
-    assert.deepEqual(await page.evaluate(()=>[sportheads.engine.game_value(12),sportheads.engine.game_value(8),sportheads.engine.game_value(9)]),[1,140,140]);
-    assert.equal(await page.locator('#clock').innerText(),'7 buts');
-    await page.selectOption('#mode','2');await page.selectOption('#goals','2');
-    await page.click('#restart');
-    assert.deepEqual(await page.evaluate(()=>[sportheads.engine.game_value(12),sportheads.engine.game_value(8)]),[2,60]);
-    assert.equal(await page.locator('#clock').innerText(),'Gagnant');
-    await page.selectOption('#mode','0');await page.selectOption('#goals','0');await page.click('#restart');
+    assert.equal(await page.locator('#mode,#goals').count(),0);
+    assert.equal(await page.locator('.play-modes button').count(),2);
+    assert.deepEqual(await page.evaluate(()=>[sportheads.engine.game_value(12),sportheads.engine.game_value(8),sportheads.engine.game_value(9)]),[0,100,100]);
     for(let kind=1;kind<=18;kind++){
       const state=await page.evaluate(kind=>{const e=sportheads.engine;e.game_start(4,0,0,true);for(let i=0;i<89;i++)e.game_tick(0);e.game_collect(kind,kind%2);for(let i=0;i<3;i++)e.game_tick(0);sportheads.render();return sportheads.renderState();},kind);
       assert.ok(state.players.every(p=>Number.isFinite(p.scale)));
@@ -83,6 +77,6 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     await page.screenshot({path:'evidence/local-match-mobile.png',fullPage:true});
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({passed:true,url,checks:['two-player movement/jump/kick','pause/resume','goal/score/reset','full-match expiry/replay','blur pause','mobile layout','three modes/goal sizes','18 bonus renderings','automatic pickup spawn','decoded audio/mute'],completeMatchSteps:final.steps,score:final.score}));
+    console.log(JSON.stringify({passed:true,url,checks:['two-player movement/jump/kick','pause/resume','goal/score/reset','full-match expiry/replay','blur pause','mobile layout','local/remote selection','18 bonus renderings','automatic pickup spawn','decoded audio/mute'],completeMatchSteps:final.steps,score:final.score}));
   }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

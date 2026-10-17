@@ -121,6 +121,45 @@ test('two occupied seats reject a third join and release both failed peers', asy
   assert.equal(room.connected, false); assert.deepEqual(events.ready, []);
 });
 
+test('disposable updates use an unordered channel without retries; controls keep the reliable path', async t => {
+  const { peers, createRoom } = setup(t);
+  const { room, events } = createRoom(); await room.create();
+  const connection = new FakeConnection(), pc = connection.peerConnection = new EventTarget();
+  const sent = [];
+  const adopted = [];
+  pc.ondatachannel = event => adopted.push(event.channel.label);
+  const channel = { label: 'sportheads-realtime-v1', readyState: 'open', bufferedAmount: 0,
+    send: message => sent.push(JSON.parse(message)), close() { this.readyState = 'closed'; this.onclose?.(); } };
+  pc.createDataChannel = (label, config) => {
+    assert.equal(label, channel.label); assert.deepEqual(config, { ordered: false, maxRetransmits: 0 }); return channel;
+  };
+  peers[0].incoming(connection); connection.openChannel();
+  assert.equal(room.realtime, undefined, 'older peers never receive an unsupported extra channel');
+  connection.emit('data', { type: 'capabilities', realtime: 1 });
+  pc.ondatachannel({ channel: { label: 'peerjs-control' } });
+  const extra = { ...channel, readyState: 'open', close() { this.readyState = 'closed'; } };
+  pc.ondatachannel({ channel: extra });
+  assert.deepEqual(adopted, ['peerjs-control'], 'PeerJS must never adopt the disposable data channel');
+  assert.equal(extra.readyState, 'closed', 'a duplicate realtime channel is refused');
+  assert.equal(room.send({ type: 'frame', sequence: 1 }, { volatile: true }), true);
+  assert.deepEqual(sent, [{ type: 'frame', sequence: 1 }]);
+  room.send({ type: 'pause', value: true }, { volatile: true }); assert.equal(connection.sent.at(-1).type, 'pause');
+  channel.bufferedAmount = 20000;
+  assert.equal(room.send({ type: 'frame', sequence: 2 }, { volatile: true }), false);
+  assert.equal(sent.length, 1); assert.equal(room.connected, true);
+  channel.onmessage({ data: JSON.stringify({ type: 'input', sequence: 7, mask: 0 }) });
+  assert.equal(events.messages.at(-1).mask, 0);
+  channel.onmessage({ data: '{invalid' }); channel.onmessage({ data: JSON.stringify({ type: 'pause', value: false }) });
+  assert.equal(events.messages.length, 1);
+  channel.close(); room.send({ type: 'frame', sequence: 3 }, { volatile: true });
+  assert.equal(connection.sent.at(-1).sequence, 3, 'a closed realtime channel falls back to reliable transport');
+  channel.readyState = 'open'; channel.bufferedAmount = 0; room.realtime = channel;
+  channel.send = () => { channel.onclose(); throw new DOMException('closed during send', 'InvalidStateError'); };
+  assert.equal(room.send({ type: 'input', sequence: 4, mask: 0 }, { volatile: true }), true);
+  assert.equal(connection.sent.at(-1).sequence, 4, 'a close event during send also falls back safely');
+  assert.equal(room.connected, true);
+});
+
 test('a failed creator return releases its new reservation so the original guest can accept a retry', async t => {
   const { peers, createRoom } = setup(t, ['unavailable-id', 'open']);
   const { room, events } = createRoom(); await room.join('ABCD2345');
@@ -224,7 +263,7 @@ test('the host reserves its slot before open and rejects a third player without 
   third.openChannel();
   assert.deepEqual(third.sent, [{ type: 'reject', reason: 'full' }]);
   opponent.openChannel();
-  assert.deepEqual(opponent.sent, [{ type: 'welcome', protocol: PROTOCOL, code: room.code }]);
+  assert.deepEqual(opponent.sent, [{ type: 'welcome', protocol: PROTOCOL, code: room.code, realtime: 1 }]);
   assert.deepEqual(events.ready, ['host']);
   t.mock.timers.tick(250);
   assert.equal(third.closed, true);

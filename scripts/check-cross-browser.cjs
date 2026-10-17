@@ -11,9 +11,14 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     await context.addInitScript(({ interrupt, candidatesOnly }) => {
       window.networkEvents = []; window.testConnections = [];
+      window.realtimeChannels = [];
+      const create = RTCPeerConnection.prototype.createDataChannel;
+      const track = channel => { if (channel.label === 'sportheads-realtime-v1') realtimeChannels.push(channel); };
+      RTCPeerConnection.prototype.createDataChannel = function (...args) { const channel = create.apply(this, args); track(channel); return channel; };
       let Peer;
       const watch = connection => {
         window.testConnections.push(connection);
+        connection.peerConnection.addEventListener('datachannel', event => track(event.channel));
         connection.on('error', error => window.networkEvents.push({ scope: 'channel', type: error.type, message: error.message, ice: connection.peerConnection?.iceConnectionState }));
       };
       Object.defineProperty(window, 'Peer', { configurable: true, get: () => Peer, set: Original => {
@@ -46,7 +51,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
       window.RTCPeerConnection = class extends Original { constructor(config, ...args) { super({ ...config, iceServers: [] }, ...args); } };
     });
     const page = await context.newPage(); pages.push(page);
-    page.on('pageerror', error => errors.push(error.message));
+    page.on('pageerror', error => errors.push(error.stack || error.message));
     if (browser === chrome) {
       const cdp = await context.newCDPSession(page); await cdp.send('Emulation.setFocusEmulationEnabled', { enabled: true });
     }
@@ -77,6 +82,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
       await host.waitForFunction(() => document.querySelector('#target-score').value === '3');
       await goToSetup(host, 'rules'); await host.click('#start');
       await guest.waitForFunction(() => sportheads.snapshot().phase === 1 && sportheads.snapshot().started);
+      for (const page of [host, guest]) await page.waitForFunction(() => realtimeChannels.some(channel => channel.readyState === 'open' && !channel.ordered && channel.maxRetransmits === 0));
       if (process.argv.includes('--lan-only')) {
         await guest.waitForFunction(async () => {
           const stats = await window.testConnections.at(-1).peerConnection.getStats();
@@ -88,7 +94,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
       await guest.evaluate(() => window.testConnections.at(-1).emit('error', { type: 'negotiation-failed' }));
       assert.equal(await guest.locator('#network-diagnostic').isVisible(), true);
       const report = JSON.parse(await guest.locator('#network-report').textContent());
-      assert.equal(report.revision, 5);
+      assert.equal(report.revision, 6);
       assert.ok(report.candidateSignaling.incomingCandidates > 0);
       assert.ok(report.candidateSignaling.appliedCandidates > 0);
       assert.equal(report.candidateSignaling.rejectedCandidates, 0);

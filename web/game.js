@@ -2,6 +2,7 @@ import { loadAssets, drawGame, createAudio } from './render.js';
 import './vendor/peerjs-1.5.5.min.js';
 import { Room, normalizeCode, validCode } from './rooms.js';
 import { captureState, createRemoteEngine } from './net-state.js';
+import { createRemoteView } from './net-render.js';
 import { PLAYER_NAMES, PITCHES, updateSelectionPreviews } from './selection.js';
 import { PLAYER_COUNT } from './players.js';
 import { balanceToAssists, assistsToBalance, balanceLabel } from './balance.js';
@@ -16,6 +17,7 @@ const bindings = { KeyA: 1, KeyQ: 1, KeyD: 2, KeyW: 4, KeyZ: 4, Space: 8, ArrowL
 const bonusNames = ['', 'Vitesse augmentée', 'Vitesse réduite', 'Super saut', 'Petit saut', 'Gel adverse', 'Gel', 'Grand but', 'Petit but', 'Bombes', 'Grand ballon', 'Ballon rebondissant', 'Petit ballon', 'Ballon sans rebond', 'Grande tête', 'Petite tête', 'Pied adverse cassé', 'Pied cassé', 'Intrus sur le terrain'];
 const effectNames = ['ring', 'green-ring', 'red-ring', 'explosion', 'dust', 'trail'];
 let core, remote = createRemoteEngine(), room = null, mode = 'local', role = null;
+let remoteView = createRemoteView(remote.engine), lastUiKey;
 let started = false, paused = false, pauseFlags = [false, false], soundEnabled = true;
 let last = 0, accumulator = 0, previousPhase = -1, lastBroadcast = 0;
 let matchId = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, receivedInput = -1;
@@ -31,6 +33,7 @@ for (const [id, selected] of [['skin-left', 1], ['skin-right', 2]]) {
 }
 for (const pitch of PITCHES) { const option = new Option(pitch.name, pitch.id); option.selected = pitch.id === 8; $('#pitch').add(option); }
 const engine = () => mode === 'online' && role === 'guest' ? remote.engine : core;
+const renderEngine = () => mode === 'online' && role === 'guest' && started && !paused && room?.connected && engine().game_value(0) === 1 ? remoteView.engine : engine();
 const assists = () => balanceToAssists(+$('#balance').value);
 const applyAssists = () => assists().forEach((level, side) => core?.game_set_assistance(side, level));
 const skins = () => [+$('#skin-left').value, +$('#skin-right').value];
@@ -64,7 +67,7 @@ function roomStatus(message, error = false) {
   if (error && room) $('#network-report').textContent = JSON.stringify(room.diagnostic(), null, 2);
 }
 function sendInput() {
-  if (mode === 'online' && role === 'guest' && room?.connected) room.send({ type: 'input', sequence: ++inputSequence, mask: paused ? 0 : input(), skin: +$('#skin-right').value });
+  if (mode === 'online' && role === 'guest' && room?.connected) room.send({ type: 'input', sequence: ++inputSequence, mask: paused ? 0 : input(), skin: +$('#skin-right').value }, { volatile: started && !paused });
 }
 function broadcast() {
   if (mode !== 'online' || role !== 'host' || !room?.connected) return;
@@ -72,7 +75,8 @@ function broadcast() {
   if (!started) state.values[14] = validTarget() ? targetScore() : lastValidTarget;
   if (!started) { state.values[15] = +$('#pitch').value; state.players.forEach((player, side) => { player[6] = assists()[side]; }); }
   room.send({ type: 'frame', sequence: ++frameSequence, matchId, started, bonuses: $('#bonuses').checked,
-    setupStep: validSetupStep(setupStep) ? setupStep : 'players', pauseFlags: [...pauseFlags], state });
+    setupStep: validSetupStep(setupStep) ? setupStep : 'players', pauseFlags: [...pauseFlags], state },
+  { volatile: started && !paused && state.values[0] === 1 });
   lastBroadcast = performance.now();
 }
 function pause(value = true) {
@@ -102,7 +106,7 @@ function clearMatch() {
   settingsOpen = false;
   started = false; paused = false; pauseFlags = [false, false]; clearInput(); remoteInput = 0;
   last = 0; accumulator = 0; previousPhase = -1; receivedSequence = -1; receivedInput = -1;
-  remote = createRemoteEngine(); audio.stopAll(); core?.game_reset(1); applyAssists();
+  remote = createRemoteEngine(); remoteView = createRemoteView(remote.engine); audio.stopAll(); core?.game_reset(1); applyAssists();
 }
 function leaveRoom() {
   restoringSettings = false; clearTimeout(recoveryTimer);
@@ -156,6 +160,8 @@ function onMessage(message) {
   receivedSequence = message.sequence; matchId = message.matchId; started = message.started;
   setupStep = message.setupStep;
   pauseFlags = message.pauseFlags; paused = pauseFlags.some(Boolean);
+  remoteView.update({ active: started && !paused && message.state.values[0] === 1,
+    key: `${matchId}:${started}:${message.state.values[0]}:${message.state.values[15]}` });
   // Preserve the guest's desired skin while an older snapshot is still in flight.
   $('#skin-left').value = message.state.skins[0];
   $('#balance').value = assistsToBalance(message.state.players.map(player => player[6]));
@@ -335,6 +341,12 @@ function renderState() {
 }
 function update() {
   const e = engine(), state = snapshot(), phase = state.phase;
+  // Tick/position changes belong to the canvas, not to the preparation menus.
+  const uiKey = JSON.stringify([!!core, mode, role, state.connected, started, paused, settingsOpen, setupStep, busy, restoringSettings,
+    pauseFlags, phase, state.score, state.targetScore, state.pitch, state.assists, matchId, skins(), $('#target-score').value, $('#pitch').value, $('#balance').value, $('#bonuses').checked,
+    e?.game_value(10), (e?.game_value(11) || 0) > 0, hasTouch()]);
+  if (uiKey === lastUiKey) return;
+  lastUiKey = uiKey;
   const names = ['Bleu', 'Rouge'];
   document.body.classList.toggle('touch-device', hasTouch());
   $('#play-view').disabled = !started;
@@ -396,16 +408,19 @@ function animate(time) {
   const elapsed = last ? Math.min(time - last, 250) : 0; last = time;
   if (core && started && !paused && engine().game_value(0) !== 3 && (mode === 'local' || (role === 'host' && room?.connected))) {
     accumulator += elapsed;
+    let advanced = false;
     while (accumulator >= 1000 / 30) {
       const mask = mode === 'local' ? input() : input() | ((performance.now() - lastInputAt < 350 ? remoteInput : 0) << 4);
-      core.game_tick(mask); playSounds(core.game_value(7)); accumulator -= 1000 / 30; broadcast();
+      core.game_tick(mask); playSounds(core.game_value(7)); accumulator -= 1000 / 30; advanced = true;
     }
+    if (advanced) broadcast();
     update();
   }
   if (role === 'host' && performance.now() - lastBroadcast > 200) broadcast();
-  drawGame(ctx, engine(), renderState()); requestAnimationFrame(animate);
+  remoteView.advance(time);
+  drawGame(ctx, renderEngine(), renderState()); requestAnimationFrame(animate);
 }
-window.sportheads = { snapshot, renderState, get engine() { return engine(); }, render() { update(); drawGame(ctx, engine(), renderState()); } };
+window.sportheads = { snapshot, renderState, get engine() { return engine(); }, get renderEngine() { return renderEngine(); }, render() { update(); remoteView.advance(); drawGame(ctx, renderEngine(), renderState()); } };
 try {
   const response = await fetch('./physics-core.wasm'); if (!response.ok) throw new Error('Chargement du moteur impossible.');
   const [wasm] = await Promise.all([WebAssembly.instantiateStreaming(response), loadAssets()]);

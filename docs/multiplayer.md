@@ -48,21 +48,38 @@ salles, aucun compte ni historique. Il faut partager le code avec son adversaire
 
 - PeerJS 1.5.5 est versionné dans `web/vendor/` avec sa licence MIT.
 - [PeerServer Cloud](https://peerjs.com/server/cloud) met les navigateurs en
-  relation ; un canal WebRTC chiffré transporte ensuite les messages.
+  relation ; WebRTC chiffré transporte ensuite les messages.
 - Le navigateur du créateur est l'autorité : un seul moteur fait avancer le
   match à 30 Hz. L'invité envoie uniquement ses commandes et son personnage.
 - Le créateur transmet les corps actifs, animations, bonus, score, terrain, objectif de victoire et niveaux d'aide, ainsi que l'étape de préparation.
-  L'invité utilise une façade de lecture pour le même renderer. Il ne recalcule
-  pas la physique et ne peut pas modifier le camp adverse par ses commandes.
-- Les messages sont validés : version du protocole (6), ordre des états/commandes,
+  L'invité garde une façade de lecture exacte pour les règles et le score.
+  Une seconde façade anime uniquement les positions et angles à la fréquence de
+  l'écran, avec une extrapolation limitée à 80 ms et des corrections sur 50 ms.
+  Pause, but, changement de match, remplacement de corps et téléportation coupent
+  le lissage. Il ne recalcule ni les collisions ni le résultat des tirs.
+- Les messages sont validés : version du protocole (7), ordre des états/commandes,
   schéma et limites numériques, bornes des collections et fréquence entrante.
   Les états périmés sont ignorés ; les corps remplacés ne grossissent pas les
   messages. Une file d'envoi saturée abandonne les vues obsolètes.
 
-Ce modèle évite la divergence de deux simulations. Le créateur reste un joueur
-de confiance ; il peut modifier son propre navigateur. Aucun classement ni
-service de compétition n'est proposé. Le ressenti de l'invité dépend du délai
-aller-retour : cette version n'utilise pas de prédiction ni de rollback réseau.
+Les deux navigateurs négocient un canal supplémentaire pour les positions et
+commandes du match : non ordonné, sans retransmission, avec une file bornée.
+Une mise à jour récente remplace une ancienne ; les numéros de séquence rejettent
+les états périmés. Les commandes maintenues sont réémises toutes les 50 ms et
+expirent chez l'hôte après 350 ms de silence. Les réglages, pauses, buts et fins
+de match restent sur le canal fiable. Une ancienne version, ou l'échec du canal
+rapide, conserve le transport fiable. Le protocole de salles 7 reste compatible.
+Le canal supplémentaire est isolé du gestionnaire PeerJS pour qu'il ne remplace
+pas son canal de contrôle.
+
+Le créateur n'envoie que le dernier état après plusieurs ticks de rattrapage.
+Les menus HTML ne sont plus reconstruits à chaque position ; ils sont mis à
+jour quand leurs données changent. Ce modèle évite la divergence de deux
+simulations : le lissage est visuel et ne change pas le score. Le créateur reste
+un joueur de confiance ; il peut modifier son propre navigateur. Aucun classement
+ni service de compétition n'est proposé. Le délai réel des actions dépend toujours
+du trajet réseau. Cette version n'utilise pas de rollback ni de prédiction locale
+des collisions ; une interruption prolongée peut encore produire un gel visuel.
 
 ## Pauses et déconnexions
 
@@ -145,6 +162,7 @@ node --test tests/*.test.mjs
 node scripts/check-game.cjs http://127.0.0.1:8765/_site/
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
 node scripts/check-rejoin.cjs http://127.0.0.1:8765/_site/
+node scripts/check-network-smoothness.cjs http://127.0.0.1:8765/_site/
 node scripts/check-setup.cjs http://127.0.0.1:8765/_site/
 node scripts/check-mobile.cjs http://127.0.0.1:8765/_site/
 node scripts/check-background.cjs http://127.0.0.1:8765/_site/
@@ -189,3 +207,8 @@ Le test de retour ferme réellement la page du créateur, garde l’invité pré
 puis vérifie le retour par lien et par code, la récupération des réglages, deux
 retours simultanés, le refus d’un troisième joueur et le lancement du match suivant.
 Le test Chrome/WebKit ferme aussi le créateur et le reconnecte dans les deux sens.
+
+Le test de fluidité applique 100 à 190 ms de délai variable aux états et supprime
+une mise à jour sur neuf. Il compare, sur les mêmes images, les mouvements
+de la façade autoritaire et du rendu lissé. Il vérifie le canal sans retransmission
+et le retour à l’état exact en pause. Il ne mesure pas le réseau des téléphones.

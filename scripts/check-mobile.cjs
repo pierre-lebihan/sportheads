@@ -18,9 +18,14 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
         Peer = class extends Original {
           constructor(...args) {
             super(...args);
-            this.on('connection', connection => connection.on('data', message => {
-              if (message?.type === 'input') window.lastRemoteInput = message.mask;
-            }));
+            this.on('connection', connection => {
+              const receive = message => { if (message?.type === 'input') window.lastRemoteInput = message.mask; };
+              connection.on('data', receive);
+              const watch = channel => { if (channel.label === 'sportheads-realtime-v1') channel.addEventListener('message', event => receive(JSON.parse(event.data))); };
+              const pc = connection.peerConnection, create = pc.createDataChannel;
+              pc.createDataChannel = function (...args) { const channel = create.apply(this, args); watch(channel); return channel; };
+              pc.addEventListener('datachannel', event => watch(event.channel));
+            });
           }
         };
       } });

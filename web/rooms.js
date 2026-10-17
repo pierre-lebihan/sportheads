@@ -5,13 +5,14 @@ export const PROTOCOL = 'sportheads-rooms-7';
 const PREFIX = 'sportheads-room-v7-';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SILENCE_TIMEOUT = 120000;
-export const NETWORK_REVISION = 5;
+const REALTIME_LABEL = 'sportheads-realtime-v1';
+export const NETWORK_REVISION = 6;
 export function normalizeCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }
 export function validCode(code) { return /^[A-HJ-NP-Z2-9]{8}$/.test(code); }
 function randomCode() { return Array.from(crypto.getRandomValues(new Uint8Array(8)), n => ALPHABET[n & 31]).join(''); }
 
 // Only matchmaking passes through PeerServer. Match snapshots and inputs use
-// one encrypted WebRTC data channel; the creator is the sole simulation owner.
+// encrypted WebRTC data channels; the creator is the sole simulation owner.
 export class Room {
   constructor({ onReady, onMessage, onDisconnect, onError }) {
     Object.assign(this, { onReady, onMessage, onDisconnect, onError });
@@ -32,6 +33,7 @@ export class Room {
     return { revision: NETWORK_REVISION, protocol: PROTOCOL, role: this.role,
       browser: globalThis.navigator?.userAgent, online: globalThis.navigator?.onLine,
       connected: this.connected, candidateSignaling: this.iceSignaling?.snapshot(),
+      realtime: { open: this.realtime?.readyState === 'open', bufferedBytes: this.realtime?.bufferedAmount || 0 },
       connectivity: this.connectivity, events: this.events.map(event => ({ ...event })) };
   }
 
@@ -146,6 +148,35 @@ export class Room {
     this.connectivity = undefined;
     this.record('channel-attempt');
     const pc = connection.peerConnection;
+    let realtimeAttempted = false;
+    const bindRealtime = channel => {
+      if (channel.label !== REALTIME_LABEL) return;
+      if (this.connection !== connection || this.realtime) { channel.close(); return; }
+      this.realtime = channel;
+      channel.onopen = () => this.record('realtime-open');
+      channel.onclose = () => { if (this.realtime === channel) this.realtime = null; };
+      channel.onerror = () => { channel.close(); };
+      channel.onmessage = event => {
+        if (typeof event.data !== 'string' || event.data.length > 65536) return;
+        let message;
+        try { message = JSON.parse(event.data); } catch { return; }
+        if (message?.type === 'frame' || message?.type === 'input') receive(message);
+      };
+    };
+    if (pc) {
+      // PeerJS 1.5.5 otherwise adopts EVERY incoming channel as its reliable one.
+      const originalDataChannel = pc.ondatachannel;
+      pc.ondatachannel = event => {
+        if (event.channel.label === REALTIME_LABEL) bindRealtime(event.channel);
+        else originalDataChannel?.call(pc, event);
+      };
+    }
+    const enableRealtime = () => {
+      if (this.role !== 'host' || realtimeAttempted || !pc?.createDataChannel) return;
+      realtimeAttempted = true;
+      try { bindRealtime(pc.createDataChannel(REALTIME_LABEL, { ordered: false, maxRetransmits: 0 })); }
+      catch { /* Keep using the reliable channel if this browser cannot open it. */ }
+    };
     pc?.addEventListener('iceconnectionstatechange', () => { this.record('ice-state'); this.captureConnectivity(connection); });
     pc?.addEventListener('signalingstatechange', () => this.record('sdp-state', { signaling: pc.signalingState }));
     pc?.addEventListener('icegatheringstatechange', () => this.record('gathering-state', { gathering: pc.iceGatheringState }));
@@ -167,11 +198,11 @@ export class Room {
         this.send({ type: 'ping', time: Date.now() });
       }, 1000);
       if (this.role === 'host') {
-        if (!this.send({ type: 'welcome', protocol: PROTOCOL, code: this.code }) || this.connection !== connection) return;
+        if (!this.send({ type: 'welcome', protocol: PROTOCOL, code: this.code, realtime: 1 }) || this.connection !== connection) return;
         welcomed = true; this.markReady();
       }
     });
-    connection.on('data', message => {
+    const receive = message => {
       if (this.closed || this.connection !== connection || !message || typeof message !== 'object') return;
       const now = performance.now();
       if (now - rateStart > 1000) { rateStart = now; messages = 0; }
@@ -182,12 +213,16 @@ export class Room {
       }
       if (message.type === 'welcome' && this.role === 'guest' && !welcomed) {
         if (message.protocol !== PROTOCOL || message.code !== this.code) { this.fail('Versions du jeu différentes. Rechargez les deux pages.'); return; }
-        welcomed = true; this.markReady(); return;
+        welcomed = true;
+        if (message.realtime === 1) this.send({ type: 'capabilities', realtime: 1 });
+        this.markReady(); return;
       }
       if (!welcomed) return;
+      if (message.type === 'capabilities') { if (message.realtime === 1) enableRealtime(); return; }
       if (message.type === 'ping') { this.send({ type: 'pong' }); return; }
       if (message.type !== 'pong') this.onMessage(message);
-    });
+    };
+    connection.on('data', receive);
     connection.on('close', () => { if (this.connection === connection) this.lost('Votre adversaire a quitté la salle.'); });
     connection.on('error', error => {
       if (this.connection !== connection) return;
@@ -205,8 +240,19 @@ export class Room {
     if (this.peer?.disconnected && !this.peer.destroyed) this.peer.reconnect();
     if (this.connected) this.send({ type: 'ping', time: Date.now() });
   }
-  send(message) {
+  send(message, { volatile = false } = {}) {
     if (!this.connection?.open) return false;
+    const realtime = this.realtime;
+    if (volatile && ['frame', 'input'].includes(message.type) && realtime?.readyState === 'open') {
+      // Old positions and held-key samples have no value once a newer one exists.
+      if (realtime.bufferedAmount > 16384) return false;
+      try { realtime.send(JSON.stringify(message)); return true; }
+      catch (error) {
+        this.record('realtime-send-error', { type: error.name });
+        if (this.realtime === realtime) this.realtime = null;
+        realtime.close();
+      }
+    }
     // Drop obsolete views instead of building seconds of delay on a slow link.
     if (message.type === 'frame' && this.connection.dataChannel?.bufferedAmount > 65536) return false;
     try { this.connection.send(message); return true; } catch (error) {
@@ -219,6 +265,7 @@ export class Room {
     const connection = this.connection; this.connection = null;
     const wasConnected = this.connected; this.connected = false;
     this.iceSignaling?.drop(connection?.connectionId);
+    const realtime = this.realtime; this.realtime = null; realtime?.close();
     connection?.close();
     if (this.closed) return;
     if (wasConnected) this.onDisconnect(message);
@@ -232,6 +279,7 @@ export class Room {
     clearTimeout(this.timer); clearInterval(this.heartbeat); clearInterval(this.statsTimer);
     const connection = this.connection; this.connection = null;
     this.iceSignaling?.close();
+    const realtime = this.realtime; this.realtime = null; realtime?.close();
     connection?.close(); this.peer?.destroy();
   }
 }

@@ -6,7 +6,7 @@ const PREFIX = 'sportheads-room-v7-';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SILENCE_TIMEOUT = 120000;
 const REALTIME_LABEL = 'sportheads-realtime-v1';
-export const NETWORK_REVISION = 6;
+export const NETWORK_REVISION = 7;
 export function normalizeCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }
 export function validCode(code) { return /^[A-HJ-NP-Z2-9]{8}$/.test(code); }
 function randomCode() { return Array.from(crypto.getRandomValues(new Uint8Array(8)), n => ALPHABET[n & 31]).join(''); }
@@ -33,6 +33,9 @@ export class Room {
     return { revision: NETWORK_REVISION, protocol: PROTOCOL, role: this.role,
       browser: globalThis.navigator?.userAgent, online: globalThis.navigator?.onLine,
       connected: this.connected, candidateSignaling: this.iceSignaling?.snapshot(),
+      signaling: { ...this.iceSignaling?.signaling(), peerOpen: this.peer?.open === true,
+        peerDisconnected: this.peer?.disconnected === true, peerDestroyed: this.peer?.destroyed === true,
+        suspended: this.suspended },
       realtime: { open: this.realtime?.readyState === 'open', bufferedBytes: this.realtime?.bufferedAmount || 0 },
       connectivity: this.connectivity, events: this.events.map(event => ({ ...event })) };
   }
@@ -111,6 +114,8 @@ export class Room {
         const oppositeRole = this.role === 'host' ? 'guest' : 'host';
         const expectedPeer = PREFIX + this.code + (oppositeRole === 'guest' ? '-guest' : '');
         if (this.closed || connection.peer !== expectedPeer || connection.metadata?.role !== oppositeRole || connection.metadata?.protocol !== PROTOCOL || this.connection) {
+          this.record('connection-rejected', { reason: this.closed ? 'closed' : this.connection ? 'occupied'
+            : connection.peer !== expectedPeer ? 'seat' : connection.metadata?.role !== oppositeRole ? 'role' : 'protocol' });
           connection.on('error', () => {});
           connection.on('open', () => {
             connection.send({ type: 'reject', reason: this.connection ? 'full' : 'version' });
@@ -187,7 +192,12 @@ export class Room {
     if (pc?.getStats) { this.captureConnectivity(connection); this.statsTimer = setInterval(() => this.captureConnectivity(connection), 1000); }
     let welcomed = false, rateStart = performance.now(), messages = 0;
     this.lastSeen = rateStart;
-    this.timer = setTimeout(() => this.lost('La connexion a expiré. Essayez une nouvelle salle ou un autre réseau.'), 18000);
+    this.timer = setTimeout(() => {
+      if (pc?.localDescription?.type === 'offer' && !pc.remoteDescription) {
+        this.record('answer-timeout');
+        this.lost('Aucune réponse de l’autre joueur. Vérifiez qu’il est sur le jeu et que le code correspond à sa salle actuelle.');
+      } else this.lost('La connexion a expiré. Essayez une nouvelle salle ou un autre réseau.');
+    }, 18000);
     connection.on('open', () => {
       if (this.closed || this.connection !== connection) { connection.close(); return; }
       this.record('channel-open');

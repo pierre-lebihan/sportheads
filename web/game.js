@@ -61,10 +61,13 @@ function music() {
   if (soundEnabled && started && !paused && engine().game_value(0) !== 3) audio.play('music-match', { loop: true, volume: .14 });
   else audio.stopAll();
 }
+function refreshDiagnostic() {
+  if (room) $('#network-report').textContent = JSON.stringify(room.diagnostic(), null, 2);
+}
 function roomStatus(message, error = false) {
   $('#room-status').textContent = message; $('#room-status').classList.toggle('error', error);
-  $('#network-diagnostic').hidden = !error || !room;
-  if (error && room) $('#network-report').textContent = JSON.stringify(room.diagnostic(), null, 2);
+  $('#network-diagnostic').hidden = !room;
+  if (room && (error || $('#network-diagnostic').open)) refreshDiagnostic();
 }
 function sendInput() {
   if (mode === 'online' && role === 'guest' && room?.connected) room.send({ type: 'input', sequence: ++inputSequence, mask: paused ? 0 : input(), skin: +$('#skin-right').value }, { volatile: started && !paused });
@@ -259,7 +262,9 @@ $('#create-room').addEventListener('click', () => connectRoom(true));
 $('#join-form').addEventListener('submit', event => { event.preventDefault(); connectRoom(false); });
 $('#leave-room').addEventListener('click', leaveRoom);
 $('#copy-code').addEventListener('click', () => copyRoom(false)); $('#copy-link').addEventListener('click', () => copyRoom(true));
+$('#network-diagnostic').addEventListener('toggle', () => { if ($('#network-diagnostic').open) refreshDiagnostic(); });
 $('#copy-diagnostic').addEventListener('click', async () => {
+  refreshDiagnostic();
   try { await navigator.clipboard.writeText($('#network-report').textContent); $('#diagnostic-copy-status').textContent = ' Diagnostic copié.'; }
   catch { $('#diagnostic-copy-status').textContent = ' Sélectionnez le texte ci-dessus pour le copier.'; }
 });

@@ -7,6 +7,7 @@ class FakeConnection extends EventEmitter {
   constructor(metadata = { protocol: PROTOCOL, role: 'guest' }) {
     super();
     this.metadata = metadata;
+    this.peerConnection = new EventTarget();
     this.open = false;
     this.closed = false;
     this.sent = [];
@@ -398,6 +399,26 @@ test('route stats survive a lost channel and collection stops on departure', asy
   const samples = pc.getStats.mock.callCount();
   t.mock.timers.tick(30000);
   assert.equal(pc.getStats.mock.callCount(), samples);
+});
+
+test('an unanswered offer reports a missing response rather than an ICE network failure', async t => {
+  const { createRoom } = setup(t);
+  const { room, events } = createRoom(); await room.join('ABCD2345');
+  Object.assign(room.connection.peerConnection, { localDescription: { type: 'offer' }, remoteDescription: null, iceConnectionState: 'new' });
+  t.mock.timers.tick(18000);
+  assert.match(events.errors[0], /Aucune réponse/);
+  assert.doesNotMatch(events.errors[0], /autre réseau/);
+  assert.ok(room.diagnostic().events.some(event => event.event === 'answer-timeout' && event.ice === 'new'));
+  assert.equal(room.closed, true);
+});
+
+test('a received answer that fails ICE keeps the network timeout message', async t => {
+  const { createRoom } = setup(t);
+  const { room, events } = createRoom(); await room.join('ABCD2345');
+  Object.assign(room.connection.peerConnection, { localDescription: { type: 'offer' }, remoteDescription: { type: 'answer' }, iceConnectionState: 'checking' });
+  t.mock.timers.tick(18000);
+  assert.match(events.errors[0], /autre réseau/);
+  assert.ok(!room.diagnostic().events.some(event => event.event === 'answer-timeout'));
 });
 
 test('a fatal peer error closes the waiting room before calling onError', async t => {

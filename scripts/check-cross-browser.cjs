@@ -94,7 +94,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
       await guest.evaluate(() => window.testConnections.at(-1).emit('error', { type: 'negotiation-failed' }));
       assert.equal(await guest.locator('#network-diagnostic').isVisible(), true);
       const report = JSON.parse(await guest.locator('#network-report').textContent());
-      assert.equal(report.revision, 6);
+      assert.equal(report.revision, 7);
       assert.ok(report.candidateSignaling.incomingCandidates > 0);
       assert.ok(report.candidateSignaling.appliedCandidates > 0);
       assert.equal(report.candidateSignaling.rejectedCandidates, 0);

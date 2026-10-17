@@ -6,7 +6,7 @@ import { protectIceSignaling } from '../web/ice-signaling.js';
 function setup() {
   const peer = new EventEmitter(); let ready = false;
   const sent = [], events = [];
-  peer.socket = { _wsOpen: () => ready, send(message) { if (ready) sent.push(JSON.parse(JSON.stringify(message))); } };
+  peer.socket = Object.assign(new EventEmitter(), { _wsOpen: () => ready, send(message) { if (ready) sent.push(JSON.parse(JSON.stringify(message))); } });
   const guard = protectIceSignaling(peer, (event, details) => events.push({ event, ...details }));
   const connection = { connectionId: 'test', peerConnection: { addIceCandidate: async () => {} } };
   guard.watch(connection);
@@ -23,6 +23,29 @@ test('signals generated before the signalling socket is ready are sent in order 
   assert.equal(guard.snapshot().queuedSignals, 2); assert.equal(guard.snapshot().flushedSignals, 2);
   peer.emit('open'); assert.equal(sent.length, 2, 'signals are not duplicated by a later open event');
   guard.close();
+});
+
+test('description diagnostics distinguish sending an offer from receiving an answer, including without a channel', () => {
+  const { peer, sent, events, guard, open } = setup();
+  guard.drop('test');
+  peer.socket.emit('message', { type: 'OFFER', src: 'private-room-id', payload: { sdp: 'private-sdp' } });
+  assert.equal(guard.signaling().incomingOffers, 1, 'a waiting creator can report an offer even without an attached channel');
+  peer.socket.send(signal('ANSWER'));
+  assert.equal(guard.signaling().outgoingAnswers, 1);
+  assert.equal(guard.signaling().socketOpen, false);
+  open(); assert.equal(sent.length, 1);
+  assert.equal(guard.signaling().outgoingAnswers, 1, 'flushing the same description is not another attempt');
+  peer.socket.send(signal('OFFER'));
+  assert.equal(guard.signaling().outgoingOffers, 1);
+  assert.equal(guard.signaling().incomingAnswers, 0, 'an unanswered offer must remain distinguishable');
+  peer.socket.emit('message', { type: 'ANSWER', payload: { sdp: 'private-sdp' } });
+  peer.socket.emit('message', { type: 'HEARTBEAT' });
+  assert.equal(guard.signaling().incomingAnswers, 1);
+  assert.equal(guard.signaling().socketOpen, true);
+  assert.doesNotMatch(JSON.stringify({ events, state: guard.signaling() }), /private-room-id|private-sdp/);
+  guard.close();
+  assert.equal(peer.socket.listenerCount('message'), 0, 'closing removes the observer');
+  assert.equal(guard.signaling().incomingAnswers, 1, 'the failed attempt stays available after close');
 });
 
 test('native candidate getters are copied explicitly and diagnostic output contains no addresses', () => {

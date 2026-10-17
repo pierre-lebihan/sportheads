@@ -15,6 +15,7 @@ function plainCandidate(candidate) {
 export function protectIceSignaling(peer, record) {
   const socket = peer.socket, queue = [];
   let closed = false, currentId, restoreCandidate;
+  const exchanges = { outgoingOffers: 0, incomingOffers: 0, outgoingAnswers: 0, incomingAnswers: 0 };
   let counts;
   const reset = () => { counts = { outgoingCandidates: 0, incomingCandidates: 0, appliedCandidates: 0, rejectedCandidates: 0, remoteEndSignals: 0, queuedSignals: 0, flushedSignals: 0 }; };
   reset();
@@ -22,6 +23,10 @@ export function protectIceSignaling(peer, record) {
   const ready = () => !peer.disconnected && !!socket?._wsOpen?.();
   function send(message) {
     if (closed || !signalTypes.has(message?.type)) return originalSend.call(socket, message);
+    if (message.type === 'OFFER' || message.type === 'ANSWER') {
+      exchanges[message.type === 'OFFER' ? 'outgoingOffers' : 'outgoingAnswers']++;
+      record('description-signal-send', { type: message.type, socketReady: ready() });
+    }
     const belongs = message.payload?.connectionId === currentId;
     if (message.type === 'CANDIDATE') {
       message = { ...message, payload: { ...message.payload, candidate: plainCandidate(message.payload?.candidate) } };
@@ -44,8 +49,14 @@ export function protectIceSignaling(peer, record) {
       originalSend.call(socket, message);
     }
   }
-  if (socket && originalSend) { socket.send = send; peer.on('open', flush); }
+  function incoming(message) {
+    if (closed || (message?.type !== 'OFFER' && message?.type !== 'ANSWER')) return;
+    exchanges[message.type === 'OFFER' ? 'incomingOffers' : 'incomingAnswers']++;
+    record('description-signal-received', { type: message.type });
+  }
+  if (socket && originalSend) { socket.send = send; socket.on?.('message', incoming); peer.on('open', flush); }
   return {
+    signaling: () => ({ socketOpen: ready(), ...exchanges }),
     snapshot: () => ({ ...counts, pendingRemoteCandidates: Math.max(0, counts.incomingCandidates - counts.appliedCandidates - counts.rejectedCandidates) }),
     watch(connection) {
       restoreCandidate?.(); currentId = connection.connectionId; reset();
@@ -77,6 +88,7 @@ export function protectIceSignaling(peer, record) {
     close() {
       closed = true; queue.length = 0; restoreCandidate?.();
       peer.off?.('open', flush);
+      socket?.off?.('message', incoming);
       if (socket?.send === send) socket.send = originalSend;
     },
   };

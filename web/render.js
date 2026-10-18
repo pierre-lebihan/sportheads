@@ -93,12 +93,26 @@ export function drawPitch(ctx, pitch, balanced = false) {
   return true;
 }
 
+// The two original 60 x 200 border boxes at (50,50)/(750,50) stay
+// physically unchanged. Draw their exact silhouettes once in the backdrop.
+function drawArenaCorners(ctx) {
+  for (const [x, angle] of [[50, Math.PI / 4], [750, -Math.PI / 4]]) {
+    ctx.save(); ctx.translate(x, 50); ctx.rotate(angle);
+    ctx.beginPath(); ctx.rect(-30, -100, 60, 200);
+    ctx.fillStyle = '#26363e29'; ctx.fill();
+    ctx.lineJoin = 'round'; ctx.strokeStyle = '#f6efd8d9'; ctx.lineWidth = 4; ctx.stroke();
+    ctx.strokeStyle = '#26363ea6'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.restore();
+  }
+}
+
 function paintBackground(ctx, state, pitch) {
   // bgPitch's groundBg child is placed at (4.45,-25.1) in the original scene.
   // Root bgPitch has multiplier128/256 and additive102/255 on RGB channels.
   drawSprite(ctx, 'stadium', state.stadiumFrame || 3, 4.45, -25.1, undefined, undefined, 0, { filter: 'contrast(0.3846153846153846) brightness(1.3)' });
   drawSprite(ctx, 'bottom-bar', 1, 0, 0);
   drawSprite(ctx, 'ground-texture', 1, 400, 470, 800, 20);
+  drawArenaCorners(ctx);
   if (pitch) drawPitch(ctx, pitch, state.balancedPitches);
 }
 
@@ -121,7 +135,7 @@ function drawBackground(ctx, state, pitch) {
 
 function polygons(ctx, engine) {
   if (!engine.game_vertex_count) return;
-  // Initial twelve bodies are the original arena borders already in the artwork.
+  // Initial twelve bodies are the original arena borders, drawn in the backdrop.
   // Extra unlabelled polygon bodies describe the selected pitch's obstacles.
   for (let i = 12; i < engine.game_body_count(); i++) {
     if (engine.game_body_value(i, BODY.role) !== 0 || engine.game_body_value(i, BODY.active) === 0) continue;

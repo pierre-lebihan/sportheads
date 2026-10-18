@@ -5,11 +5,18 @@ import { drawSprite, getAssets } from './render.js';
 export function createBalanceControls(root, onChange) {
   root.innerHTML = `<legend>Équilibrage</legend>
     <div class="balance-presets" role="group" aria-label="Préréglage d’équilibrage"></div>
-    <div class="balance-amounts" role="group" aria-label="Intensité de l’aide" hidden></div>
+    <div class="balance-amounts" hidden>
+      <label for="balance-amount">Niveau d’aide</label>
+      <input id="balance-amount" type="range" min="0" max="2" step="1" value="1" list="balance-levels">
+      <datalist id="balance-levels"><option value="0"></option><option value="1"></option><option value="2"></option></datalist>
+      <div class="balance-level-labels" aria-hidden="true"><span>Un peu</span><span>Normal</span><span>Beaucoup</span></div>
+    </div>
+    <div class="balance-details" hidden>
     <p id="balance-status" role="status"></p>
     <div class="balance-players" role="group" aria-label="Joueur à régler"></div>
     <div class="balance-stats"></div>
-    <p class="balance-help">Choisissez Manuel pour ajuster les cinq curseurs de chaque joueur.</p>`;
+    <p class="balance-help"></p>
+    </div>`;
   const $ = selector => root.querySelector(selector);
   let config = createBalance(), selected = 0, locked = false, lastPortraits = '';
   const presets = BALANCE_PRESETS.map(item => {
@@ -20,11 +27,12 @@ export function createBalanceControls(root, onChange) {
     });
     $('.balance-presets').append(button); return button;
   });
-  const amounts = AID_AMOUNTS.map((amount, index) => {
-    const button = document.createElement('button'); button.type = 'button'; button.dataset.balanceAmount = amount;
-    button.textContent = `${['Un peu', 'Normal', 'Beaucoup'][index]} · +${amount} %`;
-    button.addEventListener('click', () => { if (locked) return; config = createBalance(config.preset, amount, config.buffs); changed(); });
-    $('.balance-amounts').append(button); return button;
+  const amount = $('#balance-amount');
+  amount.addEventListener('input', () => {
+    if (locked || !['blue', 'red'].includes(config.preset)) return;
+    const index = +amount.value;
+    if (!Number.isInteger(index) || !AID_AMOUNTS[index]) return;
+    config = createBalance(config.preset, AID_AMOUNTS[index], config.buffs); changed();
   });
   const players = [0, 1].map(side => {
     const button = document.createElement('button'); button.type = 'button'; button.className = side ? 'red' : 'blue'; button.dataset.balanceSide = side;
@@ -54,7 +62,10 @@ export function createBalanceControls(root, onChange) {
     root.dataset.preset = config.preset;
     for (const button of presets) { button.disabled = locked; button.setAttribute('aria-pressed', String(button.dataset.balancePreset === config.preset)); }
     $('.balance-amounts').hidden = !['blue', 'red'].includes(config.preset);
-    for (const button of amounts) { button.disabled = locked; button.setAttribute('aria-pressed', String(+button.dataset.balanceAmount === config.amount)); }
+    amount.disabled = locked; amount.value = AID_AMOUNTS.indexOf(config.amount);
+    amount.setAttribute('aria-valuetext', ['Un peu', 'Normal', 'Beaucoup'][+amount.value]);
+    for (const [index, label] of [...$('.balance-level-labels').children].entries()) label.classList.toggle('selected', index === +amount.value);
+    $('.balance-details').hidden = config.preset !== 'manual';
     $('#balance-status').textContent = balanceLabel(config);
     for (const [side, player] of players.entries()) {
       player.button.setAttribute('aria-pressed', String(side === selected));
@@ -66,8 +77,7 @@ export function createBalanceControls(root, onChange) {
       stat.input.setAttribute('aria-label', `${selected ? 'Rouge' : 'Bleu'} : ${BUFF_STATS[index].label}`);
     }
     $('.balance-help').textContent = locked ? 'Réglages en lecture seule. Touchez un joueur pour consulter ses cinq stats.'
-      : config.preset === 'manual' ? 'Touchez un joueur pour régler ses cinq bonus.'
-        : 'Choisissez Manuel pour ajuster les cinq curseurs de chaque joueur.';
+      : 'Touchez un joueur pour régler ses cinq bonus.';
   }
   return {
     get value() { return copyBalance(config); },

@@ -25,7 +25,11 @@ module.exports = { goToSetup, setTarget };
 
 async function setBalance(page, preset, amount = 30) {
   await page.locator(`[data-balance-preset="${preset}"]`).click();
-  if (preset === 'blue' || preset === 'red') await page.locator(`[data-balance-amount="${amount}"]`).click();
+  if (preset === 'blue' || preset === 'red') {
+    const index = [10, 30, 50].indexOf(amount);
+    if (index < 0) throw Error('Aid level must be 10, 30 or 50');
+    await page.locator('#balance-amount').fill(String(index));
+  }
 }
 async function setManualBuffs(page, buffs) {
   await setBalance(page, 'manual');

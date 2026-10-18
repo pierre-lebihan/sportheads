@@ -12,9 +12,13 @@ Cinq boutons remplacent l’ancien curseur global :
 - **Normal** : aucun buff.
 - **Superman** : +30 % aux cinq stats pour les deux camps.
 - **Aides bleues / Aides rouges** : le camp choisi reçoit +10, +30 ou +50 %
-  (un peu / normal / beaucoup), l’autre conserve ses capacités normales.
+  via un curseur à trois positions (un peu / normal / beaucoup), l’autre conserve ses capacités normales.
 - **Manuel** : chaque camp possède cinq curseurs indépendants entre 0 et 50 %,
   par pas de 1 %. Passer en manuel conserve les valeurs du préréglage courant.
+
+Seul **Manuel** affiche les portraits, les types d’amélioration et leurs pourcentages.
+Les autres préréglages restent compacts, avec seulement le curseur d’intensité
+pour les aides bleues ou rouges. L’invité voit les mêmes choix en lecture seule.
 
 Les cinq stats sont l’impulsion de saut, le rayon de la tête, la protection
 du but, la vitesse de course et le mouvement de frappe. Le saut multiplie l’impulsion verticale, pas directement la hauteur atteinte.

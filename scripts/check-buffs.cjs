@@ -14,13 +14,25 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-buffs.cjs
       await goToSetup(page,'players');await page.selectOption('#skin-left','13');await page.selectOption('#skin-right','23');await goToSetup(page,'rules');
       const buffs=()=>page.evaluate(()=>sportheads.snapshot().buffs);
       assert.deepEqual(await buffs(),[[0,0,0,0,0],[0,0,0,0,0]]);
+      assert.equal(await page.locator('.balance-details').isVisible(),false);
+      assert.equal(await page.locator('#balance-amount').isVisible(),false);
       await setBalance(page,'superman');assert.deepEqual(await buffs(),[[30,30,30,30,30],[30,30,30,30,30]]);
       assert.equal(await page.locator('#buff-jump').isEnabled(),false);
+      assert.equal(await page.locator('.balance-details').isVisible(),false);
+      assert.doesNotMatch(await page.locator('#balance-controls').innerText(), /%|Puissance de saut|Taille de la tête|Protection du but/);
       await setBalance(page,'manual');assert.deepEqual(await buffs(),[[30,30,30,30,30],[30,30,30,30,30]]);
+      assert.equal(await page.locator('.balance-details').isVisible(),true);
+      assert.equal(await page.locator('[data-buff-stat]:visible').count(),5);
       for (const preset of ['blue','red']) for (const amount of [10,30,50]) {
         await setBalance(page,preset,amount);
+        assert.equal(await page.locator('.balance-details').isVisible(),false);
+        assert.equal(await page.locator('#balance-amount').isVisible(),true);
+        assert.equal(await page.locator('#balance-amount').getAttribute('aria-valuetext'), ['Un peu','Normal','Beaucoup'][[10,30,50].indexOf(amount)]);
+        assert.doesNotMatch(await page.locator('#balance-controls').innerText(), /%|Puissance de saut|Taille de la tête|Protection du but/);
         assert.deepEqual(await buffs(),[0,1].map(side=>Array(5).fill(preset===(side===0?'blue':'red')?amount:0)));
       }
+      await page.locator('#balance-amount').focus();await page.keyboard.press('Home');await page.keyboard.press('ArrowRight');
+      assert.deepEqual(await buffs(),[[0,0,0,0,0],[30,30,30,30,30]],'the aid slider snaps to its middle level');
       await setManualBuffs(page,[[1,50,49,37,11],[49,23,17,5,43]]);
       assert.deepEqual(await buffs(),[[1,50,49,37,11],[49,23,17,5,43]]);
       for (const [side,expected] of [[0,['1','50','49','37','11']],[1,['49','23','17','5','43']]]) {

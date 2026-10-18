@@ -48,3 +48,13 @@ fn score_matches_have_no_time_limit_and_target_is_bounded() {
     assert_ne!(game.phase, Phase::Finished);
     assert_eq!(game.remaining_ticks, 1);
 }
+
+#[test]
+fn public_matches_limit_the_goal_target_to_one_through_nine() {
+    for (requested, expected) in [(0, 1), (1, 1), (7, 7), (9, 9), (10, 9), (99, 9)] {
+        assert_eq!(
+            Game::score_match_on_balanced(7, requested, false, 8).target_score,
+            expected
+        );
+    }
+}

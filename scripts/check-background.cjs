@@ -1,7 +1,7 @@
 // Real WebRTC and frozen Chrome pages reproduce leaving the browser to share a link.
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const { goToSetup } = require('./setup-browser.cjs');
+const { goToSetup, setTarget } = require('./setup-browser.cjs');
 const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-background.cjs URL');
 (async () => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
@@ -70,7 +70,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-backgroun
     await resume(host); await sleep(1200);
     assert.equal((await state(h)).connected, true);
     assert.equal((await state(g)).connected, true);
-    await goToSetup(h, 'rules'); await h.fill('#target-score', '3');
+    await goToSetup(h, 'rules'); await setTarget(h, 3);
     await g.waitForFunction(() => document.querySelector('#target-score').value === '3');
     await h.click('#start'); await g.waitForFunction(() => sportheads.snapshot().started);
     await freeze(guest);

@@ -15,7 +15,7 @@ facultatives et une IA locale à trois niveaux.
 - Un but donne un point à l'autre camp, une seule fois. Après 15 étapes, le
   terrain est réinitialisé et le compte à rebours revient. Le score et l’objectif
   sont conservés.
-- Le premier à atteindre l’objectif gagne (7 par défaut, réglable de 1 à 99).
+- Le premier à atteindre l’objectif gagne (7 par défaut, réglable de 1 à 9 avec les boutons − et +).
   Les commandes ne font plus avancer le match une fois terminé.
 - Pause/reprise, nouvelle partie et pause automatique à la perte de focus.
 - Hasard explicite pour le lancement du ballon. Même graine et mêmes commandes
@@ -69,7 +69,7 @@ Les 18 bonus, le rendu des sprites, les animations et les sons sont intégrés.
 Les 19 terrains historiques restent dans le noyau pour les comparaisons Flash ;
 les 7 terrains déjà symétriques et les 9 variantes corrigées sont proposés et tirés au hasard
 dans les trois modes. Les dispositions 13, 19 et 20 restent exclues.
-Les aides individuelles à trois niveaux sont intégrées.
+Les aides individuelles à cinq niveaux sont intégrées.
 Voir [joueurs et aides](players.md). Seuls les matchs simples sont proposés.
 Les salles et le réseau sont décrits
 dans [multiplayer.md](multiplayer.md).

@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const { goToSetup } = require('./setup-browser.cjs');
+const { goToSetup, setTarget } = require('./setup-browser.cjs');
 const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs URL');
 (async () => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
@@ -78,14 +78,23 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     await local.click('#setup-next'); assert.equal((await state(local)).setupStep, 'rules');
     assert.equal(await local.locator('#pitch').isVisible(), false);
     assert.equal(await local.locator('#start').isVisible(), true);
+    assert.equal(await local.locator('#target-score').inputValue(), '7');
+    assert.equal(await local.locator('#target-score').evaluate(input => input.readOnly), true);
+    await setTarget(local, 9); assert.equal(await local.locator('#goal-plus').isEnabled(), false);
+    await local.evaluate(() => document.querySelector('#goal-plus').click());
+    assert.equal(await local.locator('#target-score').inputValue(), '9');
+    await setTarget(local, 1); assert.equal(await local.locator('#goal-minus').isEnabled(), false);
+    await local.evaluate(() => document.querySelector('#goal-minus').click());
+    assert.equal(await local.locator('#target-score').inputValue(), '1');
     assert.equal(await local.locator('#assist-left,#assist-right').count(), 0);
-    assert.deepEqual(await local.locator('#balance').evaluate(input => [input.min, input.max, input.step, input.value]), ['-3', '3', '1', '0']);
-    await local.locator('#balance').fill('-3'); await local.locator('#balance').focus();
-    for (let position = -3; position <= 3; position++) {
-      if (position > -3) await local.keyboard.press('ArrowRight');
+    assert.deepEqual(await local.locator('#balance').evaluate(input => [input.min, input.max, input.step, input.value]), ['-5', '5', '1', '0']);
+    await local.locator('#balance').fill('-5'); await local.locator('#balance').focus();
+    for (let position = -5; position <= 5; position++) {
+      if (position > -5) await local.keyboard.press('ArrowRight');
       assert.deepEqual((await state(local)).assists, [Math.max(0, -position), Math.max(0, position)]);
+      if (Math.abs(position) >= 4) assert.match(await local.locator('#balance-status').innerText(), new RegExp(position === -5 || position === 5 ? '52' : '40'));
     }
-    await local.locator('#balance').fill('-1'); await local.fill('#target-score', '1');
+    await local.locator('#balance').fill('-1'); await setTarget(local, 1);
     await local.screenshot({ path: 'evidence/setup-rules.png' });
     await goToSetup(local, 'players'); await goToSetup(local, 'rules');
     assert.equal(await local.locator('#target-score').inputValue(), '1');
@@ -138,27 +147,39 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     assert.equal(await guest.locator('#random-player-0').isEnabled(), false);
     assert.equal(await guest.locator('#skin-right').inputValue(), '12');
     await goToSetup(host, 'rules'); await waitStep(guest, 'rules');
-    await host.locator('#balance').fill('3'); await host.fill('#target-score', '1'); await host.locator('#bonuses').uncheck();
-    await guest.waitForFunction(() => document.querySelector('#balance').value === '3' && document.querySelector('#target-score').value === '1' && !document.querySelector('#bonuses').checked);
+    await host.locator('#balance').fill('5'); await setTarget(host, 1); await host.locator('#bonuses').uncheck();
+    await guest.waitForFunction(() => document.querySelector('#balance').value === '5' && document.querySelector('#target-score').value === '1' && !document.querySelector('#bonuses').checked);
+    assert.equal(await guest.locator('#balance-status').innerText(), 'Rouge +52 %');
+    for (const id of ['goal-minus', 'goal-plus']) assert.equal(await guest.locator('#' + id).isEnabled(), false);
+    await guest.evaluate(() => document.querySelector('#goal-plus').dispatchEvent(new MouseEvent('click')));
+    assert.equal(await guest.locator('#target-score').inputValue(), '1');
     for (const id of ['balance', 'target-score', 'bonuses', 'pitch']) assert.equal(await guest.locator('#' + id).isEnabled(), false, `${id} is read only`);
     assert.equal(await guest.locator('#start').isVisible(), false);
     await guest.evaluate(() => document.querySelector('#setup-next').click()); assert.equal((await state(host)).setupStep, 'rules');
     await guest.screenshot({ path: 'evidence/setup-online-guest-rules.png' });
     // A temporarily invalid target must not block shared navigation.
-    await host.fill('#target-score', '0'); await goToSetup(host, 'pitch'); await waitStep(guest, 'pitch');
-    await goToSetup(host, 'rules'); await host.fill('#target-score', '1'); await waitStep(guest, 'rules');
+    await host.evaluate(() => { const input = document.querySelector('#target-score'); input.value = '0'; input.dispatchEvent(new Event('input', { bubbles: true })); }); await goToSetup(host, 'pitch'); await waitStep(guest, 'pitch');
+    await goToSetup(host, 'rules'); await setTarget(host, 1); await waitStep(guest, 'rules');
     // Simulate a still-open older guest without changing the room transport.
     await guest.evaluate(async () => {
       const source = new URL(document.querySelector('script[type="module"]').src); source.pathname = source.pathname.replace('game.js', 'rooms.js');
       const { Room } = await import(source.href), send = Room.prototype.send;
       Room.prototype.send = function (message, options) {
-        if (window.legacyPitchInput && message.type === 'input') { message = { ...message }; delete message.pitchGeometry; }
+        if (message.type === 'input') {
+          message = { ...message };
+          if (window.legacyPitchInput) delete message.pitchGeometry;
+          if (window.legacyAssistInput) delete message.extendedAssists;
+        }
         return send.call(this, message, options);
       };
       window.legacyPitchInput = true;
     });
     await host.waitForFunction(() => document.querySelector('#start').disabled && document.querySelector('#start').textContent.includes('actualiser'));
     await guest.evaluate(() => { window.legacyPitchInput = false; });
+    await host.waitForFunction(() => !document.querySelector('#start').disabled);
+    await guest.evaluate(() => { window.legacyAssistInput = true; });
+    await host.waitForFunction(() => document.querySelector('#start').disabled && document.querySelector('#start').textContent.includes('actualiser'));
+    await guest.evaluate(() => { window.legacyAssistInput = false; });
     await host.waitForFunction(() => !document.querySelector('#start').disabled);
     // A newer guest follows an older host's original geometry in both previews
     // and the match renderer, instead of silently drawing the corrected variant.
@@ -175,14 +196,14 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     await host.evaluate(() => { window.legacyPitchFrames = false; });
     await guest.waitForFunction(() => sportheads.renderState().balancedPitches === true);
     await host.click('#start'); await guest.waitForFunction(() => sportheads.snapshot().started);
-    assert.deepEqual((await state(guest)).assists, [0, 3]);
+    assert.deepEqual((await state(guest)).assists, [0, 5]);
     await finish(host); await guest.waitForFunction(() => sportheads.snapshot().phase === 3);
     await host.click('#play-view'); await host.locator('#balance').fill('-2'); await host.click('#close-settings'); await host.click('#again');
     await guest.waitForFunction(() => sportheads.snapshot().matchId === 2 && sportheads.snapshot().assists[0] === 2);
     assert.deepEqual((await state(host)).assists, [2, 0]);
     await host.click('#play-view'); await host.click('#leave-room'); await guest.waitForFunction(() => !sportheads.snapshot().connected);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '12 distinct portraits', '16 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'seven-position slider', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'older guest must refresh before corrected pitch', 'older host retains original rendering', 'replay', 'mobile layout'] }));
+    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '12 distinct portraits', '16 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'eleven-position slider', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'older guest must refresh before corrected pitch', 'older host retains original rendering', 'replay', 'mobile layout'] }));
   } catch (error) {
     for (const [index, page] of pages.entries()) if (!page.isClosed()) {
       console.error(index, await state(page).catch(() => null));

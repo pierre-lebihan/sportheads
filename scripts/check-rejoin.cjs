@@ -1,7 +1,7 @@
 // Real PeerServer reservations and real page closes, without storage or a backend.
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const { goToSetup } = require('./setup-browser.cjs');
+const { goToSetup, setTarget } = require('./setup-browser.cjs');
 const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cjs URL');
 (async () => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
@@ -30,7 +30,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
     await Promise.all([connected(host), connected(guest)]);
     await host.selectOption('#skin-left', '11'); await guest.selectOption('#skin-right', '7');
     await goToSetup(host, 'pitch'); await host.selectOption('#pitch', '12');
-    await goToSetup(host, 'rules'); await host.fill('#target-score', '5');
+    await goToSetup(host, 'rules'); await setTarget(host, 5);
     await host.locator('#balance').evaluate(input => { input.value = '-2'; input.dispatchEvent(new Event('input', { bubbles: true })); });
     await host.locator('#bonuses').uncheck(); await settingsMatch(guest);
     await host.click('#start'); await guest.waitForFunction(() => sportheads.snapshot().phase === 1);

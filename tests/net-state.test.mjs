@@ -95,7 +95,7 @@ test('malformed and oversized packets cannot mutate the last accepted state', as
     packet => { packet.bodies[0].pop(); },
     packet => { packet.players[0][2] = 2; },
     packet => { packet.players[1][5] = 1e12; },
-    packet => { packet.players[0][6] = 4; },
+    packet => { packet.players[0][6] = 6; },
     packet => { packet.players[1][6] = -1; },
     packet => { packet.players[0][6] = 1; packet.players[1][6] = 1; },
     packet => { packet.players.push(packet.players[0]); },
@@ -144,10 +144,10 @@ test('accepted packet arrays are copied and the facade cannot be edited', async 
 });
 
 
-test('all seven exclusive handicap positions survive the WASM snapshot boundary', async () => {
+test('all eleven exclusive handicap positions survive the WASM snapshot boundary', async () => {
   const host = await wasm(); host.game_start_match(7, 3, 0);
   const guest = createRemoteEngine();
-  for (let position = -3; position <= 3; position++) {
+  for (let position = -5; position <= 5; position++) {
     const levels = [Math.max(0, -position), Math.max(0, position)];
     host.game_set_assistance(0, levels[0]); host.game_set_assistance(1, levels[1]);
     const packet = captureState(host, [1, 12]);

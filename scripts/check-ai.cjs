@@ -1,3 +1,4 @@
+const { setTarget } = require('./setup-browser.cjs');
 const assert = require('node:assert/strict');
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const url = process.argv[2];
@@ -44,7 +45,7 @@ if (!url) throw new Error('Usage: node scripts/check-ai.cjs URL');
         await page.click('#setup-next'); await page.click('#setup-next');
         await page.selectOption('#pitch', level === 'easy' ? '2' : level === 'normal' ? '6' : '18'); await page.click('#setup-next');
         assert.equal(await page.locator('#target-score').inputValue(), '7');
-        await page.fill('#target-score', '1'); await page.uncheck('#bonuses'); await page.locator('#balance').fill('-1');
+        await setTarget(page, 1); await page.uncheck('#bonuses'); await page.locator('#balance').fill('-1');
         await page.click('#start');
         await page.waitForFunction(() => sportheads.snapshot().phase === 1);
         assert.deepEqual(await page.evaluate(() => sportheads.snapshot().assists), [1, 0]);

@@ -12,4 +12,13 @@ async function goToSetup(page, target) {
   }
   if (state.setupStep !== target) throw Error(`Did not reach ${target}`);
 }
-module.exports = { goToSetup };
+async function setTarget(page, target) {
+  if (!Number.isInteger(target) || target < 1 || target > 9) throw Error('Goal target must be between 1 and 9');
+  for (let count = 0; count < 10; count++) {
+    const current = Number(await page.locator('#target-score').inputValue());
+    if (current === target) return;
+    await page.locator(current < target ? '#goal-plus' : '#goal-minus').click();
+  }
+  throw Error('Goal stepper did not reach ' + target);
+}
+module.exports = { goToSetup, setTarget };

@@ -47,7 +47,7 @@ export function isValidState(packet) {
     if (!Array.isArray(players) || players.length !== 2 || !rows(players, 2, 7, player =>
       integer(player[0], 0, 2) && integer(player[1], 0, 2)
       && integer(player[2], 0, 1) && integer(player[3], 0, 1) && integer(player[4], 0, 1)
-      && oneOf(player[5], [0.5, 1, 1.5]) && integer(player[6], 0, 3))) return false;
+      && oneOf(player[5], [0.5, 1, 1.5]) && integer(player[6], 0, 5))) return false;
     if (players[0][6] > 0 && players[1][6] > 0) return false;
     if (!rows(pickups, 16, 4, pickup => integer(pickup[0], 1, 18) && integer(pickup[3], 0, 600))) return false;
     if (!rows(bombs, 16, 2)) return false;

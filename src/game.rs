@@ -65,7 +65,7 @@ pub struct Game {
     pub xspeed: [f64; 2],
     /// Flash tests the current head bitmap's height when deciding to jump.
     pub head_height: [f64; 2],
-    /// Per-match human handicap: 0 neutral, 1/2/3 = +10/20/30% controls.
+    /// Per-match human handicap: 0 neutral, 1..=5 = +10/20/30/40/52% controls.
     pub assistance: [u32; 2],
     random_state: u32,
     pub powerups: Powerups,
@@ -156,7 +156,7 @@ impl Game {
         Self::score_match_layout(seed, target, bonus, pitch, false)
     }
     pub fn score_match_on_balanced(seed: u32, target: u32, bonus: bool, pitch: u32) -> Self {
-        Self::score_match_layout(seed, target, bonus, pitch, true)
+        Self::score_match_layout(seed, target.min(9), bonus, pitch, true)
     }
     fn score_match_layout(seed: u32, target: u32, bonus: bool, pitch: u32, balanced: bool) -> Self {
         let mut game = Self::on_pitch(seed, pitch, balanced);
@@ -176,7 +176,7 @@ impl Game {
     }
     pub fn set_assistance(&mut self, side: usize, level: u32) {
         if side < 2 {
-            self.assistance[side] = level.min(3);
+            self.assistance[side] = level.min(5);
             if self.assistance[side] > 0 {
                 self.assistance[1 - side] = 0;
             }
@@ -353,7 +353,7 @@ impl Game {
         // Preserve the asymmetries in the original game: only the right head can
         // jump off its opponent, and the x<720 restriction only guards rightward motion.
         for side in [1, 0] {
-            let assist = 1.0 + self.assistance[side] as f64 * 0.1;
+            let assist = [1.0, 1.1, 1.2, 1.3, 1.4, 1.52][self.assistance[side] as usize];
             let shift = side * 4;
             let keys = (input >> shift) & 15;
             let index = self.player[side];

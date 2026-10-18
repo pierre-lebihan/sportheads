@@ -1,6 +1,6 @@
 // Functional smoke test of the actual WASM match through its public browser UI.
 const assert=require('node:assert/strict');
-const { goToSetup } = require('./setup-browser.cjs');
+const { goToSetup, setTarget } = require('./setup-browser.cjs');
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 (async()=>{
   const browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-proxy-server']});
@@ -20,8 +20,8 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     assert.equal(await page.locator('#start').isEnabled(),true);
     assert.equal(await page.locator('#target-score').inputValue(),'7');
     assert.equal(await page.locator('#clock').count(),0);
-    await page.fill('#target-score','0'); assert.equal(await page.locator('#start').isEnabled(),false);
-    await page.fill('#target-score','3');
+    await page.evaluate(() => { const input = document.querySelector('#target-score'); input.value = '0'; input.dispatchEvent(new Event('input', { bubbles: true })); }); assert.equal(await page.locator('#start').isEnabled(),false);
+    await setTarget(page, 3);
     await page.click('#start');
     await page.evaluate(()=>{for(let i=0;i<89;i++)sportheads.engine.game_tick(0);sportheads.render();});
     assert.equal(await page.evaluate(()=>sportheads.snapshot().phase),1);

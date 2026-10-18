@@ -1,7 +1,7 @@
 // Real WebRTC with controlled state delay, jitter and missing updates.
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const { goToSetup } = require('./setup-browser.cjs');
+const { goToSetup, setTarget } = require('./setup-browser.cjs');
 const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-network-smoothness.cjs URL');
 (async () => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
@@ -50,7 +50,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-network-s
     const share = new URL(url); share.searchParams.set('room', await host.locator('#room-code').innerText());
     const guest = await pageAt(share.href); await guest.click('#join-room');
     await host.waitForFunction(() => sportheads.snapshot().connected); await goToSetup(host, 'rules');
-    await host.locator('#bonuses').uncheck(); await host.fill('#target-score', '99'); await host.click('#start');
+    await host.locator('#bonuses').uncheck(); await setTarget(host, 9); await host.click('#start');
     await guest.waitForFunction(() => sportheads.snapshot().phase === 1);
     await host.evaluate(() => { window.delayFrames = true; }); await host.keyboard.down('KeyD');
     const samples = await guest.evaluate(async () => {

@@ -6,7 +6,7 @@ import { createRemoteView } from './net-render.js';
 import { PLAYER_NAMES, PITCHES, createCharacterSelection, updateSelectionPreviews } from './selection.js';
 import { PLAYER_COUNT } from './players.js';
 import { BALANCED_PITCHES } from './pitch-geometry.js';
-import { balanceToAssists, assistsToBalance, balanceLabel } from './balance.js';
+import { balanceToAssists, assistsToBalance, balanceLabel, ASSIST_PERCENTS } from './balance.js';
 import { PREPARATION_STEPS, validSetupStep, renderSetup } from './setup-ui.js';
 import { layoutArena, setupFullscreen } from './arena-ui.js';
 import { createTouchControls } from './touch-controls.js';
@@ -29,6 +29,7 @@ let restoringSettings = false, recoveryTimer;
 let opponent = null;
 const pitchGeometry = 'balanced-v1';
 let guestBalancedPitches = false, remoteBalancedPitches = false;
+let guestExtendedAssists = false;
 const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
 const touch = createTouchControls($('#touch-controls'), sendInput);
 $('#touch-layout').value = touch.layout;
@@ -55,9 +56,10 @@ const applyAssists = () => assists().forEach((level, side) => core?.game_set_ass
 const skins = () => [+$('#skin-left').value, +$('#skin-right').value];
 const ownSide = () => role === 'guest' ? 1 : 0;
 const targetScore = () => +$('#target-score').value;
-const validTarget = () => Number.isInteger(targetScore()) && targetScore() >= 1 && targetScore() <= 99;
-const pitchUpdateNeeded = () => mode === 'online' && role === 'host' && room?.connected && !!BALANCED_PITCHES[+$('#pitch').value] && !guestBalancedPitches;
-const canStart = () => !!core && !restoringSettings && validTarget() && !pitchUpdateNeeded() && (mode !== 'online' || (role === 'host' && room?.connected));
+const validTarget = () => Number.isInteger(targetScore()) && targetScore() >= 1 && targetScore() <= 9;
+const peerUpdateNeeded = () => mode === 'online' && role === 'host' && room?.connected
+  && ((!!BALANCED_PITCHES[+$('#pitch').value] && !guestBalancedPitches) || (Math.abs(+$('#balance').value) > 3 && !guestExtendedAssists));
+const canStart = () => !!core && !restoringSettings && validTarget() && !peerUpdateNeeded() && (mode !== 'online' || (role === 'host' && room?.connected));
 function input() {
   let mask = touch.mask();
   for (const key of keys) { const bit = bindings[key] || 0; mask |= mode === 'local' || bit < 16 ? bit : bit >> 4; }
@@ -87,7 +89,7 @@ function roomStatus(message, error = false) {
   if (room && (error || $('#network-diagnostic').open)) refreshDiagnostic();
 }
 function sendInput() {
-  if (mode === 'online' && role === 'guest' && room?.connected) room.send({ type: 'input', sequence: ++inputSequence, mask: paused ? 0 : input(), skin: +$('#skin-right').value, pitchGeometry }, { volatile: started && !paused });
+  if (mode === 'online' && role === 'guest' && room?.connected) room.send({ type: 'input', sequence: ++inputSequence, mask: paused ? 0 : input(), skin: +$('#skin-right').value, pitchGeometry, extendedAssists: true }, { volatile: started && !paused });
 }
 function broadcast() {
   if (mode !== 'online' || role !== 'host' || !room?.connected) return;
@@ -126,6 +128,7 @@ function reset() {
 function clearMatch() {
   opponent = null;
   guestBalancedPitches = false; remoteBalancedPitches = false;
+  guestExtendedAssists = false;
   settingsOpen = false;
   started = false; paused = false; pauseFlags = [false, false]; clearInput(); remoteInput = 0;
   last = 0; accumulator = 0; previousPhase = -1; receivedSequence = -1; receivedInput = -1;
@@ -150,11 +153,11 @@ function onMessage(message) {
       && Array.isArray(message.skins) && message.skins.length === 2 && message.skins.every(skin => Number.isInteger(skin) && skin >= 1 && skin <= PLAYER_COUNT)
       && Number.isInteger(message.pitch) && PITCHES.some(pitch => pitch.id === message.pitch)
       && Number.isInteger(message.targetScore) && message.targetScore >= 1 && message.targetScore <= 99
-      && Number.isInteger(message.balance) && message.balance >= -3 && message.balance <= 3 && typeof message.bonuses === 'boolean') {
+      && Number.isInteger(message.balance) && message.balance >= -5 && message.balance <= 5 && typeof message.bonuses === 'boolean') {
       restoringSettings = false; clearTimeout(recoveryTimer); busy = false;
       room.returningHost = false;
       $('#skin-left').value = message.skins[0]; $('#skin-right').value = message.skins[1];
-      $('#pitch').value = message.pitch; $('#target-score').value = message.targetScore; lastValidTarget = message.targetScore;
+      $('#pitch').value = message.pitch; $('#target-score').value = Math.min(9, message.targetScore); lastValidTarget = Math.min(9, message.targetScore);
       $('#balance').value = message.balance; $('#bonuses').checked = message.bonuses;
       clearMatch(); setupStep = 'players';
       roomStatus('Salle retrouvée. Vous êtes Bleu. Vos réglages sont conservés : préparez le prochain match.');
@@ -165,8 +168,10 @@ function onMessage(message) {
       && Number.isInteger(message.skin) && message.skin >= 1 && message.skin <= PLAYER_COUNT) {
       receivedInput = message.sequence; remoteInput = message.mask; lastInputAt = performance.now();
       const supportsBalanced = message.pitchGeometry === pitchGeometry;
-      const changed = +$('#skin-right').value !== message.skin || guestBalancedPitches !== supportsBalanced;
+      const supportsExtended = message.extendedAssists === true;
+      const changed = +$('#skin-right').value !== message.skin || guestBalancedPitches !== supportsBalanced || guestExtendedAssists !== supportsExtended;
       guestBalancedPitches = supportsBalanced;
+      guestExtendedAssists = supportsExtended;
       $('#skin-right').value = message.skin;
       if (changed) update();
     } else if (message.type === 'pause' && typeof message.value === 'boolean' && started && core.game_value(0) !== 3) {
@@ -292,6 +297,12 @@ $('#copy-diagnostic').addEventListener('click', async () => {
   catch { $('#diagnostic-copy-status').textContent = ' Sélectionnez le texte ci-dessus pour le copier.'; }
 });
 $('#target-score').addEventListener('input', () => { if (validTarget()) lastValidTarget = targetScore(); update(); broadcast(); });
+for (const [id, delta] of [['goal-minus', -1], ['goal-plus', 1]]) $('#' + id).addEventListener('click', () => {
+  if ($('#target-score').disabled) return;
+  const next = Math.max(1, Math.min(9, targetScore() + delta));
+  if (next === targetScore()) return;
+  $('#target-score').value = next; $('#target-score').dispatchEvent(new Event('input', { bubbles: true }));
+});
 $('#bonuses').addEventListener('change', () => { update(); broadcast(); });
 $('#pitch').addEventListener('change', () => { update(); broadcast(); });
 for (const [buttonId, selectId] of randomChoices) $('#' + buttonId).addEventListener('click', () => {
@@ -373,7 +384,7 @@ function update() {
   // Tick/position changes belong to the canvas, not to the preparation menus.
   const uiKey = JSON.stringify([!!core, mode, role, state.connected, started, paused, settingsOpen, setupStep, busy, restoringSettings,
     pauseFlags, phase, state.score, state.targetScore, state.pitch, state.assists, state.difficulty, matchId, skins(), $('#target-score').value, $('#pitch').value, $('#balance').value, $('#bonuses').checked,
-    e?.game_value(10), (e?.game_value(11) || 0) > 0, hasTouch(), touch.layout, guestBalancedPitches, remoteBalancedPitches]);
+    e?.game_value(10), (e?.game_value(11) || 0) > 0, hasTouch(), touch.layout, guestBalancedPitches, remoteBalancedPitches, guestExtendedAssists]);
   if (uiKey === lastUiKey) return;
   lastUiKey = uiKey;
   const names = mode === 'ai' ? ['Vous · Bleu', 'IA · Rouge'] : ['Bleu', 'Rouge'];
@@ -387,7 +398,7 @@ function update() {
   $('#close-settings').hidden = !started;
   $('#touch-controls').hidden = !started;
   touch.update({ mode, side: ownSide(), names, enabled: started && !paused && phase !== 3 && (mode !== 'online' || !!room?.connected) });
-  const teamNames = names.map((name, side) => `${name}${state.assists[side] ? ' +' + state.assists[side] * 10 + '%' : ''}`);
+  const teamNames = names.map((name, side) => `${name}${state.assists[side] ? ' +' + ASSIST_PERCENTS[state.assists[side]] + '%' : ''}`);
   $('.team.blue span').textContent = teamNames[0]; $('.team.red span').textContent = teamNames[1];
   $('.team.blue span').title = names[0]; $('.team.red span').title = names[1];
   $('#score-left').textContent = state.score[0] ?? 0; $('#score-right').textContent = state.score[1] ?? 0;
@@ -395,7 +406,7 @@ function update() {
   $('#bonus-notice').textContent = notice; $('#bonus-notice').hidden = !notice;
   $('#welcome').hidden = started && !settingsOpen; $('#finished').hidden = !started || phase !== 3 || settingsOpen; $('#paused').hidden = !started || !paused || phase === 3 || settingsOpen;
   $('#start').disabled = !canStart();
-  $('#start').textContent = !core ? 'Chargement…' : mode !== 'online' ? 'Commencer' : pitchUpdateNeeded() ? 'Votre adversaire doit actualiser le jeu' : room?.connected ? 'Lancer le match' : 'En attente d’un adversaire';
+  $('#start').textContent = !core ? 'Chargement…' : mode !== 'online' ? 'Commencer' : peerUpdateNeeded() ? 'Votre adversaire doit actualiser le jeu' : room?.connected ? 'Lancer le match' : 'En attente d’un adversaire';
   $('#welcome-title').textContent = mode === 'ai' ? `Contre l’IA · ${difficulty().label}` : mode === 'local' ? 'À vous de jouer.' : room?.connected ? 'Vous êtes deux !' : 'Invitez un adversaire.';
   $('#welcome-detail').textContent = mode === 'ai' ? 'Vous jouez Bleu. L’IA joue Rouge avec les mêmes règles.' : mode === 'local' ? 'Marquez plus de buts que votre adversaire. Jouez à deux avec les commandes tactiles ou le clavier.'
     : room?.connected ? role === 'host' ? 'Vous jouez Bleu. Votre adversaire joue Rouge. Lancez le match quand vous êtes prêts.' : 'Vous jouez Rouge. Le créateur de la salle va lancer le match.'
@@ -416,6 +427,8 @@ function update() {
   const settingsLocked = (started && phase !== 3) || (mode === 'online' && role === 'guest');
   for (const radio of document.querySelectorAll('[name="ai-level"]')) radio.disabled = started && phase !== 3;
   for (const id of ['target-score', 'pitch', 'balance']) $('#' + id).disabled = !!settingsLocked;
+  $('#goal-minus').disabled = !!settingsLocked || targetScore() <= 1;
+  $('#goal-plus').disabled = !!settingsLocked || targetScore() >= 9;
   const balance = +$('#balance').value;
   $('#balance-status').textContent = balanceLabel(balance);
   $('#balance').setAttribute('aria-valuetext', balanceLabel(balance));

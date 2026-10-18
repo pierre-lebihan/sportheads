@@ -1,6 +1,6 @@
 // Real PeerServer + WebRTC integration: independent browser contexts, no mocks.
 const assert = require('node:assert/strict');
-const { goToSetup } = require('./setup-browser.cjs');
+const { goToSetup, setTarget } = require('./setup-browser.cjs');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const url = process.argv[2];
 assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
@@ -62,7 +62,7 @@ assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
     assert.equal(await guest.locator('#skin-left').isEnabled(), false);
     assert.equal(await host.locator('#skin-right').isEnabled(), false);
     await goToSetup(host, 'rules');
-    await host.fill('#target-score', '3');
+    await setTarget(host, 3);
     await guest.waitForFunction(() => document.querySelector('#target-score').value === '3');
     assert.equal(await guest.locator('#target-score').isEnabled(), false);
     await guest.selectOption('#skin-right', '12');

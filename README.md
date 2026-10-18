@@ -9,13 +9,13 @@ l’objectif de buts sont dans le cœur indépendant du navigateur.
 
 Trois choix : **Contre l’IA**, **2 joueurs sur le même écran** ou **En ligne dans une salle privée**.
 Le premier à atteindre l’objectif de buts gagne : **7 par défaut**, réglable
-de 1 à 99, sans limite de temps. Choisissez parmi **16 terrains symétriques**, les **18 bonus**
+de 1 à 9 avec les boutons − et +, sans limite de temps. Choisissez parmi **16 terrains symétriques**, les **18 bonus**
 et **12 joueurs récents** avec aperçu. Les portraits des joueurs sont des caricatures originales ; les autres sprites, animations et sons viennent du
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
-Un match simple contre l’IA ou entre deux humains. Un **curseur à sept
-positions** équilibre le duel : Bleu +30 / +20 / +10 %, neutre, Rouge +10 / +20 /
-+30 %. Un seul joueur est aidé à la fois, sur la vitesse, le saut et la frappe.
+Un match simple contre l’IA ou entre deux humains. Un **curseur à onze
+positions** équilibre le duel : Bleu +52 / +40 / +30 / +20 / +10 %, neutre, Rouge +10 / +20 /
++30 / +40 / +52 %. Un seul joueur est aidé à la fois, sur la vitesse, le saut et la frappe.
 Le centre est le réglage par défaut. L'aide est choisie avant le match puis
 verrouillée ; à distance, le créateur la règle pour la salle.
 Les personnages ont tous les mêmes caractéristiques de base.

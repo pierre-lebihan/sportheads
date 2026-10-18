@@ -1,20 +1,22 @@
 # Joueurs, terrains et aides
 
 Le site propose uniquement des matchs simples contre l’IA, en local ou à distance, au
-nombre de buts choisi (7 par défaut). Il ne contient ni tournoi, coupe,
+nombre de buts choisi (7 par défaut, entre 1 et 9 avec les boutons − et +). Il ne contient ni tournoi, coupe,
 boutique, monnaie, amélioration à débloquer ou sauvegarde de progression.
 
 ## Aider son adversaire
 
-Un seul curseur propose sept positions, neutre au centre :
-Bleu +30 %, Bleu +20 %, Bleu +10 %, neutre, Rouge +10 %, Rouge +20 %, Rouge +30 %.
+Un seul curseur propose onze positions, neutre au centre :
+Bleu +52 / +40 / +30 / +20 / +10 %, neutre, Rouge +10 / +20 / +30 / +40 / +52 %.
 Un seul camp peut être aidé à la fois, y compris dans le moteur et dans les
-états acceptés par l'invité. Les trois intensités sont :
+états acceptés par l'invité. Les cinq intensités sont :
 
 - Niveau 1 : accélération et vitesse de course, impulsion de saut et vitesse
   du mouvement de frappe multipliées par 1,10.
 - Niveau 2 : multiplicateur 1,20.
 - Niveau 3 : multiplicateur 1,30.
+- Niveau 4 : multiplicateur 1,40.
+- Niveau 5 : multiplicateur 1,52.
 
 Ces pourcentages concernent les commandes ; ils ne garantissent pas un
 pourcentage de buts ou une trajectoire identique. La physique, les contacts
@@ -75,7 +77,7 @@ Un invité plus ancien doit actualiser sa page avant que l’hôte puisse lancer
 variante corrigée ; un invité récent conserve le rendu historique face à un ancien
 hôte. Les salles et leurs codes restent sur le même protocole.
 
-`tests/assistance.rs` couvre les trois niveaux, les deux camps, les bonus
+`tests/assistance.rs` couvre les cinq niveaux, les deux camps, les bonus
 et la conservation après un but. Les captures historiques sans aide
 restent vérifiées. `tests/pitches.test.mjs` vérifie les 19 géométries historiques, la symétrie des 16
 terrains publics et leur correspondance avec la source partagée.

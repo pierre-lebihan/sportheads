@@ -76,6 +76,78 @@ fn airborne_jump_does_not_retrigger() {
     assert!(game.world.bodies[game.player[0]].velocity.y > before);
 }
 
+fn stacked_players(top: usize) -> Game {
+    let mut game = Game::score_match_on_balanced(1, 7, false, 8);
+    game.phase = Phase::Playing;
+    game.countdown = 0;
+    for side in 0..2 {
+        let head = game.player[side];
+        let position = Vec2::new(400.0, if side == top { 330.0 } else { 370.0 });
+        let offset = position - game.world.bodies[head].position;
+        for index in [head, game.foot[side]] {
+            let next = game.world.bodies[index].position + offset;
+            game.world
+                .set_transform(index, next, game.world.bodies[index].angle);
+            game.world.bodies[index].velocity =
+                Vec2::new(0.0, if side == top { 10.0 } else { 0.0 });
+        }
+    }
+    game.world
+        .set_transform(game.ball, Vec2::new(100.0, 100.0), 0.0);
+    game.world.bodies[game.ball].velocity = Vec2::default();
+    game
+}
+
+#[test]
+fn both_players_can_jump_from_the_opponents_head() {
+    for side in 0..2 {
+        let mut game = stacked_players(side);
+        let before = game.world.bodies[game.player[side]].position.y;
+        game.step(LEFT_JUMP << (side * 4));
+        let head = &game.world.bodies[game.player[side]];
+        assert_ne!(game.sounds & 2, 0, "side {side} must trigger a jump");
+        assert!(head.velocity.y < -150.0, "side {side} must jump upwards");
+        assert!(head.position.y < before);
+    }
+}
+
+#[test]
+fn head_jump_requires_a_command_and_an_opponent_under_the_falling_player() {
+    for side in 0..2 {
+        for condition in [
+            "no jump",
+            "too far horizontally",
+            "too far vertically",
+            "ascending",
+            "bombed",
+        ] {
+            let mut game = stacked_players(side);
+            let head = game.player[side];
+            match condition {
+                "too far horizontally" => {
+                    game.world.set_transform(head, Vec2::new(440.0, 330.0), 0.0)
+                }
+                "too far vertically" => {
+                    game.world.set_transform(head, Vec2::new(400.0, 300.0), 0.0)
+                }
+                "ascending" => game.world.bodies[head].velocity.y = -10.0,
+                "bombed" => game.powerups.bombed[side] = true,
+                _ => (),
+            }
+            game.step(if condition == "no jump" {
+                0
+            } else {
+                LEFT_JUMP << (side * 4)
+            });
+            assert_eq!(
+                game.sounds & 2,
+                0,
+                "side {side}: {condition} must not trigger an airborne jump"
+            );
+        }
+    }
+}
+
 #[test]
 fn goal_uses_original_display_bounds_and_correct_scorer() {
     let mut game = Game::new(1);

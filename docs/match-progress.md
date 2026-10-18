@@ -21,9 +21,10 @@ facultatives et une IA locale à quatre niveaux.
 - Hasard explicite pour le lancement du ballon. Même graine et mêmes commandes
   reproduisent les mêmes états dans la compilation testée.
 
-Le moteur conserve les asymétries de l'original : le joueur de droite peut
-sauter sur l'autre tête et la borne `x < 720` garde uniquement le mouvement
-vers la droite. La détection de but utilise les limites visuelles du ballon
+Les deux joueurs peuvent sauter depuis la tête adverse en appuyant sur Saut
+lorsqu’ils retombent au-dessus d’elle. Cette possibilité, réservée au joueur
+de droite dans Flash, s’applique désormais aux deux camps. La borne `x < 720`
+garde toujours uniquement le mouvement vers la droite. La détection de but utilise les limites visuelles du ballon
 rotatif, comme le `hitTestObject` de la référence.
 Les scénarios historiques conservent la condition de saut liée à la hauteur
 du sprite Flash. Les avatars modernes du site partagent tous une hauteur de

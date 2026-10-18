@@ -414,8 +414,8 @@ impl Game {
     }
 
     fn apply_controls(&mut self, input: u32) {
-        // Preserve the asymmetries in the original game: only the right head can
-        // jump off its opponent, and the x<720 restriction only guards rightward motion.
+        // Either player can jump off its opponent. The original x<720
+        // restriction still only guards rightward motion.
         for side in [1, 0] {
             let assist = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5][self.assistance[side] as usize];
             let speed_boost = assist * (1.0 + self.buffs[side][3] as f64 / 100.0);
@@ -449,8 +449,7 @@ impl Game {
                     }
                 }
             }
-            let on_head = side == 1
-                && (position.x - other_position.x).abs() < 30.0
+            let on_head = (position.x - other_position.x).abs() < 30.0
                 && position.y < other_position.y
                 && position.y > other_position.y - 45.0
                 && self.world.bodies[index].velocity.y >= 1.0;

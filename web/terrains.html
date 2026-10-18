@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sportheads — terrains retirés à valider</title>
+  <style>
+    :root{font-family:"Trebuchet MS",Arial,sans-serif;color:#243b57;background:#edf4f9;color-scheme:light}
+    *{box-sizing:border-box}body{margin:0}main{max-width:1120px;margin:auto;padding:24px 18px 40px}header{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid #c6d5e1;padding-bottom:14px}a{color:#285d94;text-underline-offset:3px}h1{font-size:28px;margin:24px 0 12px}h2{font-size:20px;margin:28px 0 8px}h3{font-size:17px;margin:0}p{font-size:14px;line-height:1.6;max-width:78ch;margin:8px 0 14px}.note{color:#61798e}.legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:18px 0}.legend label{display:flex;align-items:center;gap:8px;min-height:44px}input{width:18px;height:18px;accent-color:#285d94}button{font:inherit;min-height:44px;padding:8px 14px;border:1px solid #b8ccdc;border-radius:5px;background:white;color:#244875;cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #dc9c24;outline-offset:3px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 18px}.pitch{min-width:0;padding-bottom:18px;border-bottom:1px solid #c6d5e1}.pitch-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 8px}.pitch-heading label{display:flex;align-items:center;gap:7px;min-height:44px;font-size:13px;cursor:pointer;white-space:nowrap}.pitch canvas{display:block;width:100%;height:auto;background:#b9d4e5}.pitch p{font-size:13px;margin:9px 0 0}details{margin-top:24px}summary{cursor:pointer;padding:12px 0}.selection{position:sticky;bottom:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;padding:12px 14px;margin-top:24px;border:1px solid #b8ccdc;background:#fff}.selection output{font-size:13px;overflow-wrap:anywhere}.selection button{background:#285d94;color:white;border-color:#285d94}.status{font-size:13px;color:#61798e}[hidden]{display:none!important}@media(max-width:650px){main{padding:16px 12px 24px}.grid{grid-template-columns:1fr;gap:12px}h1{font-size:24px}.selection{padding:10px}.selection button{font-size:13px}}
+  </style>
+  <script type="module" src="./terrains.js"></script>
+</head>
+<body><main>
+  <header><strong>Sportheads</strong><a href="./">Retour au jeu</a></header>
+  <h1>Les 12 terrains retirés</h1>
+  <p>Le filtre appliqué exigeait une symétrie géométrique exacte autour du milieu du terrain. Il a donc aussi retiré des terrains qui semblent symétriques, parfois pour un seul pixel de décalage. Ce critère était trop strict pour une simple validation visuelle.</p>
+  <p class="note">Ces aperçus utilisent le décor et les obstacles du jeu. Les choix ci-dessous servent à préparer votre réponse ; ils ne changent pas les terrains disponibles.</p>
+  <div class="legend"><label><input id="show-axis" type="checkbox" checked> Montrer le milieu du terrain</label><label><input id="show-mirror" type="checkbox"> Superposer les obstacles en miroir</label></div>
+  <p id="loading" class="status" role="status">Chargement des aperçus…</p>
+  <h2>9 terrains avec de petits décalages</h2>
+  <p class="note">Ils sont proches d’une disposition symétrique. Les mesures ci-dessous sont exprimées en pixels du terrain original, large de 800 pixels.</p>
+  <div id="near-pitches" class="grid"></div>
+  <h2>3 terrains avec une disposition différente entre les camps</h2>
+  <div id="uneven-pitches" class="grid"></div>
+  <details><summary>Voir aussi les 7 terrains conservés</summary><div id="kept-pitches" class="grid"></div></details>
+  <div class="selection"><output id="selected" aria-live="polite">Aucun terrain coché.</output><button id="copy-selection" type="button" disabled>Copier ma sélection</button><span id="copy-status" class="status" role="status"></span></div>
+</main></body>
+</html>

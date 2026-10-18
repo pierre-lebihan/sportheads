@@ -80,8 +80,14 @@ Le [prompt de création](avatar-prompt.md) documente leur provenance.
 
 Les 16 terrains symétriques sont proposés, avec aperçu ; le numéro 8 est
 le terrain libre. Les 19 blueprints historiques restent dans le noyau de comparaison.
+Les obstacles ont un corps graphite opaque, un contour clair doublé d’un trait
+sombre et un léger relief. Le même dessin apparaît dans les aperçus et dans
+les matchs, devant le ciel comme devant les tribunes. Le dessin suit les formes
+physiques existantes ; le liseré décoratif dépasse de 2,5 pixels sans agrandir
+les collisions. Il fait partie du décor mis en cache.
 Leurs obstacles sont des rectangles ou cercles statiques capturés dans Flash,
-avec ses troncatures int/uint. Le rendu utilise les SVG originaux.
+avec ses troncatures int/uint. Le rendu Graphite utilise la géométrie capturée
+pour les terrains historiques et les mêmes corrections que le moteur pour les variantes symétriques.
 Le créateur choisit le terrain à distance.
 
 Les terrains 2, 4, 6, 9, 14, 15, 16, 17 et 18 sont recentrés et leurs paires
@@ -98,7 +104,7 @@ en jeu. L’API historique `game_start_on_pitch` et les fixtures Flash restent i
 Le paquet de publication versionne aussi le WASM pour charger ensemble le moteur
 et le rendu actualisés. En ligne, les messages annoncent la variante géométrique.
 Un invité plus ancien doit actualiser sa page avant que l’hôte puisse lancer une
-variante corrigée ; un invité récent conserve le rendu historique face à un ancien
+variante corrigée ; un invité récent conserve la géométrie historique face à un ancien
 hôte. Les salles et leurs codes restent sur le même protocole.
 
 `tests/buffs.rs` couvre les stats indépendantes, les deux camps, les limites,

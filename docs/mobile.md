@@ -99,7 +99,8 @@ Le profilage local du 18 octobre 2026 a mesuré environ 4,7 ms par rendu complet
 avant ce cache contre 1,1 ms après, dans WebKit de bureau avec viewport mobile.
 Ce résultat isole une économie de rendu ; il ne mesure pas l’iPhone physique.
 `check-render-cache.cjs` compare 40 images avec le dessin original dans Chrome
-et WebKit (tolérance d’arrondi d’un niveau par canal), vérifie les changements
+et WebKit (99,99 % des canaux à un niveau près, faible tolérance supplémentaire
+sur l’anticrénelage des petits reflets), vérifie les changements
 de stade/terrain et l’absence de nouvelle rasterisation pendant 120 images.
 
 ```sh

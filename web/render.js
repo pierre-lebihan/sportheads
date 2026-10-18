@@ -1,5 +1,5 @@
 import { AVATAR_FRAMES } from './players.js';
-import { BALANCED_PITCHES } from './pitch-geometry.js';
+import { BALANCED_PITCHES, ORIGINAL_PITCHES } from './pitch-geometry.js';
 import { NEW_BONUSES, BONUS_FIELD_COUNT } from './bonuses.js';
 // Original vector sprites exported from the SWF; all registration points and
 // timeline frames come from assets/manifest.json, without a Flash runtime.
@@ -104,16 +104,33 @@ export function drawSprite(ctx, name, number, x, y, width, height, angle = 0, op
   return true;
 }
 
+// Shared by pitch previews and live matches. The light outer edge separates
+// obstacles from the stands; the dark face/edge separates them from the sky.
+function paintObstacle(ctx, halfWidth, halfHeight, circle = false) {
+  ctx.fillStyle = '#465964'; ctx.fill();
+  ctx.lineJoin = 'round'; ctx.strokeStyle = '#f6efd8'; ctx.lineWidth = 5; ctx.stroke();
+  ctx.strokeStyle = '#26363e'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.save(); ctx.clip();
+  const highlight = ctx.createLinearGradient(0, -halfHeight, 0, halfHeight);
+  highlight.addColorStop(0, '#ffffff30'); highlight.addColorStop(.55, '#ffffff00'); highlight.addColorStop(1, '#00000028');
+  ctx.fillStyle = highlight; ctx.fillRect(-halfWidth, -halfHeight, halfWidth * 2, halfHeight * 2);
+  ctx.strokeStyle = '#d9e1dc'; ctx.globalAlpha *= .55; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  if (circle) ctx.arc(0, 0, Math.max(0, halfWidth - 4), Math.PI * 1.12, Math.PI * 1.82);
+  else { ctx.moveTo(-halfWidth + 3, -halfHeight + 3); ctx.lineTo(halfWidth - 3, -halfHeight + 3); }
+  ctx.stroke(); ctx.restore();
+}
+
 export function drawPitch(ctx, pitch, balanced = false) {
-  const props = balanced && BALANCED_PITCHES[pitch];
+  const props = (balanced && BALANCED_PITCHES[pitch]) || ORIGINAL_PITCHES[pitch];
   if (!props) return drawSprite(ctx, 'blueprints', pitch, 0, 0);
   for (const [kind, x, y, size, height, angle] of props) {
     ctx.save(); ctx.translate(x, y); ctx.rotate(angle || 0);
-    ctx.fillStyle = kind === 'circle' ? '#84afbd' : '#8eabc9';
     ctx.beginPath();
     if (kind === 'circle') ctx.arc(0, 0, size, 0, Math.PI * 2);
     else ctx.rect(-size, -height, size * 2, height * 2);
-    ctx.fill(); ctx.restore();
+    paintObstacle(ctx, size, kind === 'circle' ? size : height, kind === 'circle');
+    ctx.restore();
   }
   return true;
 }
@@ -148,16 +165,18 @@ function polygons(ctx, engine) {
   // Extra unlabelled polygon bodies describe the selected pitch's obstacles.
   for (let i = 12; i < engine.game_body_count(); i++) {
     if (engine.game_body_value(i, 9) !== 0 || engine.game_body_value(i, 10) === 0) continue;
-    const n = engine.game_vertex_count(i); if (!n) continue;
+    const n = engine.game_vertex_count(i), radius = engine.game_body_value(i, 8);
+    if (!n && !radius) continue;
     ctx.save(); ctx.translate(engine.game_body_value(i, 0), engine.game_body_value(i, 1)); ctx.rotate(engine.game_body_value(i, 4));
-    const gradient = ctx.createLinearGradient(0, -12, 0, 12); gradient.addColorStop(0, '#4b4d49'); gradient.addColorStop(.45, '#252722'); gradient.addColorStop(1, '#0f110e');
-    ctx.fillStyle = gradient; ctx.strokeStyle = '#70736c'; ctx.lineWidth = 1;
     ctx.beginPath();
+    let halfWidth = radius, halfHeight = radius;
+    if (radius) ctx.arc(0, 0, radius, 0, Math.PI * 2);
     for (let j = 0; j < n; j++) {
       const x = engine.game_vertex_value(i, j, 0), y = engine.game_vertex_value(i, j, 1);
+      halfWidth = Math.max(halfWidth, Math.abs(x)); halfHeight = Math.max(halfHeight, Math.abs(y));
       if (j) ctx.lineTo(x, y); else ctx.moveTo(x, y);
     }
-    ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+    ctx.closePath(); paintObstacle(ctx, halfWidth, halfHeight, !!radius); ctx.restore();
   }
 }
 

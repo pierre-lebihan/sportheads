@@ -78,6 +78,7 @@ pub struct Game {
     pub mode: u32,
     pub target_score: u32,
     pub pitch: u32,
+    balanced_pitch: bool,
     pub goal_style: u32,
     pub active_ticks: u32,
     spawn_timer: u32,
@@ -95,10 +96,10 @@ impl Default for Game {
 
 impl Game {
     pub fn new(seed: u32) -> Self {
-        Self::on_pitch(seed, 8)
+        Self::on_pitch(seed, 8, false)
     }
 
-    fn on_pitch(seed: u32, pitch: u32) -> Self {
+    fn on_pitch(seed: u32, pitch: u32, balanced_pitch: bool) -> Self {
         let mut game = Self {
             world: World::new(Vec2::new(0.0, 300.0)),
             player: [0; 2],
@@ -125,6 +126,7 @@ impl Game {
             mode: 0,
             target_score: 7,
             pitch: pitch.clamp(2, 20),
+            balanced_pitch,
             goal_style: 0,
             active_ticks: 0,
             spawn_timer: 0,
@@ -151,7 +153,13 @@ impl Game {
         Self::score_match_on(seed, target, bonus, 8)
     }
     pub fn score_match_on(seed: u32, target: u32, bonus: bool, pitch: u32) -> Self {
-        let mut game = Self::on_pitch(seed, pitch);
+        Self::score_match_layout(seed, target, bonus, pitch, false)
+    }
+    pub fn score_match_on_balanced(seed: u32, target: u32, bonus: bool, pitch: u32) -> Self {
+        Self::score_match_layout(seed, target, bonus, pitch, true)
+    }
+    fn score_match_layout(seed: u32, target: u32, bonus: bool, pitch: u32, balanced: bool) -> Self {
+        let mut game = Self::on_pitch(seed, pitch, balanced);
         game.mode = 1;
         game.bonus_enabled = bonus;
         game.target_score = target.clamp(1, 99);
@@ -254,7 +262,11 @@ impl Game {
                     .add_joint(self.player[side], self.foot[side], center, 100_000_000.0);
         }
         self.pickups.clear();
-        crate::pitches::spawn(&mut self.world, self.pitch);
+        if self.balanced_pitch {
+            crate::pitches::spawn_balanced(&mut self.world, self.pitch);
+        } else {
+            crate::pitches::spawn(&mut self.world, self.pitch);
+        }
         self.bombs.clear();
         self.effects.clear();
         self.streaker = None;

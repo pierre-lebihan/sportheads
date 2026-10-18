@@ -52,15 +52,36 @@ Le [prompt de création](avatar-prompt.md) documente leur provenance.
 
 ## Terrains et vérifications
 
-Les 7 terrains symétriques sont proposés, avec aperçu ; le numéro 8 est
+Les 16 terrains symétriques sont proposés, avec aperçu ; le numéro 8 est
 le terrain libre. Les 19 blueprints historiques restent dans le noyau de comparaison.
 Leurs obstacles sont des rectangles ou cercles statiques capturés dans Flash,
 avec ses troncatures int/uint. Le rendu utilise les SVG originaux.
 Le créateur choisit le terrain à distance.
 
+Les terrains 2, 4, 6, 9, 14, 15, 16, 17 et 18 sont recentrés et leurs paires
+alignées en hauteur et en angle. Leurs dimensions physiques sont conservées.
+Le rendu de ces neuf variantes utilise les mêmes dimensions que les collisions.
+Les terrains 13, 19 et 20 restent exclus : leur disposition demanderait un autre dessin.
+La [galerie avant/après](https://pierre-lebihan.github.io/sportheads/terrains.html)
+conserve les versions originales et permet de visualiser les corrections.
+
+`data/balanced-pitches.json` est la source des corrections. `scripts/generate-pitches.py`
+produit la géométrie Rust et le module de rendu `web/pitch-geometry.js`.
+Le jeu utilise `game_start_balanced_pitch`, qui conserve la variante lors des remises
+en jeu. L’API historique `game_start_on_pitch` et les fixtures Flash restent intactes.
+Le paquet de publication versionne aussi le WASM pour charger ensemble le moteur
+et le rendu actualisés. En ligne, les messages annoncent la variante géométrique.
+Un invité plus ancien doit actualiser sa page avant que l’hôte puisse lancer une
+variante corrigée ; un invité récent conserve le rendu historique face à un ancien
+hôte. Les salles et leurs codes restent sur le même protocole.
+
 `tests/assistance.rs` couvre les trois niveaux, les deux camps, les bonus
 et la conservation après un but. Les captures historiques sans aide
-restent vérifiées. `tests/pitches.test.mjs` vérifie les 19 géométries du WASM.
+restent vérifiées. `tests/pitches.test.mjs` vérifie les 19 géométries historiques, la symétrie des 16
+terrains publics et leur correspondance avec la source partagée.
+`tests/balanced_pitches.rs` vérifie la conservation des corrections après un but.
+`scripts/check-balanced-pitches.cjs URL` compare les pixels réellement dessinés aux
+collisions du WASM sur Chrome et WebKit, puis lance un match corrigé.
 `scripts/check-setup.cjs URL` vérifie les portraits distincts, les réglages
 et le partage des aides dans une vraie salle WebRTC.
 `scripts/check-character-selection.cjs URL` vérifie la grille, les deux camps,

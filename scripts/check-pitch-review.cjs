@@ -15,11 +15,13 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-pitch-rev
     const ids = await page.locator('article').evaluateAll(articles=>articles.map(a=>+a.dataset.pitch).sort((a,b)=>a-b));
     assert.deepEqual(ids, Array.from({length:19},(_,i)=>i+2));
     const image = ()=>page.locator('[data-pitch="9"] canvas').evaluate(canvas=>canvas.toDataURL());
+    const corrected = await image(); await page.check('#show-original'); assert.notEqual(await image(), corrected); await page.uncheck('#show-original');
+    assert.equal(await page.locator('[data-restore]').count(), 3);
     const initial = await image(); await page.uncheck('#show-axis'); assert.notEqual(await image(),initial);
     const plain = await image(); await page.check('#show-mirror'); assert.notEqual(await image(),plain);
     await page.uncheck('#show-mirror'); await page.check('#show-axis');
-    await page.check('[data-restore="9"]'); await page.check('[data-restore="13"]');
-    await page.click('#copy-selection'); assert.equal(await page.evaluate(()=>navigator.clipboard.readText()), 'Remets les terrains 9, 13.');
+    await page.check('[data-restore="19"]'); await page.check('[data-restore="13"]');
+    await page.click('#copy-selection'); assert.equal(await page.evaluate(()=>navigator.clipboard.readText()), 'Remets les terrains 13, 19.');
     await page.locator('[data-pitch="9"]').screenshot({path:'evidence/pitch-review-9.png'});
     await page.screenshot({path:'evidence/pitch-review-desktop.png',fullPage:true});
     for(const width of [320,390]) {
@@ -30,6 +32,6 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-pitch-rev
     }
     await page.click('summary'); assert.equal(await page.locator('#kept-pitches').isVisible(),true);
     assert.deepEqual(errors,[]);
-    console.log(JSON.stringify({passed:true,removed:12,near:9,uneven:3,kept:7,axis:true,mirror:true,copy:true,mobile:true}));
+    console.log(JSON.stringify({passed:true,removed:3,corrected:9,uneven:3,kept:7,axis:true,mirror:true,copy:true,mobile:true}));
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

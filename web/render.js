@@ -1,4 +1,5 @@
 import { AVATAR_ATLAS, PLAYER_COUNT } from './players.js';
+import { BALANCED_PITCHES } from './pitch-geometry.js';
 // Original vector sprites exported from the SWF; all registration points and
 // timeline frames come from assets/manifest.json, without a Flash runtime.
 let manifest;
@@ -68,6 +69,20 @@ export function drawSprite(ctx, name, number, x, y, width, height, angle = 0, op
   return true;
 }
 
+export function drawPitch(ctx, pitch, balanced = false) {
+  const props = balanced && BALANCED_PITCHES[pitch];
+  if (!props) return drawSprite(ctx, 'blueprints', pitch, 0, 0);
+  for (const [kind, x, y, size, height, angle] of props) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(angle || 0);
+    ctx.fillStyle = kind === 'circle' ? '#84afbd' : '#8eabc9';
+    ctx.beginPath();
+    if (kind === 'circle') ctx.arc(0, 0, size, 0, Math.PI * 2);
+    else ctx.rect(-size, -height, size * 2, height * 2);
+    ctx.fill(); ctx.restore();
+  }
+  return true;
+}
+
 function polygons(ctx, engine) {
   if (!engine.game_vertex_count) return;
   // Initial twelve bodies are the original arena borders already in the artwork.
@@ -99,7 +114,7 @@ export function drawGame(ctx, engine, state = {}) {
   drawSprite(ctx, 'bottom-bar', 1, 0, 0);
   drawSprite(ctx, 'ground-texture', 1, 400, 470, 800, 20);
   if (!engine) return;
-  if (state.blueprintFrame) drawSprite(ctx, 'blueprints', state.blueprintFrame, 0, 0);
+  if (state.blueprintFrame) drawPitch(ctx, state.blueprintFrame, state.balancedPitches);
   else polygons(ctx, engine);
   const bodies = [];
   for (let i = 0; i < engine.game_body_count(); i++) {

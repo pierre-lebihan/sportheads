@@ -1,9 +1,9 @@
-import { drawGame, drawSprite, getAssets } from './render.js';
+import { drawGame, drawSprite, drawPitch, getAssets } from './render.js';
 import { PLAYER_NAMES } from './players.js';
 
 export { PLAYER_NAMES } from './players.js';
-// Keep the original blueprint IDs, offering only geometry mirrored between camps.
-export const PITCHES = [3, 5, 7, 8, 10, 11, 12].map(id => ({ id, name: id === 8 ? 'Terrain libre' : `Terrain ${id}` }));
+// Original IDs: seven unchanged symmetric pitches, plus nine corrected layouts.
+export const PITCHES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18].map(id => ({ id, name: id === 8 ? 'Terrain libre' : `Terrain ${id}` }));
 let previous = '';
 export function createCharacterSelection(container) {
   const $ = selector => container.querySelector(selector);
@@ -76,8 +76,8 @@ export function createCharacterSelection(container) {
     refresh();
   } };
 }
-export function updateSelectionPreviews(pitch, skins) {
-  const key = `${pitch}:${skins.join(':')}`;
+export function updateSelectionPreviews(pitch, skins, balanced = true) {
+  const key = `${pitch}:${skins.join(':')}:${balanced}`;
   if (!getAssets() || previous === key) return;
   let drawn = true;
   for (const side of [0, 1]) {
@@ -88,7 +88,7 @@ export function updateSelectionPreviews(pitch, skins) {
   const canvas = document.querySelector('#pitch-preview'), ctx = canvas.getContext('2d');
   ctx.save(); ctx.scale(canvas.width / 800, canvas.height / 540);
   drawGame(ctx, null, { started: false });
-  drawn = drawSprite(ctx, 'blueprints', pitch, 0, 0) && drawn;
+  drawn = drawPitch(ctx, pitch, balanced) && drawn;
   ctx.restore();
   document.querySelector('#pitch-caption').textContent = PITCHES.find(p => p.id === pitch)?.name || 'Terrain';
   if (drawn) previous = key;

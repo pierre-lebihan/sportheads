@@ -34,6 +34,7 @@ jobs:
           node --check web/net-render.js
           node --check web/selection.js
           node --check web/terrains.js
+          node --check web/pitch-geometry.js
           node --check web/players.js
           node --check web/touch-controls.js
           node --check web/touch-layout.js

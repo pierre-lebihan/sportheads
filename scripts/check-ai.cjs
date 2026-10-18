@@ -42,7 +42,7 @@ if (!url) throw new Error('Usage: node scripts/check-ai.cjs URL');
         await page.click('#setup-back'); assert.equal(await page.evaluate(() => sportheads.snapshot().setupStep), 'difficulty');
         assert.ok(await page.locator(`[name="ai-level"][value="${level}"]`).isChecked());
         await page.click('#setup-next'); await page.click('#setup-next');
-        await page.selectOption('#pitch', level === 'normal' ? '7' : '8'); await page.click('#setup-next');
+        await page.selectOption('#pitch', level === 'easy' ? '2' : level === 'normal' ? '6' : '18'); await page.click('#setup-next');
         assert.equal(await page.locator('#target-score').inputValue(), '7');
         await page.fill('#target-score', '1'); await page.uncheck('#bonuses'); await page.locator('#balance').fill('-1');
         await page.click('#start');

@@ -1,5 +1,6 @@
-import { loadAssets, drawGame, drawSprite } from './render.js';
+import { loadAssets, drawGame, drawPitch } from './render.js';
 import { PITCHES } from './selection.js';
+import { BALANCED_PITCHES } from './pitch-geometry.js';
 
 const removed = [
   { id: 2, detail: 'L’ensemble central est placé à x = 410, soit 10 px à droite du milieu.' },
@@ -14,7 +15,7 @@ const removed = [
   { id: 18, detail: 'La colonne centrale est 10 px à gauche du milieu. La paire de rampes est décalée de 11,5 px vers la gauche, avec 3 px d’écart en hauteur.' },
   { id: 19, uneven: true, detail: 'Une seule rampe inclinée, sans son équivalent en miroir. Elle peut dévier le ballon différemment selon le camp.' },
   { id: 20, uneven: true, detail: 'Une seule rampe inclinée dans l’autre sens, sans son équivalent en miroir.' }
-];
+].map(pitch => ({ ...pitch, corrected: !!BALANCED_PITCHES[pitch.id] }));
 const $ = selector => document.querySelector(selector);
 const previews = [];
 function selection() {
@@ -23,20 +24,22 @@ function selection() {
   $('#copy-selection').disabled = !selected.length; $('#copy-status').textContent = '';
   return selected;
 }
-for (const pitch of [...removed, ...PITCHES.map(pitch => ({ ...pitch, kept: true }))]) {
+for (const pitch of [...removed, ...PITCHES.filter(pitch => !BALANCED_PITCHES[pitch.id]).map(pitch => ({ ...pitch, kept: true }))]) {
   const article = document.createElement('article'); article.className = 'pitch'; article.dataset.pitch = pitch.id;
   const heading = document.createElement('div'); heading.className = 'pitch-heading';
   const title = document.createElement('h3'); title.textContent = pitch.name || 'Terrain ' + pitch.id; heading.append(title);
-  if (!pitch.kept) {
+  if (pitch.corrected) { const status = document.createElement('span'); status.className = 'status'; status.textContent = 'Corrigé · Jouable'; heading.append(status); }
+  if (!pitch.kept && !pitch.corrected) {
     const label = document.createElement('label'), input = document.createElement('input'); input.type = 'checkbox'; input.dataset.restore = pitch.id;
     input.addEventListener('change', selection); label.append(input, 'À remettre'); heading.append(label);
   }
   const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 480; canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', (pitch.name || 'Terrain ' + pitch.id) + '. ' + (pitch.detail || 'Conservé dans le sélecteur.'));
   article.append(heading, canvas);
-  if (pitch.detail) { const detail = document.createElement('p'); detail.textContent = pitch.detail; article.append(detail); }
+  const detail = document.createElement('p');
+  if (pitch.detail) { detail.textContent = pitch.detail; article.append(detail); }
   $(pitch.kept ? '#kept-pitches' : pitch.uneven ? '#uneven-pitches' : '#near-pitches').append(article);
-  previews.push({ ...pitch, canvas });
+  previews.push({ ...pitch, canvas, detailElement: detail });
 }
 $('#copy-selection').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText('Remets les terrains ' + selection().join(', ') + '.'); $('#copy-status').textContent = 'Sélection copiée. Vous pouvez la coller dans la conversation.'; }
@@ -47,14 +50,17 @@ try {
   const [wasm] = await Promise.all([WebAssembly.instantiateStreaming(response), loadAssets()]);
   const engine = wasm.instance.exports;
   function draw() {
-    for (const { id, canvas } of previews) {
-      engine.game_start_on_pitch(1, 7, 0, id);
+    for (const { id, canvas, corrected, detail, detailElement } of previews) {
+      const balanced = corrected && !$('#show-original').checked;
+      engine[balanced ? 'game_start_balanced_pitch' : 'game_start_on_pitch'](1, 7, 0, id);
+      if (corrected) detailElement.textContent = balanced ? 'Corrigé : obstacles recentrés, hauteurs alignées et angles en miroir. Le dessin suit les collisions.' : 'Avant : ' + detail;
       const ctx = canvas.getContext('2d');
-      drawGame(ctx, engine, { started: false, skins: [1, 2], modernPlayers: true, blueprintFrame: id,
+      drawGame(ctx, engine, { started: false, skins: [1, 2], modernPlayers: true, blueprintFrame: id, balancedPitches: balanced,
         goalFrames: [8, 9].map(field => engine.game_value(field) === 140 ? 2 : engine.game_value(field) === 60 ? 3 : 1) });
       if ($('#show-mirror').checked) {
         ctx.save(); ctx.translate(800, 0); ctx.scale(-1, 1);
-        drawSprite(ctx, 'blueprints', id, 0, 0, undefined, undefined, 0, { alpha: .5, filter: 'sepia(1) saturate(5) hue-rotate(330deg)' });
+        ctx.globalAlpha = .5; ctx.filter = 'sepia(1) saturate(5) hue-rotate(330deg)';
+        drawPitch(ctx, id, balanced);
         ctx.restore();
       }
       if ($('#show-axis').checked) {
@@ -63,6 +69,6 @@ try {
       }
     }
   }
-  draw(); $('#show-axis').addEventListener('change', draw); $('#show-mirror').addEventListener('change', draw);
+  draw(); $('#show-original').addEventListener('change', draw); $('#show-axis').addEventListener('change', draw); $('#show-mirror').addEventListener('change', draw);
   $('#loading').hidden = true; window.reviewReady = true;
 } catch (error) { $('#loading').textContent = 'Les aperçus n’ont pas pu se charger. Rechargez la page.'; window.reviewError = error.message; }

@@ -1,7 +1,7 @@
 # Match à deux joueurs
 
 La version publique exécute le cœur Rust/WASM en direct, sans Flash ni Ruffle.
-Elle propose les 7 terrains symétriques du sélecteur original (3, 5, 7, 8, 10, 11 et 12),
+Elle propose 16 terrains symétriques : 7 dispositions originales et 9 dispositions corrigées,
 dont le terrain libre (numéro 8), avec les 18 bonus originaux, des aides individuelles
 facultatives et une IA locale à trois niveaux.
 
@@ -67,7 +67,8 @@ Les 12 joueurs récents sont sélectionnables avec leur nom et leur portrait.
 
 Les 18 bonus, le rendu des sprites, les animations et les sons sont intégrés.
 Les 19 terrains historiques restent dans le noyau pour les comparaisons Flash ;
-seuls les 7 terrains symétriques sont proposés et tirés au hasard dans les trois modes.
+les 7 terrains déjà symétriques et les 9 variantes corrigées sont proposés et tirés au hasard
+dans les trois modes. Les dispositions 13, 19 et 20 restent exclues.
 Les aides individuelles à trois niveaux sont intégrées.
 Voir [joueurs et aides](players.md). Seuls les matchs simples sont proposés.
 Les salles et le réseau sont décrits

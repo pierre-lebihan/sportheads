@@ -1,6 +1,6 @@
-//! Exact static geometry captured from the original playable blueprints.
+//! Historical Flash geometry and symmetric public variants.
 //! Regenerate: python3 scripts/generate-pitches.py
-//! Oracle: tests/fixtures/pitches/original.json; Flash int/uint truncation is preserved.
+//! Sources: tests/fixtures/pitches/original.json and data/balanced-pitches.json.
 use crate::{body::Body, math::Vec2, world::World};
 
 enum Obstacle {
@@ -115,7 +115,78 @@ pub fn spawn(world: &mut World, pitch: u32) {
     let Some(props) = pitch.checked_sub(2).and_then(|i| PITCHES.get(i as usize)) else {
         return;
     };
-    for prop in *props {
+    spawn_props(world, props);
+}
+
+/// Symmetric public variants; historical Flash geometry stays available via spawn.
+pub fn spawn_balanced(world: &mut World, pitch: u32) {
+    let props: &[Obstacle] = match pitch {
+        2 => &[
+            Obstacle::Box(400.0, 133.0, 24.5, 12.5, std::f64::consts::FRAC_PI_2),
+            Obstacle::Circle(400.0, 99.0, 19.0),
+            Obstacle::Circle(400.0, 165.0, 19.0),
+        ],
+        4 => &[
+            Obstacle::Circle(580.0, 200.0, 40.0),
+            Obstacle::Circle(220.0, 200.0, 40.0),
+        ],
+        6 => &[
+            Obstacle::Circle(667.0, 120.0, 15.0),
+            Obstacle::Box(203.0, 160.0, 66.5, 12.0, 0.5235987755982988),
+            Obstacle::Circle(528.5, 199.0, 15.0),
+            Obstacle::Box(597.0, 160.0, 66.5, 12.0, 2.6179938779914944),
+            Obstacle::Circle(271.5, 199.0, 15.0),
+            Obstacle::Circle(133.0, 120.0, 15.0),
+        ],
+        9 => &[
+            Obstacle::Circle(400.0, 120.0, 15.0),
+            Obstacle::Box(469.5, 160.0, 66.5, 12.0, 0.5235987755982988),
+            Obstacle::Circle(538.5, 200.0, 15.0),
+            Obstacle::Box(330.5, 160.0, 66.5, 12.0, 2.6179938779914944),
+            Obstacle::Circle(261.5, 200.0, 15.0),
+        ],
+        14 => &[
+            Obstacle::Box(547.5, 175.0, 66.5, 12.5, std::f64::consts::FRAC_PI_2),
+            Obstacle::Box(252.5, 175.0, 66.5, 12.5, std::f64::consts::FRAC_PI_2),
+        ],
+        15 => &[
+            Obstacle::Circle(400.0, 120.0, 15.0),
+            Obstacle::Box(647.0, 213.5, 66.5, 12.0, 0.5235987755982988),
+            Obstacle::Circle(525.0, 140.0, 15.0),
+            Obstacle::Box(153.0, 213.5, 66.5, 12.0, 2.6179938779914944),
+            Obstacle::Circle(275.0, 140.0, 15.0),
+        ],
+        16 => &[
+            Obstacle::Circle(400.0, 60.0, 15.0),
+            Obstacle::Box(647.0, 213.5, 66.5, 12.0, 0.5235987755982988),
+            Obstacle::Circle(605.0, 270.0, 15.0),
+            Obstacle::Box(153.0, 213.5, 66.5, 12.0, 2.6179938779914944),
+            Obstacle::Circle(195.0, 270.0, 15.0),
+        ],
+        17 => &[
+            Obstacle::Circle(460.0, 214.0, 15.0),
+            Obstacle::Circle(515.0, 290.0, 15.0),
+            Obstacle::Circle(400.0, 132.0, 15.0),
+            Obstacle::Circle(340.0, 214.0, 15.0),
+            Obstacle::Circle(285.0, 290.0, 15.0),
+        ],
+        18 => &[
+            Obstacle::Circle(400.0, 60.0, 15.0),
+            Obstacle::Box(521.5, 138.5, 66.5, 12.0, 0.5235987755982988),
+            Obstacle::Circle(400.0, 180.0, 15.0),
+            Obstacle::Box(278.5, 138.5, 66.5, 12.0, 2.6179938779914944),
+            Obstacle::Circle(400.0, 120.0, 15.0),
+        ],
+        _ => {
+            spawn(world, pitch);
+            return;
+        }
+    };
+    spawn_props(world, props);
+}
+
+fn spawn_props(world: &mut World, props: &[Obstacle]) {
+    for prop in props {
         match *prop {
             Obstacle::Circle(x, y, radius) => {
                 world.add_body(Body::circle(Vec2::new(x, y), radius, 0.0, 0.5, 0.0, false));

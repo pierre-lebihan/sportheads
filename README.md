@@ -9,7 +9,7 @@ l’objectif de buts sont dans le cœur indépendant du navigateur.
 
 Trois choix : **Contre l’IA**, **2 joueurs sur le même écran** ou **En ligne dans une salle privée**.
 Le premier à atteindre l’objectif de buts gagne : **7 par défaut**, réglable
-de 1 à 99, sans limite de temps. Choisissez parmi **7 terrains symétriques**, les **18 bonus**
+de 1 à 99, sans limite de temps. Choisissez parmi **16 terrains symétriques**, les **18 bonus**
 et **12 joueurs récents** avec aperçu. Les portraits des joueurs sont des caricatures originales ; les autres sprites, animations et sons viennent du
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 

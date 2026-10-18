@@ -25,7 +25,7 @@ function bodies(engine) {
   const found = {};
   for (let index = 0; index < engine.game_body_count(); index++) {
     const role = engine.game_body_value(index, 9);
-    if (role !== 2 && role !== 3) continue;
+    if (role !== 1 && role !== 2 && role !== 3) continue;
     const [x, y, vx, vy, radius] = [0, 1, 2, 3, 8].map(field => engine.game_body_value(index, field));
     if (![x, y, vx, vy, radius].every(Number.isFinite)) return {};
     found[role] = { x, y, vx, vy, radius };
@@ -51,27 +51,42 @@ export function createOpponent({ difficulty = 'normal', seed = 1 } = {}) {
       if (nextDecision === null) nextDecision = tick + level.reaction;
       if (tick >= nextDecision) {
         nextDecision = tick + level.reaction;
-        const { 2: self, 3: ball } = bodies(engine);
-        if (!self || !ball) { held = 0; return 0; }
+        const { 1: opponent, 2: self, 3: ball } = bodies(engine);
+        if (!self || !ball || !opponent) { held = 0; return 0; }
         const bounce = .3 + engine.game_value(13) * .3;
         // Close encounters need the ball's current position; long-range
         // anticipation must not make the keeper step away from an easy shot.
         const horizon = Math.min(level.horizon, Math.max(0, (Math.abs(ball.x - self.x) - 35) / 140));
         const ahead = forecast(ball, horizon, bounce);
-        // Stay on the goal side of the ball so contact sends it towards Blue.
-        let target = ahead.x + self.radius + ball.radius + 5;
-        if (difficulty !== 'easy' && ball.vx > 60 && ball.x > 430) {
-          // Intercept incoming shots instead of following them into our net.
-          target = Math.min(target, 690);
+        const spacing = self.radius + ball.radius + 8;
+        let target = ahead.x + spacing, minimum = 280, covering = false;
+        const distantAttack = ball.x < 270;
+        const unreachableHighBall = ball.y < 300 && ball.x < 500;
+        const shotAlreadyAway = ball.vx < -100 && ball.x < 520;
+        if (distantAttack || unreachableHighBall || shotAlreadyAway) {
+          // Do not follow the ball into Blue's goal mouth. Hold a covering
+          // position and let the opponent bring it back into a contestable area.
+          minimum = 420;
+          target = Math.max(440, ahead.x + 120, opponent.x + opponent.radius + self.radius + 24);
+          covering = true;
+        } else if (opponent.y > 300 && opponent.x > ball.x + ball.radius) {
+          // A player screening the ball can counter immediately if we rush past.
+          minimum = Math.max(minimum, opponent.x + opponent.radius + self.radius + 20);
+          target = Math.max(target, minimum); covering = true;
         }
-        target = clamp(target + (random() * 2 - 1) * level.error, 90, 700);
+        if (ball.x > self.x + self.radius * .5 && ball.vx > -20) {
+          // Recover the goal side of the actual ball before considering a shot.
+          target = Math.max(target, ball.x + spacing);
+        }
+        // Inaccuracy may miss a chance, but must not discard the safety margin.
+        target = clamp(target + (random() * 2 - 1) * level.error, Math.min(minimum, 715), 715);
         const dx = target - self.x;
         held = Math.abs(dx) > 7 ? dx < 0 ? 1 : 2 : 0;
         const near = forecast(ball, difficulty === 'easy' ? 0 : .1, bounce);
         const reachable = Math.abs(near.x - self.x) < self.radius + ball.radius + 38;
         const above = near.y < self.y - self.radius * .4 && near.y > self.y - 105;
-        if (reachable && above && self.vy > -30 && near.vy > -120 && random() >= level.miss) held |= 4;
-        const inFront = ball.x > self.x - self.radius - ball.radius - 45 && ball.x < self.x + ball.radius;
+        if (reachable && above && (!covering || ball.x > 500) && self.vy > -30 && near.vy > -120 && random() >= level.miss) held |= 4;
+        const inFront = ball.x > self.x - self.radius - ball.radius - 45 && ball.x < self.x - self.radius * .25;
         const atFoot = ball.y > self.y - 25 && ball.y < self.y + 65;
         if (inFront && atFoot && tick >= kickReady && !engine.game_player_value(1, 3) && random() >= level.miss) {
           held |= 8; kickUntil = tick + 3; kickReady = tick + 12;

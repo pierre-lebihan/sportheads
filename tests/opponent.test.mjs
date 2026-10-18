@@ -6,6 +6,48 @@ import { captureState, isValidState, createRemoteEngine } from '../web/net-state
 const bytes = await readFile(new URL('../probe/physics-core.wasm', import.meta.url));
 async function wasm() { return (await WebAssembly.instantiate(bytes)).instance.exports; }
 
+async function decision(difficulty, { ball, human, self }, seed = 1) {
+  const e = await wasm(); e.game_probe_start(400, 400, 0, 0);
+  const packet = captureState(e, [1, 2]), view = createRemoteEngine();
+  for (const [role, change] of [[1, human], [2, self], [3, ball]]) {
+    const body = packet.bodies.find(body => body[9] === role);
+    for (const [field, name] of ['x', 'y', 'vx', 'vy'].entries()) if (change[name] !== undefined) body[field] = change[name];
+  }
+  const ai = createOpponent({ difficulty, seed }); let mask = 0;
+  for (let tick = 0; tick <= 12; tick++) { packet.values[6] = tick; assert.ok(view.update(packet)); mask = ai.step(view.engine); }
+  return mask;
+}
+
+test('all levels cover a ball near the opposing goal instead of chasing it, or retreat when already too deep', async () => {
+  for (const { id } of AI_LEVELS) for (const seed of [1, 2, 3, 4, 5]) {
+    const situation = { ball: { x: 110, y: 440, vx: 0, vy: 0 }, human: { x: 130, y: 440 }, self: { x: 420, y: 440 } };
+    assert.equal((await decision(id, situation, seed)) & 1, 0, `${id}: no rush underneath the opposing goal`);
+    situation.self.x = 170;
+    assert.equal((await decision(id, situation, seed)) & 3, 2, `${id}: recover instead of following the ball deeper`);
+  }
+});
+
+test('all levels respect an opponent screening the ball but still contest a safe midfield chance', async () => {
+  for (const { id } of AI_LEVELS) {
+    assert.equal((await decision(id, { ball: { x: 350, y: 430, vx: 0, vy: 0 }, human: { x: 450, y: 440 }, self: { x: 500, y: 440 } })) & 1, 0, `${id}: stay on the goal side of the opponent`);
+    assert.equal((await decision(id, { ball: { x: 400, y: 430, vx: 0, vy: 0 }, human: { x: 220, y: 440 }, self: { x: 470, y: 440 } })) & 3, 1, `${id}: keep attacking a safe loose ball`);
+    assert.equal((await decision(id, { ball: { x: 650, y: 430, vx: 100, vy: 0 }, human: { x: 500, y: 440 }, self: { x: 570, y: 440 } })) & 3, 2, `${id}: recover when the ball passes behind`);
+    assert.equal((await decision(id, { ball: { x: 160, y: 150, vx: -80, vy: 0 }, human: { x: 200, y: 440 }, self: { x: 360, y: 440 } })) & 3, 2, `${id}: do not run underneath a distant high ball`);
+  }
+});
+
+test('actual matches keep all three levels out of the opposing goal area when the ball is trapped there', async () => {
+  for (const { id } of AI_LEVELS) for (const seed of [1, 2, 3]) {
+    const e = await wasm(); e.game_probe_start(120, 440, 0, 0);
+    const ai = createOpponent({ difficulty: id, seed }); let minimum = 600;
+    for (let tick = 0; tick < 240; tick++) {
+      for (let i = 0; i < e.game_body_count(); i++) if (e.game_body_value(i, 9) === 2) minimum = Math.min(minimum, e.game_body_value(i, 0));
+      e.game_tick((ai.step(e) << 4) | 4);
+    }
+    assert.ok(minimum > 330, `${id}: overcommitted to x=${minimum}`);
+  }
+});
+
 test('each level has a finite reaction delay; decisions cannot edit the actual match', async () => {
   const firstMoves = [];
   for (const { id } of AI_LEVELS) {

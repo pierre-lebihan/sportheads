@@ -47,6 +47,12 @@ match ; elle peut être revue après sa fin. Les bonus, terrains et aides resten
 disponibles. Sur mobile, seul le pavé du joueur humain s’affiche ; au clavier,
 les flèches/P ou Q/A, D, Z/W et espace contrôlent Bleu.
 
+Les trois niveaux partagent des règles de placement : couvrir quand le ballon
+est près du but adverse, éviter de dépasser un adversaire qui protège le ballon,
+se replier quand le ballon passe derrière et contester les occasions accessibles
+au milieu du terrain. La précision et le temps de réaction restent propres à
+chaque difficulté ; ces règles n’ajoutent aucune aide physique.
+
 L’IA est un contrôleur local dans `web/opponent.js`, indépendant de celle du
 Flash. Il lit l’état public du match et produit les quatre commandes humaines.
 L’estimation de vol tient compte de la gravité et des rebonds sur les limites ;

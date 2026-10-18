@@ -33,16 +33,19 @@ export function setupFullscreen(arena, button, settingsButton, status, onChange)
   const request = arena.requestFullscreen || arena.webkitRequestFullscreen;
   const enabled = arena.requestFullscreen ? document.fullscreenEnabled : document.webkitFullscreenEnabled;
   const supported = !!request && enabled !== false;
+  const standalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   function update() {
     const active = current() === arena;
     button.hidden = !supported;
     button.setAttribute('aria-pressed', String(active));
     button.title = active ? 'Quitter le plein écran' : 'Plein écran';
     button.setAttribute('aria-label', button.title);
-    settingsButton.textContent = active ? 'Quitter le plein écran' : 'Plein écran';
+    settingsButton.textContent = supported ? active ? 'Quitter le plein écran' : 'Plein écran'
+      : standalone() ? 'Ouvert depuis l’écran d’accueil' : 'Jouer sans barre d’adresse';
+    settingsButton.disabled = !supported && standalone();
     if (!supported) {
-      status.hidden = false;
-      status.textContent = 'Ce navigateur ne propose pas le plein écran. Ajoutez le jeu à l’écran d’accueil depuis le menu de partage, puis ouvrez son icône pour jouer sans barre d’adresse.';
+      status.hidden = standalone();
+      status.textContent = 'Le plein écran du navigateur est indisponible ici, notamment sur iPhone. Dans Chrome ou Safari : Partager → Sur l’écran d’accueil (ou Ajouter à l’écran d’accueil), puis Ajouter. Gardez « Ouvrir comme app web » activé si proposé et lancez Sportheads depuis son icône pour jouer sans barre d’adresse.';
     }
   }
   async function toggle() {

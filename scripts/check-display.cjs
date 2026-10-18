@@ -6,12 +6,13 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
   const chrome = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
   const safari = await webkit.launch({ headless: true });
   const errors = [];
-  async function pageAt(browser, mobile, unsupported = false) {
+  async function pageAt(browser, mobile, unsupported = false, standalone = false) {
     const context = await browser.newContext({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 720 }, isMobile: mobile, hasTouch: mobile });
-    if (unsupported) await context.addInitScript(() => {
+    if (unsupported) await context.addInitScript(standalone => {
       Object.defineProperty(Element.prototype, 'requestFullscreen', { value: undefined });
       Object.defineProperty(Element.prototype, 'webkitRequestFullscreen', { value: undefined });
-    });
+      Object.defineProperty(navigator, 'standalone', { value: standalone });
+    }, standalone);
     const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
     if (browser === chrome) await (await context.newCDPSession(page)).send('Emulation.setFocusEmulationEnabled', { enabled: true });
     await page.goto(url); await page.waitForFunction(() => window.ready || window.loadError);
@@ -84,10 +85,16 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
     const unsupported = await pageAt(chrome, true, true);
     await unsupported.click('#fullscreen-settings');
     assert.equal(await unsupported.locator('#fullscreen').isVisible(), false);
+    assert.equal(await unsupported.locator('#fullscreen-settings').innerText(), 'Jouer sans barre d’adresse');
     assert.match(await unsupported.locator('#fullscreen-status').innerText(), /écran d’accueil/);
+    assert.match(await unsupported.locator('#fullscreen-status').innerText(), /Ouvrir comme app web/);
     const manifest = await unsupported.evaluate(async () => (await fetch(document.querySelector('link[rel="manifest"]').href)).json());
     assert.equal(manifest.display, 'standalone');
     assert.equal(manifest.start_url, './');
+    const installed = await pageAt(chrome, true, true, true);
+    assert.equal(await installed.locator('#fullscreen-settings').innerText(), 'Ouvert depuis l’écran d’accueil');
+    assert.equal(await installed.locator('#fullscreen-settings').isDisabled(), true);
+    assert.equal(await installed.locator('#fullscreen-status').isVisible(), false);
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ passed: true, checks: ['800x480 crop without empty bars', 'small transparent score overlay', 'side tools in landscape', 'no overlap with either touch layout', 'local and AI on Chrome/WebKit mobile 320/390/740/844', 'real fullscreen enter/exit and external exit', 'unsupported-browser guidance and standalone manifest'] }));
   } finally { await Promise.all([chrome.close(), safari.close()]); }

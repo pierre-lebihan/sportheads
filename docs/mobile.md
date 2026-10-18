@@ -42,6 +42,11 @@ autorisation de plein écran n'est nécessaire.
   Si l’API est indisponible, le jeu propose l’ajout à l’écran d’accueil ; son
   manifeste demande une ouverture autonome, sans barre d’adresse. Cela n’ajoute
   pas de mode hors ligne ni de sauvegarde de partie.
+  Sur iPhone, le bouton des réglages devient **Jouer sans barre d’adresse** :
+  dans Chrome ou Safari, **Partager → Sur l’écran d’accueil → Ajouter**, puis
+  ouvrir le jeu depuis son icône. Garder **Ouvrir comme app web** activé si proposé.
+  Une ouverture autonome masque cette consigne et ne propose plus de bouton
+  plein écran inopérant. Voir l’[aide Chrome pour iPhone](https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DiOS&hl=fr).
 - Pause arrête le match. La roue dentée ouvre les réglages
   dans le jeu et met en pause ; Retour au match ferme le menu. Reprendre
   relance ensuite la partie.
@@ -70,11 +75,25 @@ du navigateur restent disponibles dans les menus, hors des manettes.
 
 ## Validation
 
+Le décor (stade, correction de couleur, sol et obstacles fixes) est rasterisé
+une seule fois par changement de terrain ou de stade. Chaque contexte ne garde
+que son décor actuel, dans un canvas de 800 × 540 pixels ; le canvas du jeu
+conserve son cadrage de 800 × 480. Les joueurs, le ballon et les effets restent
+animés séparément. Aucun calcul de physique ou d’IA n’est réduit.
+
+Le profilage local du 18 octobre 2026 a mesuré environ 4,7 ms par rendu complet
+avant ce cache contre 1,1 ms après, dans WebKit de bureau avec viewport mobile.
+Ce résultat isole une économie de rendu ; il ne mesure pas l’iPhone physique.
+`check-render-cache.cjs` compare 40 images avec le dessin original dans Chrome
+et WebKit (tolérance d’arrondi d’un niveau par canal), vérifie les changements
+de stade/terrain et l’absence de nouvelle rasterisation pendant 120 images.
+
 ```sh
 node scripts/check-mobile.cjs http://127.0.0.1:8766/
 node scripts/check-touch-release.cjs http://127.0.0.1:8766/
 node scripts/check-touch-layouts.cjs http://127.0.0.1:8766/
 node scripts/check-display.cjs http://127.0.0.1:8766/
+node scripts/check-render-cache.cjs http://127.0.0.1:8766/
 ```
 
 Le test utilise les vrais événements multi-touch de Chrome via CDP, le WASM

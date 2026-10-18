@@ -7,6 +7,10 @@ let manifest;
 const images = new Map();
 const base = new URL('./assets/', import.meta.url);
 let loading;
+let assetsReady = false;
+// One raster per destination context: do not repeatedly rasterize the large
+// stadium SVG (and its color filter) on the animation thread, especially iOS.
+const backgrounds = new WeakMap();
 
 function imageFor(frame) {
   if (!images.has(frame.file)) {
@@ -38,6 +42,7 @@ export function loadAssets() {
         if(!loaded)throw new Error(`Impossible de décoder ${frame.file}`);
       }
     }));
+    assetsReady = true;
     return manifest;
   })();
   return loading;
@@ -113,6 +118,30 @@ export function drawPitch(ctx, pitch, balanced = false) {
   return true;
 }
 
+function paintBackground(ctx, state, pitch) {
+  // bgPitch's groundBg child is placed at (4.45,-25.1) in the original scene.
+  // Root bgPitch has multiplier128/256 and additive102/255 on RGB channels.
+  drawSprite(ctx, 'stadium', state.stadiumFrame || 3, 4.45, -25.1, undefined, undefined, 0, { filter: 'contrast(0.3846153846153846) brightness(1.3)' });
+  drawSprite(ctx, 'bottom-bar', 1, 0, 0);
+  drawSprite(ctx, 'ground-texture', 1, 400, 470, 800, 20);
+  if (pitch) drawPitch(ctx, pitch, state.balancedPitches);
+}
+
+function drawBackground(ctx, state, pitch) {
+  // The manifest becomes available before all SVGs have decoded. Never retain
+  // an incomplete loading frame. Keep only the current scene, not all pitches.
+  if (!assetsReady) { paintBackground(ctx, state, pitch); return; }
+  const key = `${state.stadiumFrame || 3}:${pitch || 0}:${!!state.balancedPitches}`;
+  let cached = backgrounds.get(ctx);
+  if (cached?.key !== key) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800; canvas.height = 540;
+    paintBackground(canvas.getContext('2d'), state, pitch);
+    cached = { key, canvas }; backgrounds.set(ctx, cached);
+  }
+  ctx.drawImage(cached.canvas, 0, 0);
+}
+
 function polygons(ctx, engine) {
   if (!engine.game_vertex_count) return;
   // Initial twelve bodies are the original arena borders already in the artwork.
@@ -138,14 +167,9 @@ function polygons(ctx, engine) {
 export function drawGame(ctx, engine, state = {}) {
   ctx.clearRect(0, 0, 800, 540);
   if (!manifest) { ctx.fillStyle = '#51874d'; ctx.fillRect(0, 0, 800, 540); return; }
-  // bgPitch's groundBg child is placed at (4.45,-25.1) in the original scene.
-  // Root bgPitch has multiplier128/256 and additive102/255 on all RGB channels.
-  drawSprite(ctx, 'stadium', state.stadiumFrame || 3, 4.45, -25.1, undefined, undefined, 0, { filter: 'contrast(0.3846153846153846) brightness(1.3)' });
-  drawSprite(ctx, 'bottom-bar', 1, 0, 0);
-  drawSprite(ctx, 'ground-texture', 1, 400, 470, 800, 20);
+  drawBackground(ctx, state, engine && state.blueprintFrame);
   if (!engine) return;
-  if (state.blueprintFrame) drawPitch(ctx, state.blueprintFrame, state.balancedPitches);
-  else polygons(ctx, engine);
+  if (!state.blueprintFrame) polygons(ctx, engine);
   const bonus = state.bonus || Array.from({ length: BONUS_FIELD_COUNT }, (_, field) => engine.game_bonus_value?.(field) || 0);
   drawBonusArena(ctx, bonus, state.goalHeights || [engine.game_value(8), engine.game_value(9)]);
   const bodies = [];

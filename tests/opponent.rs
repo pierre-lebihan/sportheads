@@ -82,3 +82,22 @@ fn planner_releases_disabled_players_and_rejects_invalid_side() {
     g.powerups.bombed[1] = true;
     assert_eq!(plan(&g, 1, 9, 2, false), 0);
 }
+
+#[test]
+fn planning_never_consumes_live_v2_bonuses_or_changes_heavy_ball_mass() {
+    let mut game = ready(8);
+    game.set_bonus_mode(2);
+    for id in 19..=23 {
+        for side in 0..2 {
+            game.collect_id(id, side);
+        }
+    }
+    let before = game.v2.clone();
+    let mass = game.world.bodies[game.ball].mass;
+    let bodies = format!("{:?}", game.world.bodies);
+    let action = plan(&game, 1, 9, 10, true);
+    assert!(action <= 15);
+    assert_eq!(game.v2, before);
+    assert_eq!(game.world.bodies[game.ball].mass, mass);
+    assert_eq!(format!("{:?}", game.world.bodies), bodies);
+}

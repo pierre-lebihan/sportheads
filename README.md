@@ -9,7 +9,7 @@ l’objectif de buts sont dans le cœur indépendant du navigateur.
 
 Trois choix : **Contre l’IA**, **2 joueurs sur le même écran** ou **En ligne dans une salle privée**.
 Le premier à atteindre l’objectif de buts gagne : **7 par défaut**, réglable
-de 1 à 9 avec les boutons − et +, sans limite de temps. Choisissez parmi **16 terrains symétriques**, les **18 bonus**
+de 1 à 9 avec les boutons − et +, sans limite de temps. Choisissez parmi **16 terrains symétriques**, les **bonus au choix**
 et **23 personnages : 12 joueurs récents, Pierre, Vilma, Thibaud, Marie, Corentin, Pierre Nomad, Maël, Baptiste, Jerem, Arthur et Vilma Dreadlocks** avec aperçu. Les portraits des joueurs sont des caricatures originales ; les autres sprites, animations et sons viennent du
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
@@ -23,6 +23,15 @@ La protection réduit la hauteur du but : +50 % donne un but deux fois plus peti
 La vitesse renforce l’accélération et la course ; la frappe accélère le mouvement
 du pied. Le bonus de tête conserve la taille du pied. Les réglages sont verrouillés pendant le match.
 À distance, le créateur les règle pour les deux camps et l’invité les voit en lecture seule.
+Les bonus à ramasser ont trois réglages : **Aucun bonus**, **Bonus historiques**
+(les 18 d’origine, par défaut), ou **Bonus V2** (les 18 historiques et 5 ajouts).
+V2 ajoute une **frappe puissante** manuelle à usage unique (8 s pour l’utiliser),
+un **bouclier de but** pour un seul ballon (5 s), un **ballon lourd**, une
+**tête ressort** et une **zone trampoline** partagée au centre (6 s chacun).
+Les icônes et les effets sont visibles sur le terrain ; le guide des cinq ajouts
+se déplie dans les paramètres. Le choix est verrouillé pendant le match et
+partagé avec l’invité en ligne. Voir [les règles et vérifications](docs/bonuses.md).
+
 Les personnages ont tous les mêmes caractéristiques de base.
 La sélection affiche les deux portraits face à face et une grille de personnages.
 Choisissez les deux camps en local ou contre l’IA ; en ligne, chacun choisit le sien

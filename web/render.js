@@ -1,5 +1,6 @@
 import { AVATAR_FRAMES } from './players.js';
 import { BALANCED_PITCHES } from './pitch-geometry.js';
+import { NEW_BONUSES, BONUS_FIELD_COUNT } from './bonuses.js';
 // Original vector sprites exported from the SWF; all registration points and
 // timeline frames come from assets/manifest.json, without a Flash runtime.
 let manifest;
@@ -43,6 +44,36 @@ export function loadAssets() {
 }
 
 export function getAssets() { return manifest; }
+
+// Small canvas icons share the game's pickup scale and need no external assets.
+export function drawBonusPickup(ctx, kind, x, y, scale = 1) {
+  const bonus = NEW_BONUSES.find(item => item.id === kind); if (!bonus) return;
+  ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
+  ctx.fillStyle = '#ffffffed'; ctx.strokeStyle = bonus.color; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  if (kind === 19) { ctx.moveTo(1,-10); ctx.lineTo(-7,2); ctx.lineTo(0,2); ctx.lineTo(-2,11); ctx.lineTo(8,-3); ctx.lineTo(2,-3); ctx.closePath(); ctx.fillStyle=bonus.color; ctx.fill(); }
+  if (kind === 20) { ctx.moveTo(-8,-7); ctx.quadraticCurveTo(0,-4,8,-7); ctx.lineTo(7,3); ctx.quadraticCurveTo(5,8,0,11); ctx.quadraticCurveTo(-5,8,-7,3); ctx.closePath(); ctx.stroke(); }
+  if (kind === 21) { ctx.moveTo(-5,-6); ctx.lineTo(-9,9); ctx.lineTo(9,9); ctx.lineTo(5,-6); ctx.closePath(); ctx.fillStyle=bonus.color;ctx.fill();ctx.beginPath();ctx.arc(0,-7,3,Math.PI,0);ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.fillText('2×',0,5); }
+  if (kind === 22) { ctx.arc(0,-7,3,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(-6,-1);for(let i=0;i<5;i++)ctx.lineTo(i%2?6:-6,i*2);ctx.lineTo(6,10);ctx.stroke(); }
+  if (kind === 23) { ctx.ellipse(0,-2,10,4,0,0,Math.PI*2);ctx.moveTo(-8,0);ctx.lineTo(-10,9);ctx.moveTo(8,0);ctx.lineTo(10,9);ctx.moveTo(-3,-7);ctx.lineTo(0,-10);ctx.lineTo(3,-7);ctx.stroke(); }
+  ctx.restore();
+}
+
+function drawBonusArena(ctx, bonus, heights) {
+  if (bonus[8] > 0 || bonus[12] > 0) {
+    ctx.save(); ctx.strokeStyle='#ad52b5'; ctx.lineWidth=3; ctx.fillStyle='#c76acf55';
+    ctx.fillRect(320,452,160,8);ctx.beginPath();ctx.moveTo(320,452);ctx.lineTo(480,452);ctx.stroke();
+    for(let x=326;x<480;x+=12){ctx.beginPath();ctx.moveTo(x,454);ctx.lineTo(x+5,458);ctx.lineTo(x,462);ctx.stroke();}
+    if(bonus[12]>0){ctx.globalAlpha=bonus[12]/10;ctx.beginPath();ctx.ellipse(400,450-bonus[12],70,6,0,Math.PI,0);ctx.stroke();}ctx.restore();
+  }
+  for(const side of [0,1]) {
+    if(bonus[3+side]<=0 && bonus[10+side]<=0)continue;
+    const x=side?715:85, top=460-heights[side];ctx.save();
+    ctx.strokeStyle=bonus[3+side]>0?'#30c3e7':'#f1b550';ctx.lineWidth=4;ctx.globalAlpha=bonus[3+side]>0?.8:bonus[10+side]/12;
+    ctx.setLineDash(bonus[3+side]>0?[9,4]:[3,8]);ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,460);ctx.stroke();ctx.restore();
+  }
+}
 
 /** Frame numbers are 1-based, like MovieClip.gotoAndStop. Width/height default
  * to native SVG crop dimensions; options.scale scales around the Flash origin. */
@@ -115,12 +146,17 @@ export function drawGame(ctx, engine, state = {}) {
   if (!engine) return;
   if (state.blueprintFrame) drawPitch(ctx, state.blueprintFrame, state.balancedPitches);
   else polygons(ctx, engine);
+  const bonus = state.bonus || Array.from({ length: BONUS_FIELD_COUNT }, (_, field) => engine.game_bonus_value?.(field) || 0);
+  drawBonusArena(ctx, bonus, state.goalHeights || [engine.game_value(8), engine.game_value(9)]);
   const bodies = [];
   for (let i = 0; i < engine.game_body_count(); i++) {
     if (engine.game_body_value(i, 10) === 0) continue;
     bodies.push({ i, x: engine.game_body_value(i, 0), y: engine.game_body_value(i, 1), angle: engine.game_body_value(i, 4), r: engine.game_body_value(i, 8), role: engine.game_body_value(i, 9) });
   }
-  for (const pu of state.powerups || []) drawSprite(ctx, `pu-${pu.kind}`, 1, pu.x, pu.y);
+  for (const pu of state.powerups || []) {
+    if (pu.kind > 18) drawBonusPickup(ctx, pu.kind, pu.x, pu.y);
+    else drawSprite(ctx, `pu-${pu.kind}`, 1, pu.x, pu.y);
+  }
   const aliases = { 'green-ring': 'ring-good', 'red-ring': 'ring-bad' };
   for (const effect of state.effects || []) {
     const name = aliases[effect.kind] || effect.name || effect.kind;
@@ -133,7 +169,9 @@ export function drawGame(ctx, engine, state = {}) {
       // B2DManager sizes the display object to the physical diameter separately.
       const bounce = state.ballBounce ?? 1;
       const frame = state.ballFrame || (bounce === 0 ? 3 : bounce === 2 ? 2 : 1);
+      if(bonus[9]>0){ctx.save();ctx.strokeStyle='#f2a72a';ctx.globalAlpha=bonus[9]/12;ctx.lineWidth=body.r*1.7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(body.x-engine.game_body_value(body.i,2)*.08,body.y-engine.game_body_value(body.i,3)*.08);ctx.lineTo(body.x,body.y);ctx.stroke();ctx.restore();}
       drawSprite(ctx, 'ball-inside', frame, body.x, body.y, body.r * 2, body.r * 2, body.angle);
+      if(bonus[7]>0){ctx.save();ctx.strokeStyle='#455a73';ctx.lineWidth=3;ctx.beginPath();ctx.arc(body.x,body.y,body.r+1,0,Math.PI*2);ctx.stroke();ctx.restore();}
     }
     if (body.role === 1 || body.role === 2) {
       const side = body.role - 1;
@@ -142,6 +180,9 @@ export function drawGame(ctx, engine, state = {}) {
       const effect = state.players?.[side] || state.headEffects?.[side];
       if (effect?.freeze || effect?.ice || effect?.bombed) drawSprite(ctx, 'body-effect', effect.bombed ? 3 : 2, body.x, body.y, undefined, undefined, 0, { scale });
       if (effect?.speed !== undefined && effect.speed !== 1) drawSprite(ctx, 'speed-bolt', effect.speed === 0 ? 3 : 2, body.x + 12 * scale, body.y + 3 * scale, undefined, undefined, 0, { scale });
+      for(const [timer,max,color,offset] of [[bonus[1+side],240,'#eba323',8],[bonus[5+side],180,'#88b733',4]]) {
+        if(timer<=0)continue;ctx.save();ctx.strokeStyle=color;ctx.lineWidth=offset===4?3+(bonus[13+side]||0)/3:3;ctx.beginPath();ctx.arc(body.x,body.y,body.r+offset,-Math.PI/2,-Math.PI/2+Math.PI*2*timer/max);ctx.stroke();ctx.restore();
+      }
     }
   }
   for (const body of bodies) {

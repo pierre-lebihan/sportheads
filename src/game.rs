@@ -31,7 +31,7 @@ pub enum Phase {
 
 #[derive(Clone, Debug)]
 pub struct Pickup {
-    pub kind: Kind,
+    pub kind: u32,
     pub position: Vec2,
     pub ttl: i32,
 }
@@ -78,6 +78,8 @@ pub struct Game {
     pub streaker: Option<usize>,
     streaker_target: f64,
     pub bonus_enabled: bool,
+    pub bonus_mode: u32,
+    pub v2: crate::bonus_v2::BonusesV2,
     pub mode: u32,
     pub target_score: u32,
     pub pitch: u32,
@@ -127,6 +129,8 @@ impl Game {
             streaker: None,
             streaker_target: 400.0,
             bonus_enabled: false,
+            bonus_mode: 0,
+            v2: crate::bonus_v2::BonusesV2::default(),
             mode: 0,
             target_score: 7,
             pitch: pitch.clamp(2, 20),
@@ -150,6 +154,7 @@ impl Game {
         g.mode = mode.min(2);
         g.goal_style = goal_style.min(2);
         g.bonus_enabled = bonus;
+        g.bonus_mode = u32::from(bonus);
         g.apply_goal_style();
         g
     }
@@ -166,6 +171,7 @@ impl Game {
         let mut game = Self::on_pitch(seed, pitch, balanced);
         game.mode = 1;
         game.bonus_enabled = bonus;
+        game.bonus_mode = u32::from(bonus);
         game.target_score = target.clamp(1, 99);
         game
     }
@@ -312,6 +318,7 @@ impl Game {
         self.effects.clear();
         self.streaker = None;
         self.powerups.reset_round();
+        self.v2 = crate::bonus_v2::BonusesV2::default();
         self.last_touch = 1;
         self.apply_goal_style();
         for side in 0..2 {
@@ -339,10 +346,21 @@ impl Game {
             return;
         }
         let celebrating = self.phase == Phase::Goal;
+        if self.bonus_mode == 2 {
+            self.tick_v2();
+        }
         self.apply_controls(input);
         self.update_bonuses();
         for _ in 0..3 {
+            let before = if self.bonus_mode == 2 {
+                Some(self.before_v2_step())
+            } else {
+                None
+            };
             self.world.step();
+            if let Some(before) = before {
+                self.after_v2_step(input, before);
+            }
             for (a, b, speed) in self.world.contact_events.clone() {
                 if a == self.ball || b == self.ball {
                     let other = if a == self.ball { b } else { a };
@@ -558,6 +576,9 @@ impl Game {
                     b.velocity = old.velocity;
                     b.omega = old.omega;
                     self.ball = self.world.add_body(b);
+                    if self.v2.heavy > 0 {
+                        self.scale_ball_mass(2.0);
+                    }
                     self.emit_effect(0, old.position, 40.0, 40.0);
                 }
                 Effect::ResizePlayer(side, scale) => {
@@ -653,7 +674,8 @@ impl Game {
             self.spawn_timer += 1;
             if self.spawn_timer > 200 {
                 self.spawn_timer = 0;
-                let kind = Kind::from_id((self.random() * 18.0).ceil().max(1.0) as u32).unwrap();
+                let count = if self.bonus_mode == 2 { 23.0 } else { 18.0 };
+                let kind = (self.random() * count).ceil().max(1.0) as u32;
                 let p = Vec2::new(220.0 + self.random() * 360.0, 150.0 + self.random() * 270.0);
                 self.pickups.push(Pickup {
                     kind,
@@ -676,7 +698,7 @@ impl Game {
             }
         });
         for kind in collected {
-            self.collect(kind, self.last_touch);
+            self.collect_id(kind, self.last_touch);
         }
         let effects = self.powerups.step();
         self.apply_effects(effects);

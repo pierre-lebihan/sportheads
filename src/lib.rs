@@ -1,6 +1,7 @@
 //! The Rust game core. Browser-independent and shared by native and WASM builds.
 //! Local two-player rules, eighteen original bonuses and Box2D-style physics.
 pub mod body;
+pub mod bonus_v2;
 pub mod broadphase;
 pub mod collision;
 pub mod contact;
@@ -469,13 +470,24 @@ pub extern "C" fn game_set_skin(side: u32, skin: u32) {
 }
 #[no_mangle]
 pub extern "C" fn game_collect(kind: u32, side: u32) {
+    GAME.with(|g| g.borrow_mut().collect_id(kind, side as usize));
+}
+#[no_mangle]
+pub extern "C" fn game_set_bonus_mode(mode: u32) {
+    GAME.with(|g| g.borrow_mut().set_bonus_mode(mode));
+}
+#[no_mangle]
+pub extern "C" fn game_bonus_value(field: u32) -> f64 {
     GAME.with(|g| {
-        if let Some(k) = powerups::Kind::from_id(kind) {
-            if side < 2 {
-                g.borrow_mut().collect(k, side as usize);
-            }
+        let game = g.borrow();
+        if field == 0 {
+            game.bonus_mode as f64
+        } else if field <= 14 {
+            game.v2.value(field) as f64
+        } else {
+            f64::NAN
         }
-    });
+    })
 }
 #[no_mangle]
 pub extern "C" fn game_player_value(side: u32, f: u32) -> f64 {
@@ -505,7 +517,7 @@ pub extern "C" fn game_pickup_value(i: u32, f: u32) -> f64 {
         let g = g.borrow();
         let p = &g.pickups[i as usize];
         match f {
-            0 => p.kind as u32 as f64,
+            0 => p.kind as f64,
             1 => p.position.x,
             2 => p.position.y,
             _ => p.ttl as f64,

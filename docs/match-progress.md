@@ -65,7 +65,8 @@ avec buts classiques. Les variantes historiques chronométrées restent testées
 dans le noyau pour les comparaisons Flash mais ne sont plus proposées. Les bonus peuvent toujours modifier temporairement les buts.
 Les 12 joueurs récents sont sélectionnables avec leur nom et leur portrait.
 
-Les 18 bonus, le rendu des sprites, les animations et les sons sont intégrés.
+Les 18 bonus historiques, le rendu des sprites, les animations et les sons sont intégrés.
+Le choix V2 ajoute cinq effets facultatifs ; voir [les bonus](bonuses.md).
 Les 19 terrains historiques restent dans le noyau pour les comparaisons Flash ;
 les 7 terrains déjà symétriques et les 9 variantes corrigées sont proposés et tirés au hasard
 dans les trois modes. Les dispositions 13, 19 et 20 restent exclues.

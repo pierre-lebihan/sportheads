@@ -20,7 +20,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
   async function settingsMatch(page) {
     await page.waitForFunction(() => document.querySelector('#pitch').value === '12'
       && document.querySelector('#target-score').value === '5' && JSON.stringify(sportheads.snapshot().buffs) === '[[13,27,41,22,39],[9,0,50,49,8]]'
-      && !document.querySelector('#bonuses').checked);
+      && document.querySelector('#bonuses').value === '2');
   }
   try {
     const host = await pageAt(); await host.click('#play-online'); await host.click('#create-room');
@@ -32,7 +32,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
     await goToSetup(host, 'pitch'); await host.selectOption('#pitch', '12');
     await goToSetup(host, 'rules'); await setTarget(host, 5);
     await setManualBuffs(host, [[13,27,41,22,39],[9,0,50,49,8]]);
-    await host.locator('#bonuses').uncheck(); await settingsMatch(guest);
+    await host.locator('#bonuses').selectOption('2'); await settingsMatch(guest);
     await host.click('#start'); await guest.waitForFunction(() => sportheads.snapshot().phase === 1);
     await host.close();
     await guest.waitForFunction(() => !sportheads.snapshot().connected);

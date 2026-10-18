@@ -45,7 +45,7 @@ if (!url) throw new Error('Usage: node scripts/check-ai.cjs URL');
         await page.click('#setup-next'); await page.click('#setup-next');
         await page.selectOption('#pitch', level === 'easy' ? '2' : level === 'normal' ? '6' : '18'); await page.click('#setup-next');
         assert.equal(await page.locator('#target-score').inputValue(), '7');
-        await setTarget(page, 1); await page.uncheck('#bonuses'); await setBalance(page, 'blue', 10);
+        await setTarget(page, 1); await page.selectOption('#bonuses', '0'); await setBalance(page, 'blue', 10);
         await page.click('#start');
         await page.waitForFunction(() => sportheads.snapshot().phase === 1);
         assert.deepEqual(await page.evaluate(() => sportheads.snapshot().buffs), [[10,10,10,10,10], [0,0,0,0,0]]);

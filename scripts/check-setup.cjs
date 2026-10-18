@@ -147,8 +147,8 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     assert.equal(await guest.locator('#random-player-0').isEnabled(), false);
     assert.equal(await guest.locator('#skin-right').inputValue(), '12');
     await goToSetup(host, 'rules'); await waitStep(guest, 'rules');
-    await setBalance(host,'red',50); await setTarget(host, 1); await host.locator('#bonuses').uncheck();
-    await guest.waitForFunction(() => sportheads.snapshot().balance.preset === 'red' && sportheads.snapshot().balance.amount === 50 && document.querySelector('#target-score').value === '1' && !document.querySelector('#bonuses').checked);
+    await setBalance(host,'red',50); await setTarget(host, 1); await host.locator('#bonuses').selectOption('0');
+    await guest.waitForFunction(() => sportheads.snapshot().balance.preset === 'red' && sportheads.snapshot().balance.amount === 50 && document.querySelector('#target-score').value === '1' && document.querySelector('#bonuses').value === '0');
     assert.equal(await guest.locator('#balance-status').innerText(), 'Rouge +50 %');
     for (const id of ['goal-minus', 'goal-plus']) assert.equal(await guest.locator('#' + id).isEnabled(), false);
     await guest.evaluate(() => document.querySelector('#goal-plus').dispatchEvent(new MouseEvent('click')));

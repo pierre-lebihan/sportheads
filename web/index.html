@@ -109,7 +109,9 @@
             <h1 id="rules-title">Réglez le match</h1>
             <fieldset class="settings"><legend id="settings-legend">Votre partie</legend>
               <div class="goal-setting"><label for="target-score">Buts pour gagner</label><div class="goal-stepper" role="group" aria-label="Objectif de buts"><button id="goal-minus" type="button" aria-label="Un but de moins">−</button><input id="target-score" type="number" min="1" max="9" step="1" value="7" readonly aria-label="Buts pour gagner, entre 1 et 9"><button id="goal-plus" type="button" aria-label="Un but de plus">+</button></div></div>
-              <label class="check"><input id="bonuses" type="checkbox" checked> Bonus</label>
+              <label for="bonuses">Bonus <select id="bonuses"><option value="0">Aucun bonus</option><option value="1" selected>Bonus historiques</option><option value="2">Bonus V2</option></select></label>
+              <p id="bonuses-help" class="bonuses-help">Les 18 bonus du jeu original.</p>
+              <details id="v2-guide" class="v2-guide" hidden><summary>Les cinq nouveaux bonus</summary><ul id="v2-bonus-list"></ul></details>
             </fieldset>
             <fieldset id="balance-controls" class="assistance"></fieldset>
             <div class="launch"><h2 id="welcome-title">À vous de jouer.</h2><p id="welcome-detail">Le premier à atteindre l’objectif gagne.</p><p id="guest-wait" hidden>Le créateur lancera le match lorsque vous serez prêts.</p></div>

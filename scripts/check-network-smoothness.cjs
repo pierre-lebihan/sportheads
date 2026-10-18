@@ -50,7 +50,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-network-s
     const share = new URL(url); share.searchParams.set('room', await host.locator('#room-code').innerText());
     const guest = await pageAt(share.href); await guest.click('#join-room');
     await host.waitForFunction(() => sportheads.snapshot().connected); await goToSetup(host, 'rules');
-    await host.locator('#bonuses').uncheck(); await setTarget(host, 9); await host.click('#start');
+    await host.locator('#bonuses').selectOption('0'); await setTarget(host, 9); await host.click('#start');
     await guest.waitForFunction(() => sportheads.snapshot().phase === 1);
     await host.evaluate(() => { window.delayFrames = true; }); await host.keyboard.down('KeyD');
     const samples = await guest.evaluate(async () => {

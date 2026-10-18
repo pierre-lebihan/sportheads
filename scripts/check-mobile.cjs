@@ -108,7 +108,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     await p.screenshot({ path: 'evidence/mobile-settings-small.png', fullPage: true });
     await p.setViewportSize({ width: 390, height: 844 });
     await p.locator('#touch-settings summary').click(); await p.selectOption('#touch-layout', 'three-fingers');
-    await p.locator('#bonuses').uncheck(); await p.locator('#start').tap();
+    await p.locator('#bonuses').selectOption('0'); await p.locator('#start').tap();
     await p.waitForFunction(() => sportheads.snapshot().phase === 1);
     await fits(p);
     let before = await bodies(p);
@@ -192,7 +192,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     const link = new URL(url); link.searchParams.set('room', await h.locator('#room-code').innerText());
     const guest = await mobile({ width: 844, height: 390 }, link.href), g = guest.page;
     await g.locator('#join-room').tap(); await h.waitForFunction(() => sportheads.snapshot().connected);
-    await goToSetup(h, 'rules'); await h.locator('#bonuses').uncheck();
+    await goToSetup(h, 'rules'); await h.locator('#bonuses').selectOption('0');
     await g.waitForFunction(() => sportheads.snapshot().setupStep === 'rules');
     await g.locator('#touch-settings summary').click();
     await g.selectOption('#touch-layout', 'three-fingers');

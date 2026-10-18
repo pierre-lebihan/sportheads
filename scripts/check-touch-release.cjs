@@ -21,7 +21,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-touch-rel
       page.on('pageerror', error => errors.push(error.message));
       await page.goto(url); await page.waitForFunction(() => window.ready || window.loadError);
       assert.equal(await page.evaluate(() => window.loadError), undefined);
-      await goToSetup(page, 'rules'); await page.locator('#touch-settings summary').click(); await page.selectOption('#touch-layout', 'three-fingers'); await page.locator('#bonuses').uncheck(); await page.click('#start');
+      await goToSetup(page, 'rules'); await page.locator('#touch-settings summary').click(); await page.selectOption('#touch-layout', 'three-fingers'); await page.locator('#bonuses').selectOption('0'); await page.click('#start');
       await page.waitForFunction(() => sportheads.snapshot().phase === 1);
       const left = page.locator('[data-side="0"] [data-action="1"]'), right = page.locator('[data-side="0"] [data-action="2"]');
       await page.evaluate(() => { window.dropPointerRelease = true; });

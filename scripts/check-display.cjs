@@ -48,7 +48,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
       for (const mode of ['local', 'ai']) {
         await page.click('#play-' + mode);
         if (mode === 'ai') await page.click('#setup-next');
-        await goToSetup(page, 'rules'); await page.uncheck('#bonuses'); await page.click('#start');
+        await goToSetup(page, 'rules'); await page.selectOption('#bonuses', '0'); await page.click('#start');
         for (const layout of ['thumbs', 'three-fingers']) {
           await page.click('#play-view');
           if (!await page.locator('#touch-layout').isVisible()) await page.click('#touch-settings summary');

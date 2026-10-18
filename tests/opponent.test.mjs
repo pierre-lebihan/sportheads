@@ -140,3 +140,16 @@ test('a seeded opponent replays identically without using the game random genera
   assert.deepEqual(await run(), await run());
   assert.throws(() => createOpponent({ difficulty: 'impossible' }), RangeError);
 });
+
+test('all four AI levels handle the five active V2 bonuses and their wire snapshots',async()=>{
+  for(const {id} of AI_LEVELS)for(const pitch of [2,6,8,18]){
+    const e=await wasm();e.game_start_balanced_pitch(17,99,1,pitch);e.game_set_bonus_mode(2);
+    const ai=createOpponent({difficulty:id,seed:17});
+    for(let tick=0;tick<360;tick++){
+      if(tick===100)for(let kind=19;kind<=23;kind++)for(const side of [0,1])e.game_collect(kind,side);
+      const mask=ai.step(e);assert.ok(Number.isInteger(mask)&&mask>=0&&mask<=15);
+      e.game_tick((mask<<4)|(tick%60<30?2:1)|(tick%90<8?4:0));
+      if(tick%30===0)assert.ok(isValidState(captureState(e,[13,23])),`${id}, terrain ${pitch}, tick ${tick}`);
+    }
+  }
+});

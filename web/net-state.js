@@ -1,5 +1,6 @@
 import { PLAYER_COUNT } from './players.js';
 import { validBuffs, BUFF_STATS } from './balance.js';
+import { validBonusState, BONUS_FIELD_COUNT } from './bonuses.js';
 // Host-authoritative render snapshots. No simulation, assets or executable code
 // cross this boundary; the guest only reads the last validated numeric state.
 const KEYS = ['values', 'skins', 'bodies', 'players', 'pickups', 'bombs', 'effects'];
@@ -29,14 +30,16 @@ export function isValidState(packet) {
     if (prototype !== Object.prototype && prototype !== null) return false;
     const keys = Object.keys(packet);
     const hasBuffs = Object.hasOwn(packet, 'buffs');
-    if (keys.length !== KEYS.length + Number(hasBuffs) || !KEYS.every(key => Object.hasOwn(packet, key))
-      || (hasBuffs && !validBuffs(packet.buffs))) return false;
+    const hasBonus = Object.hasOwn(packet, 'bonus');
+    if (keys.length !== KEYS.length + Number(hasBuffs) + Number(hasBonus) || !KEYS.every(key => Object.hasOwn(packet, key))
+      || (hasBuffs && !validBuffs(packet.buffs)) || (hasBonus && !validBonusState(packet.bonus))) return false;
+    const bonusCount = hasBonus && packet.bonus[0] === 2 ? 23 : 18;
     const { values: v, skins, bodies, players, pickups, bombs, effects } = packet;
     if (!row(v, 16) || !row(skins, 2) || !skins.every(skin => integer(skin, 1, PLAYER_COUNT))) return false;
     if (!integer(v[0], 0, 3) || !integer(v[1], 0) || !integer(v[2], 0) || !integer(v[3], 0)
       || !integer(v[4], 0) || !integer(v[5], -1, 1) || !integer(v[6], 0)
       || !integer(v[7], 0, 127) || ![v[8], v[9]].every(height => hasBuffs ? integer(height, 30, 140) : oneOf(height, [60, 100, 140]))
-      || !integer(v[10], 0, 18) || !integer(v[11], 0, 70) || !oneOf(v[12], [0, 1]) || !integer(v[13], 0, 2)
+      || !integer(v[10], 0, bonusCount) || !integer(v[11], 0, 70) || !oneOf(v[12], [0, 1]) || !integer(v[13], 0, 2)
       || !integer(v[14], 1, 99) || !integer(v[15], 2, 20)) return false;
     const roles = new Set();
     if (!rows(bodies, 6, 11, body => {
@@ -59,7 +62,7 @@ export function isValidState(packet) {
           || ![60, 100, 140].some(base => Math.round(base * (100 - packet.buffs[side][2]) / 100) === v[8 + side])) return false;
       }
     }
-    if (!rows(pickups, 16, 4, pickup => integer(pickup[0], 1, 18) && integer(pickup[3], 0, 600))) return false;
+    if (!rows(pickups, 16, 4, pickup => integer(pickup[0], 1, bonusCount) && integer(pickup[3], 0, 600))) return false;
     if (!rows(bombs, 16, 2)) return false;
     if (!rows(effects, 256, 6, effect => integer(effect[0], 0, 5) && integer(effect[3], 0, 1000)
       && effect[4] >= 0 && effect[4] <= 4096 && effect[5] >= 0 && effect[5] <= 4096)) return false;
@@ -97,6 +100,7 @@ export function captureState(engine, skins) {
     bodies,
     players: Array.from({ length: 2 }, (_, side) => Array.from({ length: 7 }, (_, field) => engine.game_player_value(side, field))),
     buffs: Array.from({ length: 2 }, (_, side) => Array.from({ length: BUFF_STATS.length }, (_, stat) => engine.game_buff_value?.(side, stat) ?? 0)),
+    bonus: Array.from({ length: BONUS_FIELD_COUNT }, (_, field) => engine.game_bonus_value?.(field) ?? 0),
     pickups: captureRows(engine, 'game_pickup_count', 'game_pickup_value', 4, 16),
     bombs: captureRows(engine, 'game_bomb_count', 'game_bomb_value', 2, 16),
     effects: captureRows(engine, 'game_effect_count', 'game_effect_value', 6, 256),
@@ -121,6 +125,7 @@ export function createRemoteEngine() {
     game_vertex_value: () => 0,
     game_player_value: (side, field) => value('players', side, field),
     game_buff_value: (side, stat) => Number.isInteger(side) && Number.isInteger(stat) ? current.buffs?.[side]?.[stat] ?? (side >= 0 && side < 2 && stat >= 0 && stat < BUFF_STATS.length ? 0 : NaN) : NaN,
+    game_bonus_value: field => Number.isInteger(field) && field >= 0 && field < BONUS_FIELD_COUNT ? current.bonus?.[field] ?? 0 : NaN,
     game_pickup_count: () => current.pickups.length,
     game_pickup_value: (index, field) => value('pickups', index, field),
     game_bomb_count: () => current.bombs.length,
@@ -137,6 +142,7 @@ export function createRemoteEngine() {
           key === 'values' || key === 'skins' ? packet[key].slice() : packet[key].map(entry => entry.slice()),
         ]));
         if (Object.hasOwn(packet, 'buffs')) next.buffs = packet.buffs.map(stats => stats.slice());
+        if (Object.hasOwn(packet, 'bonus')) next.bonus = packet.bonus.slice();
         // Also reject an accessor that changes its answer between validation and copy.
         if (!isValidState(next)) return false;
         current = next;

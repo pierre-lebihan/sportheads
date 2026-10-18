@@ -32,7 +32,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-buffs.cjs
       await page.locator('[data-balance-side="0"]').click();
       await page.locator('#buff-jump').focus();await page.keyboard.press('ArrowRight');
       assert.equal((await buffs())[0][0],2,'manual percentages are precise, not ten-percent steps');
-      await setTarget(page,1);await page.uncheck('#bonuses');
+      await setTarget(page,1);await page.selectOption('#bonuses', '0');
       await goToSetup(page,'pitch');await goToSetup(page,'rules');assert.deepEqual(await buffs(),[[2,50,49,37,11],[49,23,17,5,43]]);
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
       const name=browser===chrome?'chromium':'webkit';

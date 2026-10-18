@@ -10,11 +10,11 @@ const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
 
 // A short flight estimate, corrected from the real ball at each decision.
 // World uses three 1/96 s substeps per game tick, rather than 1/30 s.
-function forecast(ball, seconds, bounce) {
+function forecast(ball, seconds, bounce, gravity = 300) {
   let { x, y, vx, vy, radius } = ball;
   for (let remaining = seconds; remaining > 0; remaining -= 1 / 96) {
     const dt = Math.min(remaining, 1 / 96);
-    vy += 300 * dt; x += vx * dt; y += vy * dt;
+    vy += gravity * dt; x += vx * dt; y += vy * dt;
     if (x < 5 + radius) { x = 5 + radius; vx = Math.abs(vx) * bounce; }
     if (x > 795 - radius) { x = 795 - radius; vx = -Math.abs(vx) * bounce; }
     if (y > 460 - radius) { y = 460 - radius; vy = -Math.abs(vy) * bounce; }
@@ -56,10 +56,11 @@ export function createOpponent({ difficulty = 'normal', seed = 1 } = {}) {
         const { 1: opponent, 2: self, 3: ball } = bodies(engine);
         if (!self || !ball || !opponent) { held = 0; return 0; }
         const bounce = .3 + engine.game_value(13) * .3;
+        const gravity = engine.game_bonus_value?.(7) > 0 ? 600 : 300;
         // Close encounters need the ball's current position; long-range
         // anticipation must not make the keeper step away from an easy shot.
         const horizon = Math.min(level.horizon, Math.max(0, (Math.abs(ball.x - self.x) - 35) / 140));
-        const ahead = forecast(ball, horizon, bounce);
+        const ahead = forecast(ball, horizon, bounce, gravity);
         const spacing = self.radius + ball.radius + 8;
         let target = ahead.x + spacing, minimum = 280, covering = false;
         const distantAttack = ball.x < 270;
@@ -86,13 +87,13 @@ export function createOpponent({ difficulty = 'normal', seed = 1 } = {}) {
         const dx = target - (self.x + self.vx * .06);
         held = Math.abs(dx) > 7 ? dx < 0 ? 1 : 2 : 0;
         const arrival = ball.vx > 30 ? clamp((self.x - ball.x) / ball.vx, .08, .3) : .12;
-        const near = forecast(ball, difficulty === 'easy' ? .05 : arrival, bounce);
+        const near = forecast(ball, difficulty === 'easy' ? .05 : arrival, bounce, gravity);
         const reachable = Math.abs(near.x - (self.x + self.vx * .08)) < self.radius + ball.radius + 30;
         const jumpSpeed = (150 + 50 * engine.game_player_value(1, 1)) * (1 + (engine.game_buff_value?.(1, 0) || 0) / 100);
         const jumpReach = jumpSpeed * jumpSpeed / (2 * 460) + self.radius + ball.radius + 4;
         const above = near.y < self.y - self.radius * .4 && near.y > self.y - jumpReach;
         if (reachable && above && (!covering || ball.x > 500) && self.vy > -30 && near.vy > -160 && random() >= level.miss) held |= 4;
-        const shot = forecast(ball, .1, bounce);
+        const shot = forecast(ball, .1, bounce, gravity);
         const inFront = shot.x > self.x - self.radius - ball.radius - 45 && shot.x < self.x - self.radius * .2;
         const atFoot = shot.y > self.y - 25 && shot.y < self.y + 65;
         if (inFront && atFoot && tick >= kickReady && !engine.game_player_value(1, 3) && random() >= level.miss) {

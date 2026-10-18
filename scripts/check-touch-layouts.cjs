@@ -70,7 +70,7 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       assert.equal(await page.evaluate(() => window.loadError), undefined);
       assert.equal(await page.locator('#touch-layout').inputValue(), 'thumbs');
       await page.click('#play-ai'); for (let i = 0; i < 3; i++) await page.click('#setup-next');
-      await setTarget(page, 9); await page.uncheck('#bonuses'); await page.click('#start');
+      await setTarget(page, 9); await page.selectOption('#bonuses', '0'); await page.click('#start');
       await page.waitForFunction(() => sportheads.snapshot().phase === 1);
       await gesture([point(1, movement, .15, .8), point(2, kick)]); await expectInput(9);
       await gesture([point(1, movement, .15, .2), point(2, kick)]); await expectInput(13);

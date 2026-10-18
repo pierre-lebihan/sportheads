@@ -15,7 +15,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-quit.cjs 
     assert.equal(await page.evaluate(()=>window.loadError),undefined);return page;
   }
   async function prepare(page) {
-    await goToSetup(page,'rules');await setTarget(page,1);await page.uncheck('#bonuses');
+    await goToSetup(page,'rules');await setTarget(page,1);await page.selectOption('#bonuses', '0');
     await page.waitForFunction(()=>!document.querySelector('#start').disabled);await page.click('#start');
     await page.waitForFunction(()=>sportheads.snapshot().phase===1);
   }

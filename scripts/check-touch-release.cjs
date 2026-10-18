@@ -65,8 +65,10 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-touch-rel
       const base = await stick.boundingBox();
       await page.mouse.move(base.x + 12, base.y + 68); await page.mouse.down();
       assert.equal(await stick.getAttribute('data-mask'), '1');
-      await page.mouse.move(1, 1);
-      assert.notEqual(await stick.getAttribute('data-mask'), '0', 'joystick keeps its angle beyond the base');
+      // A vertical drag emits only one jump tick, so a later zero mask is valid.
+      // Drag horizontally outside the base to test sustained pointer capture.
+      await page.mouse.move(base.x + base.width + 16, base.y + base.height / 2);
+      assert.equal(await stick.getAttribute('data-mask'), '2', 'joystick keeps its angle beyond the base');
       await page.mouse.up(); assert.equal(await stick.getAttribute('data-mask'), '0');
       assert.deepEqual(errors, []);
       console.log(JSON.stringify({ passed: true, browser: name, checks: ['lost pointer release', 'repeated taps', 'next gesture repairs missing touchend', 'keyboard remains independent', 'pause and resume', 'mouse capture and release'] }));

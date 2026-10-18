@@ -28,7 +28,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-ai-perfor
     await page.selectOption('#bonuses', v2 ? '2' : '0'); await page.click('#start');
     await page.waitForFunction(() => sportheads.snapshot().phase === 1);
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
-    await page.evaluate(v2 => { aiCosts.length = 0; const e = sportheads.engine; e.game_probe_start(550, 430, 60, 0); if (v2) { e.game_set_bonus_mode(2); for(let id=19;id<=23;id++)for(const side of [0,1])e.game_collect(id,side); } }, v2);
+    await page.evaluate(v2 => { aiCosts.length = 0; sportheads.resetPerformance(); const e = sportheads.engine; e.game_probe_start(550, 430, 60, 0); if (v2) { e.game_set_bonus_mode(2); for(let id=19;id<=23;id++)for(const side of [0,1])e.game_collect(id,side); } }, v2);
     const frames = await page.evaluate(() => new Promise(resolve => {
       const gaps = []; let previous, begin;
       function frame(time) {
@@ -39,13 +39,15 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-ai-perfor
       }
       requestAnimationFrame(frame);
     }));
+    const diagnostic = await page.evaluate(() => sportheads.performance());
     const costs = await page.evaluate(() => aiCosts);
     const percentile = (values, p) => values.slice().sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(values.length*p))];
-    const result = { passed: true, bonusV2: v2, cpuSlowdown: 4, frames: frames.length, plans: costs.length,
+    const result = { passed: true, bonusV2: v2, cpuSlowdown: 4, frames: frames.length, plans: diagnostic.planner.plans,
       frameP95Ms: percentile(frames, .95), frameMaxMs: Math.max(...frames),
-      planP95Ms: percentile(costs, .95), planMaxMs: Math.max(...costs), physicalDeviceTested: false };
+      mainPlannerCalls: costs.length, costs: diagnostic.costs, planner: diagnostic.planner, assets: diagnostic.assets, physicalDeviceTested: false };
     console.log(JSON.stringify(result));
-    assert.ok(costs.length >= 4, 'the real Expert planner was exercised');
+    assert.ok(diagnostic.planner.plans >= 4 && diagnostic.planner.accepted > 0, 'the real Expert planner was exercised in the Worker');
+    assert.equal(costs.length, 0, 'no native anticipation runs on the UI thread');
     assert.ok(result.frameP95Ms <= 50, 'at least 95% of frames stay within 50 ms under 4x CPU slowdown');
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }

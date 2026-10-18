@@ -93,10 +93,10 @@ if (!url) throw new Error('Usage: node scripts/check-ai.cjs URL');
         await page.click('#again'); assert.equal(await page.evaluate(() => sportheads.snapshot().difficulty), level);
         assert.equal(await page.evaluate(() => sportheads.snapshot().phase), 0);
         await page.click('#play-view');
-        for (let i = 0; i < 4; i++) await page.click('#setup-back');
+        await page.click('#quit-match-settings');
         assert.equal(await page.evaluate(() => sportheads.snapshot().setupStep), 'home');
         // Next preparation starts afresh, with the defaults for this check.
-        await page.evaluate(() => { document.querySelector('#target-score').value = '7'; });
+        await page.evaluate(() => { const input = document.querySelector('#target-score'); input.value = '7'; input.dispatchEvent(new Event('input', { bubbles: true })); });
       }
       await page.click('#play-local');
       assert.equal(await page.evaluate(() => sportheads.snapshot().difficulty), null);

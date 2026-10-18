@@ -2,7 +2,9 @@ import { TOUCH_LAYOUTS, movementMask, joystickVector, joystickGesture, readTouch
 
 // Native contact snapshots repair missed releases. Every finger owns its own
 // action; sliding changes only the movement contact, never the kick/index.
-export function createTouchControls(root, onChange) {
+export function createTouchControls(root, onChange, measure = (_name, action) => action()) {
+  const listen = (target, name, handler, options) => target.addEventListener(name,
+    event => measure('touchInput', () => handler(event)), options);
   const pointers = new Map(), touches = new Map(), buttons = [...root.querySelectorAll('[data-action]')];
   let mode = 'local', side = 0, enabled = false, touchEvents = 'ontouchstart' in window, layout = readTouchLayout();
   let pendingJumps = 0, jumpSequence = 0;
@@ -89,7 +91,7 @@ export function createTouchControls(root, onChange) {
     pendingJumps = 0;
     touches.clear(); for (const id of pointers.keys()) removePointer(id); paint();
   }
-  root.addEventListener('touchstart', event => {
+  listen(root, 'touchstart', event => {
     touchEvents = true;
     let changed = false;
     for (const [id, contact] of pointers) if (contact.type === 'touch') changed = removePointer(id) || changed;
@@ -101,9 +103,9 @@ export function createTouchControls(root, onChange) {
     if (changed) { event.preventDefault(); paint(); }
   }, { passive: false });
   for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
-    window.addEventListener(type, reconcileTouches, { capture: true, passive: type !== 'touchmove' });
+    listen(window, type, reconcileTouches, { capture: true, passive: type !== 'touchmove' });
   }
-  root.addEventListener('pointerdown', event => {
+  listen(root, 'pointerdown', event => {
     if (event.pointerType === 'touch' && touchEvents) return;
     if (event.button !== 0) return;
     const contact = createContact(event.target, event.clientX, event.clientY);
@@ -112,23 +114,23 @@ export function createTouchControls(root, onChange) {
     try { contact.button.setPointerCapture(event.pointerId); } catch { /* Global release also clears the contact. */ }
     pointers.set(event.pointerId, { ...contact, type: event.pointerType }); paint();
   });
-  window.addEventListener('pointerdown', event => {
+  listen(window, 'pointerdown', event => {
     if (!event.isPrimary) return;
     let changed = false;
     for (const [id, contact] of pointers) if (contact.type === event.pointerType) changed = removePointer(id) || changed;
     if (changed) paint();
   }, true);
-  window.addEventListener('pointermove', event => {
+  listen(window, 'pointermove', event => {
     if (event.buttons === 0) { release(event); return; }
     const contact = pointers.get(event.pointerId);
     if (contact && move(contact, event.clientX, event.clientY)) paint();
   }, true);
-  root.addEventListener('contextmenu', event => event.preventDefault());
-  root.addEventListener('lostpointercapture', release);
-  window.addEventListener('pointerup', release, true); window.addEventListener('pointercancel', release, true);
-  window.addEventListener('blur', clear); window.addEventListener('pagehide', clear); window.addEventListener('orientationchange', clear);
-  window.addEventListener('resize', clear);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) clear(); });
+  listen(root, 'contextmenu', event => event.preventDefault());
+  listen(root, 'lostpointercapture', release);
+  listen(window, 'pointerup', release, true); listen(window, 'pointercancel', release, true);
+  listen(window, 'blur', clear); listen(window, 'pagehide', clear); listen(window, 'orientationchange', clear);
+  listen(window, 'resize', clear);
+  listen(document, 'visibilitychange', () => { if (document.hidden) clear(); });
   return {
     get layout() { return layout; },
     setLayout(value) {

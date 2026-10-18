@@ -1,3 +1,4 @@
+import { BONUS, BONUS_FIELDS, BONUS_LIMITS } from './engine-contract.js';
 export const BONUS_MODES = Object.freeze([
   { id: 0, label: 'Aucun bonus', description: 'Un duel sans bonus à ramasser.' },
   { id: 1, label: 'Bonus historiques', description: 'Les 18 bonus du jeu original.' },
@@ -17,9 +18,9 @@ export function bonusModeFromMessage(message) {
   if (!Object.hasOwn(message,'bonusMode')) return Number(message.bonuses);
   return validBonusMode(message.bonusMode) && message.bonuses === (message.bonusMode !== 0) ? message.bonusMode : null;
 }
-export const BONUS_FIELD_COUNT = 15;
-const limits = [2,240,240,150,150,180,180,180,180,12,12,12,10,10,10];
+export const BONUS_FIELD_COUNT = BONUS_FIELDS.length;
 export function validBonusState(state) {
-  return Array.isArray(state) && state.length === BONUS_FIELD_COUNT && limits.every((limit,index) =>
-    Number.isInteger(state[index]) && state[index]>=0 && state[index]<=limit && (index===0 || state[0]===2 || state[index]===0));
+  return Array.isArray(state) && state.length === BONUS_FIELD_COUNT && BONUS_FIELDS.every((name, index) =>
+    Number.isInteger(state[index]) && state[index] >= 0 && state[index] <= BONUS_LIMITS[name]
+    && (index === BONUS.mode || state[BONUS.mode] === 2 || state[index] === 0));
 }

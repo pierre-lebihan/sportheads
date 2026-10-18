@@ -123,6 +123,12 @@
             <select id="touch-layout"><option value="thumbs">2 pouces · joystick et tir</option><option value="three-fingers">3 doigts · saut séparé en haut</option></select>
             <p id="touch-layout-help"></p>
           </details>
+          <details id="performance-diagnostic" class="help"><summary>Fluidité du jeu</summary>
+            <p>Mesurez une partie sur cet appareil pour identifier les ralentissements.</p>
+            <button id="measure-performance" type="button" disabled>Mesurer pendant 10 secondes</button>
+            <button id="copy-performance" type="button" hidden>Copier le diagnostic</button>
+            <p id="performance-status" role="status"></p><pre id="performance-report" hidden></pre>
+          </details>
           <details class="help"><summary>Commandes et projet</summary><p>Bleu : Q/A, D, Z/W et Espace. Rouge : flèches et P. Échap : pause.</p><p id="online-controls" hidden>En ligne ou contre l’IA : flèches et P, ou Q/A, D, Z/W et Espace. Vous contrôlez uniquement votre joueur.</p><p>Sur mobile : choisissez votre disposition dans Commandes tactiles. Le bouton Tir reste toujours manuel. Essayez le mode paysage.</p><nav aria-label="Projet"><a href="./physics.html">Comparaisons physiques</a><a href="https://github.com/pierre-lebihan/sportheads">GitHub</a></nav></details>
         </section>
       </div>

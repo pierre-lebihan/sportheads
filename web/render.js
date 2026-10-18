@@ -1,54 +1,12 @@
-import { AVATAR_FRAMES } from './players.js';
+import { PHASE, MATCH, BODY_ROLE, BODY, BONUS_FIELDS, decodeFields, readBonus } from './engine-contract.js';
 import { BALANCED_PITCHES, ORIGINAL_PITCHES } from './pitch-geometry.js';
-import { NEW_BONUSES, BONUS_FIELD_COUNT } from './bonuses.js';
+import { NEW_BONUSES } from './bonuses.js';
 // Original vector sprites exported from the SWF; all registration points and
 // timeline frames come from assets/manifest.json, without a Flash runtime.
-let manifest;
-const images = new Map();
+import { getAssets, imageFor, assetsReady } from './assets.js';
+export { loadAssets, getAssets, prepareMatchAssets, matchAssetsReady, assetStats } from './assets.js';
 const base = new URL('./assets/', import.meta.url);
-let loading;
-let assetsReady = false;
-// One raster per destination context: do not repeatedly rasterize the large
-// stadium SVG (and its color filter) on the animation thread, especially iOS.
 const backgrounds = new WeakMap();
-
-function imageFor(frame) {
-  if (!images.has(frame.file)) {
-    const image = new Image();
-    image.src = new URL(frame.file, base).href;
-    images.set(frame.file, image);
-  }
-  return images.get(frame.file);
-}
-
-export function loadAssets() {
-  if (!loading) loading = (async () => {
-    const response = await fetch(new URL('manifest.json', base));
-    if (!response.ok) throw new Error('Les graphismes du jeu ne sont pas disponibles.');
-    manifest = await response.json();
-    manifest.sprites['modern-heads'] = { frames: AVATAR_FRAMES.map(frame => ({
-      ...frame, width: 50, height: 50, originX: 25, originY: 25,
-    })) };
-    const pending = [...new Map(Object.values(manifest.sprites).flatMap(sprite => sprite.frames).map(frame => [frame.file, frame])).values()];
-    // Bound concurrent SVG decoding (several animation frames reuse one file).
-    await Promise.all(Array.from({ length: 2 }, async () => {
-      while (pending.length) {
-        const frame = pending.pop();
-        let loaded=false;
-        for(let attempt=0;attempt<3&&!loaded;attempt++){
-          try {await imageFor(frame).decode();loaded=true;}
-          catch {images.delete(frame.file);}
-        }
-        if(!loaded)throw new Error(`Impossible de décoder ${frame.file}`);
-      }
-    }));
-    assetsReady = true;
-    return manifest;
-  })();
-  return loading;
-}
-
-export function getAssets() { return manifest; }
 
 // Small canvas icons share the game's pickup scale and need no external assets.
 export function drawBonusPickup(ctx, kind, x, y, scale = 1) {
@@ -66,24 +24,24 @@ export function drawBonusPickup(ctx, kind, x, y, scale = 1) {
 }
 
 function drawBonusArena(ctx, bonus, heights) {
-  if (bonus[8] > 0 || bonus[12] > 0) {
+  if (bonus.trampoline > 0 || bonus.trampolineFlash > 0) {
     ctx.save(); ctx.strokeStyle='#ad52b5'; ctx.lineWidth=3; ctx.fillStyle='#c76acf55';
     ctx.fillRect(320,452,160,8);ctx.beginPath();ctx.moveTo(320,452);ctx.lineTo(480,452);ctx.stroke();
     for(let x=326;x<480;x+=12){ctx.beginPath();ctx.moveTo(x,454);ctx.lineTo(x+5,458);ctx.lineTo(x,462);ctx.stroke();}
-    if(bonus[12]>0){ctx.globalAlpha=bonus[12]/10;ctx.beginPath();ctx.ellipse(400,450-bonus[12],70,6,0,Math.PI,0);ctx.stroke();}ctx.restore();
+    if(bonus.trampolineFlash>0){ctx.globalAlpha=bonus.trampolineFlash/10;ctx.beginPath();ctx.ellipse(400,450-bonus.trampolineFlash,70,6,0,Math.PI,0);ctx.stroke();}ctx.restore();
   }
   for(const side of [0,1]) {
-    if(bonus[3+side]<=0 && bonus[10+side]<=0)continue;
+    if((side ? bonus.redShield : bonus.blueShield)<=0 && (side ? bonus.redShieldFlash : bonus.blueShieldFlash)<=0)continue;
     const x=side?715:85, top=460-heights[side];ctx.save();
-    ctx.strokeStyle=bonus[3+side]>0?'#30c3e7':'#f1b550';ctx.lineWidth=4;ctx.globalAlpha=bonus[3+side]>0?.8:bonus[10+side]/12;
-    ctx.setLineDash(bonus[3+side]>0?[9,4]:[3,8]);ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,460);ctx.stroke();ctx.restore();
+    ctx.strokeStyle=(side ? bonus.redShield : bonus.blueShield)>0?'#30c3e7':'#f1b550';ctx.lineWidth=4;ctx.globalAlpha=(side ? bonus.redShield : bonus.blueShield)>0?.8:(side ? bonus.redShieldFlash : bonus.blueShieldFlash)/12;
+    ctx.setLineDash((side ? bonus.redShield : bonus.blueShield)>0?[9,4]:[3,8]);ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,460);ctx.stroke();ctx.restore();
   }
 }
 
 /** Frame numbers are 1-based, like MovieClip.gotoAndStop. Width/height default
  * to native SVG crop dimensions; options.scale scales around the Flash origin. */
 export function drawSprite(ctx, name, number, x, y, width, height, angle = 0, options = {}) {
-  const sprite = manifest?.sprites[name];
+  const sprite = getAssets()?.sprites[name];
   if (!sprite) return false;
   const index = Math.max(0, Math.min(sprite.frames.length - 1, Math.floor(number || 1) - 1));
   const frame = sprite.frames[index];
@@ -147,7 +105,9 @@ function paintBackground(ctx, state, pitch) {
 function drawBackground(ctx, state, pitch) {
   // The manifest becomes available before all SVGs have decoded. Never retain
   // an incomplete loading frame. Keep only the current scene, not all pitches.
-  if (!assetsReady) { paintBackground(ctx, state, pitch); return; }
+  const stadium = getAssets()?.sprites.stadium?.frames[(state.stadiumFrame || 3) - 1];
+  const image = stadium && imageFor(stadium);
+  if (!assetsReady() || !image?.complete || !image.naturalWidth) { paintBackground(ctx, state, pitch); return; }
   const key = `${state.stadiumFrame || 3}:${pitch || 0}:${!!state.balancedPitches}`;
   let cached = backgrounds.get(ctx);
   if (cached?.key !== key) {
@@ -164,10 +124,10 @@ function polygons(ctx, engine) {
   // Initial twelve bodies are the original arena borders already in the artwork.
   // Extra unlabelled polygon bodies describe the selected pitch's obstacles.
   for (let i = 12; i < engine.game_body_count(); i++) {
-    if (engine.game_body_value(i, 9) !== 0 || engine.game_body_value(i, 10) === 0) continue;
-    const n = engine.game_vertex_count(i), radius = engine.game_body_value(i, 8);
+    if (engine.game_body_value(i, BODY.role) !== 0 || engine.game_body_value(i, BODY.active) === 0) continue;
+    const n = engine.game_vertex_count(i), radius = engine.game_body_value(i, BODY.radius);
     if (!n && !radius) continue;
-    ctx.save(); ctx.translate(engine.game_body_value(i, 0), engine.game_body_value(i, 1)); ctx.rotate(engine.game_body_value(i, 4));
+    ctx.save(); ctx.translate(engine.game_body_value(i, BODY.x), engine.game_body_value(i, BODY.y)); ctx.rotate(engine.game_body_value(i, BODY.angle));
     ctx.beginPath();
     let halfWidth = radius, halfHeight = radius;
     if (radius) ctx.arc(0, 0, radius, 0, Math.PI * 2);
@@ -185,16 +145,16 @@ function polygons(ctx, engine) {
  * headEffects [{ice,bombed,speed}], footFrames [left,right], blueprintFrame. */
 export function drawGame(ctx, engine, state = {}) {
   ctx.clearRect(0, 0, 800, 540);
-  if (!manifest) { ctx.fillStyle = '#51874d'; ctx.fillRect(0, 0, 800, 540); return; }
+  if (!getAssets()) { ctx.fillStyle = '#51874d'; ctx.fillRect(0, 0, 800, 540); return; }
   drawBackground(ctx, state, engine && state.blueprintFrame);
   if (!engine) return;
   if (!state.blueprintFrame) polygons(ctx, engine);
-  const bonus = state.bonus || Array.from({ length: BONUS_FIELD_COUNT }, (_, field) => engine.game_bonus_value?.(field) || 0);
-  drawBonusArena(ctx, bonus, state.goalHeights || [engine.game_value(8), engine.game_value(9)]);
+  const bonus = state.bonus ? decodeFields(BONUS_FIELDS, state.bonus) : readBonus(engine);
+  drawBonusArena(ctx, bonus, state.goalHeights || [engine.game_value(MATCH.blueGoalHeight), engine.game_value(MATCH.redGoalHeight)]);
   const bodies = [];
   for (let i = 0; i < engine.game_body_count(); i++) {
-    if (engine.game_body_value(i, 10) === 0) continue;
-    bodies.push({ i, x: engine.game_body_value(i, 0), y: engine.game_body_value(i, 1), angle: engine.game_body_value(i, 4), r: engine.game_body_value(i, 8), role: engine.game_body_value(i, 9) });
+    if (engine.game_body_value(i, BODY.active) === 0) continue;
+    bodies.push({ i, x: engine.game_body_value(i, BODY.x), y: engine.game_body_value(i, BODY.y), angle: engine.game_body_value(i, BODY.angle), r: engine.game_body_value(i, BODY.radius), role: engine.game_body_value(i, BODY.role) });
   }
   for (const pu of state.powerups || []) {
     if (pu.kind > 18) drawBonusPickup(ctx, pu.kind, pu.x, pu.y);
@@ -207,36 +167,36 @@ export function drawGame(ctx, engine, state = {}) {
     drawSprite(ctx, name, frame, effect.x, effect.y, effect.width, effect.height, effect.angle || 0, effect);
   }
   for (const body of bodies) {
-    if (body.role === 3) {
+    if (body.role === BODY_ROLE.ball) {
       // updateBall maps bounce0->frame3(dead),1->frame1(normal),2->frame2.
       // B2DManager sizes the display object to the physical diameter separately.
       const bounce = state.ballBounce ?? 1;
       const frame = state.ballFrame || (bounce === 0 ? 3 : bounce === 2 ? 2 : 1);
-      if(bonus[9]>0){ctx.save();ctx.strokeStyle='#f2a72a';ctx.globalAlpha=bonus[9]/12;ctx.lineWidth=body.r*1.7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(body.x-engine.game_body_value(body.i,2)*.08,body.y-engine.game_body_value(body.i,3)*.08);ctx.lineTo(body.x,body.y);ctx.stroke();ctx.restore();}
+      if(bonus.shotTrail>0){ctx.save();ctx.strokeStyle='#f2a72a';ctx.globalAlpha=bonus.shotTrail/12;ctx.lineWidth=body.r*1.7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(body.x-engine.game_body_value(body.i, BODY.vx)*.08,body.y-engine.game_body_value(body.i, BODY.vy)*.08);ctx.lineTo(body.x,body.y);ctx.stroke();ctx.restore();}
       drawSprite(ctx, 'ball-inside', frame, body.x, body.y, body.r * 2, body.r * 2, body.angle);
-      if(bonus[7]>0){ctx.save();ctx.strokeStyle='#455a73';ctx.lineWidth=3;ctx.beginPath();ctx.arc(body.x,body.y,body.r+1,0,Math.PI*2);ctx.stroke();ctx.restore();}
+      if(bonus.heavy>0){ctx.save();ctx.strokeStyle='#455a73';ctx.lineWidth=3;ctx.beginPath();ctx.arc(body.x,body.y,body.r+1,0,Math.PI*2);ctx.stroke();ctx.restore();}
     }
-    if (body.role === 1 || body.role === 2) {
-      const side = body.role - 1;
+    if (body.role === BODY_ROLE.blue || body.role === BODY_ROLE.red) {
+      const side = body.role - BODY_ROLE.blue;
       const scale = body.r / 20;
       drawSprite(ctx, state.modernPlayers ? 'modern-heads' : 'heads', state.skins?.[side] || side + 1, body.x, body.y, undefined, undefined, 0, { scale, flipX: side === 1 });
       const effect = state.players?.[side] || state.headEffects?.[side];
       if (effect?.freeze || effect?.ice || effect?.bombed) drawSprite(ctx, 'body-effect', effect.bombed ? 3 : 2, body.x, body.y, undefined, undefined, 0, { scale });
       if (effect?.speed !== undefined && effect.speed !== 1) drawSprite(ctx, 'speed-bolt', effect.speed === 0 ? 3 : 2, body.x + 12 * scale, body.y + 3 * scale, undefined, undefined, 0, { scale });
-      for(const [timer,max,color,offset] of [[bonus[1+side],240,'#eba323',8],[bonus[5+side],180,'#88b733',4]]) {
-        if(timer<=0)continue;ctx.save();ctx.strokeStyle=color;ctx.lineWidth=offset===4?3+(bonus[13+side]||0)/3:3;ctx.beginPath();ctx.arc(body.x,body.y,body.r+offset,-Math.PI/2,-Math.PI/2+Math.PI*2*timer/max);ctx.stroke();ctx.restore();
+      for(const [timer,max,color,offset] of [[(side ? bonus.redCharge : bonus.blueCharge),240,'#eba323',8],[(side ? bonus.redSpring : bonus.blueSpring),180,'#88b733',4]]) {
+        if(timer<=0)continue;ctx.save();ctx.strokeStyle=color;ctx.lineWidth=offset===4?3+((side ? bonus.redSpringFlash : bonus.blueSpringFlash)||0)/3:3;ctx.beginPath();ctx.arc(body.x,body.y,body.r+offset,-Math.PI/2,-Math.PI/2+Math.PI*2*timer/max);ctx.stroke();ctx.restore();
       }
     }
   }
   for (const body of bodies) {
-    if (body.role === 4 || body.role === 5) {
-      const side = body.role - 4;
+    if (body.role === BODY_ROLE.blueFoot || body.role === BODY_ROLE.redFoot) {
+      const side = body.role - BODY_ROLE.blueFoot;
       const frame = state.footFrames?.[side] || (state.players?.[side]?.broken ? 2 : 1);
       drawSprite(ctx, side === 0 ? 'foot-left' : 'foot-right', frame, body.x, body.y, undefined, undefined, body.angle + Math.PI, { scale: state.footScales?.[side] || state.players?.[side]?.scale || 1 });
     }
   }
   for (const bomb of state.bombs || []) drawSprite(ctx, 'bomb', 1, bomb.x, bomb.y, undefined, undefined, bomb.angle || 0);
-  for (const streaker of state.streakers || bodies.filter(body => body.role === 6)) {
+  for (const streaker of state.streakers || bodies.filter(body => body.role === BODY_ROLE.streaker)) {
     drawSprite(ctx, 'streaker', 1, streaker.x, streaker.y, undefined, undefined, streaker.angle || 0);
     drawSprite(ctx, 'streaker-head', 1, streaker.x, streaker.y, undefined, undefined, 0, { flipX: streaker.flipX });
   }
@@ -247,12 +207,12 @@ export function drawGame(ctx, engine, state = {}) {
     drawSprite(ctx, 'goal', frame, side ? 800 : 0, 340, undefined, undefined, 0, { flipX: !!side });
     ctx.restore();
   }
-  const ball = bodies.find(body => body.role === 3);
+  const ball = bodies.find(body => body.role === BODY_ROLE.ball);
   if (ball) drawSprite(ctx, 'shadow', 1, ball.x, 463, undefined, undefined, 0, { scaleY: .33332825 });
   if (state.started !== false && !state.paused) {
-    const phase = engine.game_value(0);
-    if (phase === 0) drawSprite(ctx, 'counter', Math.max(2, 91 - engine.game_value(4)), 400, 50);
-    if (phase === 2) drawSprite(ctx, 'goal-words', 2, 400, 80);
+    const phase = engine.game_value(MATCH.phase);
+    if (phase === PHASE.countdown) drawSprite(ctx, 'counter', Math.max(2, 91 - engine.game_value(MATCH.countdown)), 400, 50);
+    if (phase === PHASE.goal) drawSprite(ctx, 'goal-words', 2, 400, 80);
   }
 }
 
@@ -264,8 +224,8 @@ export function createAudio() {
   return {
     unlock() { unlocked = true; },
     play(name, { loop = false, volume = .5 } = {}) {
-      if (!unlocked || !manifest?.sounds[name]) return;
-      const player = loop && players.has(name) ? players.get(name) : new Audio(new URL(manifest.sounds[name], base).href);
+      if (!unlocked || !getAssets()?.sounds[name]) return;
+      const player = loop && players.has(name) ? players.get(name) : new Audio(new URL(getAssets().sounds[name], base).href);
       player.loop = loop; player.volume = volume;
       if (loop) players.set(name, player);
       else { effects.add(player); player.addEventListener('ended', () => effects.delete(player), { once: true }); }

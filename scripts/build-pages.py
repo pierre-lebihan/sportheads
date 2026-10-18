@@ -28,11 +28,13 @@ for old, new in replacements.items():
         raise SystemExit(f'Expected exactly one occurrence of {old}')
     html = html.replace(old, new)
 (site / 'physics.html').write_text(html)
-browser_files = ('index.html', 'game.js', 'game.css', 'render.js', 'rooms.js', 'ice-diagnostics.js', 'ice-signaling.js', 'net-state.js', 'net-render.js', 'selection.js', 'players.js', 'touch-controls.js', 'touch-layout.js', 'bonuses.js', 'balance.js', 'balance-ui.js', 'arena-ui.js', 'setup-ui.js', 'opponent.js', 'manifest.webmanifest', 'terrains.html', 'terrains.js', 'pitch-geometry.js')
+browser_files = ('index.html', 'game.js', 'game.css', 'render.js', 'rooms.js', 'ice-diagnostics.js', 'ice-signaling.js', 'net-state.js', 'net-render.js', 'selection.js', 'players.js', 'touch-controls.js', 'touch-layout.js', 'bonuses.js', 'balance.js', 'balance-ui.js', 'arena-ui.js', 'setup-ui.js', 'opponent.js', 'engine-contract.js', 'assets.js', 'app-state.js', 'game-ui.js', 'room-session.js', 'planner.js', 'planner-runtime.js', 'planner-worker.js', 'performance.js', 'fixed-step.js', 'performance-ui.js', 'engine-view.js', 'manifest.webmanifest', 'terrains.html', 'terrains.js', 'pitch-geometry.js')
 # Every app module uses the same revision, including its transitive imports.
 # A refreshed page must not mix a new UI with cached networking code.
 revision = hashlib.sha256(b''.join((root / 'web' / name).read_bytes() for name in browser_files)
-    + (root / 'probe/physics-core.wasm').read_bytes()).hexdigest()[:12]
+    + (root / 'probe/physics-core.wasm').read_bytes()
+    + (root / 'web/assets/manifest.json').read_bytes() + (root / 'web/assets/runtime.json').read_bytes()
+    + (root / 'web/assets/portraits.webp').read_bytes()).hexdigest()[:12]
 for filename in browser_files:
     source = (root / 'web' / filename).read_text()
     if filename.endswith(('.js', '.html')):
@@ -43,15 +45,23 @@ for filename in browser_files:
                 for quote in ("'", '"'):
                     source = source.replace(f'{quote}./{dependency}{quote}', f'{quote}./{dependency}?v={revision}{quote}')
     (site / filename).write_text(source)
-manifest=json.loads((root/'web/assets/manifest.json').read_text())
-for sprite in manifest['sprites'].values():
-    for frame in sprite['frames']:
-        if not (root/'web/assets'/frame['file']).is_file():
-            raise SystemExit(f"Missing sprite frame: {frame['file']}")
-for sound in manifest['sounds'].values():
-    if not (root/'web/assets'/sound).is_file():
-        raise SystemExit(f"Missing sound: {sound}")
-shutil.copytree(root / 'web/assets', site / 'assets')
+manifest = json.loads((root / 'web/assets/manifest.json').read_text())
+catalogue = json.loads((root / 'web/assets/runtime.json').read_text())
+# Archive originals in Git, but publish only graphics reachable by the game.
+names = {spec if isinstance(spec, str) else spec['sprite'] for spec in catalogue['boot'] + catalogue['common'] + catalogue['bonuses']}
+manifest['sprites'] = {name: sprite for name, sprite in manifest['sprites'].items() if name in names}
+files = {frame['file'] for sprite in manifest['sprites'].values() for frame in sprite['frames']}
+files.update(manifest['sounds'].values())
+files.update(['runtime.json', catalogue['portraitAtlas']])
+(site / 'assets').mkdir()
+for filename in sorted(files):
+    source = root / 'web/assets' / filename
+    if not source.is_file():
+        raise SystemExit(f'Missing runtime asset: {filename}')
+    destination = site / 'assets' / filename
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, destination)
+(site / 'assets/manifest.json').write_text(json.dumps(manifest, separators=(',', ':'), ensure_ascii=False))
 shutil.copytree(root / 'web/vendor', site / 'vendor')
 shutil.copyfile(root / 'probe/physics-core.wasm', site / 'physics-core.wasm')
 # Omit runtime diagnostics; publish only numeric scenes and measured results.

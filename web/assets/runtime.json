@@ -1,0 +1,53 @@
+{
+  "portraitAtlas": "portraits.webp",
+  "boot": [
+    {
+      "sprite": "stadium",
+      "frames": [
+        3
+      ]
+    },
+    "bottom-bar",
+    "ground-texture",
+    "foot-left",
+    "foot-right",
+    "goal",
+    "ball-inside",
+    "shadow",
+    "counter",
+    "goal-words"
+  ],
+  "bonuses": [
+    "body-effect",
+    "speed-bolt",
+    "bomb",
+    "streaker",
+    "streaker-head",
+    "explosion",
+    "pu-1",
+    "pu-2",
+    "pu-3",
+    "pu-4",
+    "pu-5",
+    "pu-6",
+    "pu-7",
+    "pu-8",
+    "pu-9",
+    "pu-10",
+    "pu-11",
+    "pu-12",
+    "pu-13",
+    "pu-14",
+    "pu-15",
+    "pu-16",
+    "pu-17",
+    "pu-18"
+  ],
+  "common": [
+    "ring",
+    "ring-good",
+    "ring-bad",
+    "dust",
+    "trail"
+  ]
+}

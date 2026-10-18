@@ -1,3 +1,4 @@
+import { BODY, readBody } from './engine-contract.js';
 // Presentation only: authority, scores and collisions remain on the creator.
 // Advance at display rate without adding a fixed interpolation delay.
 const HORIZON = 80, CORRECTION = 50, MAX_TRAVEL = 40, TELEPORT = 60;
@@ -19,7 +20,7 @@ export function createRemoteView(authority, now = () => performance.now()) {
   const engine = Object.freeze({ ...authority,
     game_body_value(index, field) {
       const pose = displayed[index];
-      if (pose && pose.role === authority.game_body_value(index, 9)) {
+      if (pose && pose.role === authority.game_body_value(index, BODY.role)) {
         if (field === 0) return pose.x;
         if (field === 1) return pose.y;
         if (field === 4) return pose.angle;
@@ -34,8 +35,7 @@ export function createRemoteView(authority, now = () => performance.now()) {
       const continuous = running && active && epoch === key;
       running = active; epoch = key; receivedAt = time;
       poses = Array.from({ length: authority.game_body_count() }, (_, index) => {
-        const value = field => authority.game_body_value(index, field);
-        const pose = { x: value(0), y: value(1), vx: value(2), vy: value(3), angle: value(4), omega: value(5), radius: value(8), role: value(9), dx: 0, dy: 0, da: 0 };
+        const pose = { ...readBody(authority, index), dx: 0, dy: 0, da: 0 };
         const before = previous.get(pose.role);
         if (continuous && before?.radius === pose.radius && Math.hypot(before.x - pose.x, before.y - pose.y) < TELEPORT) {
           pose.dx = before.x - pose.x; pose.dy = before.y - pose.y; pose.da = angleDelta(before.angle - pose.angle);

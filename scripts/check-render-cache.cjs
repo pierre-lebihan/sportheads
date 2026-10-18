@@ -13,7 +13,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-render-ca
         const gameURL = document.querySelector('script[type="module"]').src;
         const source = await (await fetch(gameURL)).text();
         const ref = source.match(/from ['"]([^'"]*render\.js[^'"]*)['"]/)[1];
-        const r = await import(new URL(ref, gameURL)); await r.loadAssets();
+        const r = await import(new URL(ref, gameURL)); await r.loadAssets({ allStadiums: true });
         // Keep the same rendering path as the live canvas and cache. Forcing a
         // CPU context changes SVG/filter antialiasing in Chromium itself.
         const makeContext = () => { const c = document.createElement('canvas'); c.width = 800; c.height = 540; return c.getContext('2d', { willReadFrequently: false }); };

@@ -160,11 +160,17 @@ connexions WebRTC entre contextes indépendants. Ils demandent un accès Interne
 
 ## Publication
 
+L'état central, le contrat moteur, le chargement par usage et l'anticipation IA
+dans un Worker sont décrits dans [l'organisation du navigateur](docs/runtime.md).
+La physique est protégée par une référence numérique de 48 scénarios ; cette
+refonte ne change aucun fichier Rust.
+
 GitHub Actions vérifie les pull requests et les pushes sur `main` : tests Rust,
 Clippy, formatage, tests JavaScript, puis scénarios navigateur sur le vrai `_site/`
 compilé. Chromium et WebKit couvrent les parties locales et IA, la préparation,
 l'équilibrage, les deux dispositions tactiles, le saut par geste, les touches
 bloquées, les formats mobiles, le plein écran et les obstacles des terrains.
+Une dixième suite vérifie les ressources, la parité du Worker et l'état central.
 La publication Pages n'a lieu que sur `main`, après réussite de toutes ces étapes.
 Les journaux, états et captures sont disponibles dans l'artefact `browser-report`
 du workflow pendant sept jours, y compris lorsqu'un scénario échoue.

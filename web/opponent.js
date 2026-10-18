@@ -1,3 +1,4 @@
+import { PHASE, MATCH, BODY_ROLE, BODY, PLAYER, BONUS, BUFF, readBody } from './engine-contract.js';
 // Local controller: reads the public match state and returns only the four
 // human input bits. It cannot change physics, bonuses, positions or scores.
 export const AI_LEVELS = Object.freeze([
@@ -25,15 +26,15 @@ function forecast(ball, seconds, bounce, gravity = 300) {
 function bodies(engine) {
   const found = {};
   for (let index = 0; index < engine.game_body_count(); index++) {
-    const role = engine.game_body_value(index, 9);
-    if (role !== 1 && role !== 2 && role !== 3) continue;
-    const [x, y, vx, vy, radius] = [0, 1, 2, 3, 8].map(field => engine.game_body_value(index, field));
+    const role = engine.game_body_value(index, BODY.role);
+    if (role !== BODY_ROLE.blue && role !== BODY_ROLE.red && role !== BODY_ROLE.ball) continue;
+    const { x, y, vx, vy, radius } = readBody(engine, index);
     if (![x, y, vx, vy, radius].every(Number.isFinite)) return {};
     found[role] = { x, y, vx, vy, radius };
   }
   return found;
 }
-export function createOpponent({ difficulty = 'normal', seed = 1 } = {}) {
+export function createOpponent({ difficulty = 'normal', seed = 1, planner = null } = {}) {
   const level = AI_LEVELS.find(item => item.id === difficulty);
   if (!level) throw new RangeError('Unknown AI difficulty');
   let rng = seed >>> 0, nextDecision = null, previousTick = -1, held = 0, kickUntil = 0, kickReady = 0;
@@ -41,22 +42,22 @@ export function createOpponent({ difficulty = 'normal', seed = 1 } = {}) {
   const random = () => { rng = (Math.imul(rng, 1664525) + 1013904223) >>> 0; return rng / 4294967296; };
   return Object.freeze({
     step(engine) {
-      const tick = engine.game_value(6);
-      if (engine.game_value(0) !== 1 || tick < previousTick) {
+      const tick = engine.game_value(MATCH.tick);
+      if (engine.game_value(MATCH.phase) !== PHASE.playing || tick < previousTick) {
         nextDecision = null; held = 0; kickUntil = 0; kickReady = 0; planUntil = 0; planningActive = false;
       }
       previousTick = tick;
-      if (engine.game_value(0) !== 1) return 0;
-      if (engine.game_player_value(1, 2) || engine.game_player_value(1, 4)) {
+      if (engine.game_value(MATCH.phase) !== PHASE.playing) return 0;
+      if (engine.game_player_value(1, PLAYER.freeze) || engine.game_player_value(1, PLAYER.bombed)) {
         held = 0; planUntil = 0; planningActive = false; nextDecision = tick + level.reaction; return 0;
       }
       if (nextDecision === null) nextDecision = tick + level.reaction;
       if (tick >= nextDecision) {
         nextDecision = tick + level.reaction;
-        const { 1: opponent, 2: self, 3: ball } = bodies(engine);
+        const scene = bodies(engine), opponent = scene[BODY_ROLE.blue], self = scene[BODY_ROLE.red], ball = scene[BODY_ROLE.ball];
         if (!self || !ball || !opponent) { held = 0; return 0; }
-        const bounce = .3 + engine.game_value(13) * .3;
-        const gravity = engine.game_bonus_value?.(7) > 0 ? 600 : 300;
+        const bounce = .3 + engine.game_value(MATCH.bounce) * .3;
+        const gravity = engine.game_bonus_value?.(BONUS.heavy) > 0 ? 600 : 300;
         // Close encounters need the ball's current position; long-range
         // anticipation must not make the keeper step away from an easy shot.
         const horizon = Math.min(level.horizon, Math.max(0, (Math.abs(ball.x - self.x) - 35) / 140));
@@ -89,14 +90,14 @@ export function createOpponent({ difficulty = 'normal', seed = 1 } = {}) {
         const arrival = ball.vx > 30 ? clamp((self.x - ball.x) / ball.vx, .08, .3) : .12;
         const near = forecast(ball, difficulty === 'easy' ? .05 : arrival, bounce, gravity);
         const reachable = Math.abs(near.x - (self.x + self.vx * .08)) < self.radius + ball.radius + 30;
-        const jumpSpeed = (150 + 50 * engine.game_player_value(1, 1)) * (1 + (engine.game_buff_value?.(1, 0) || 0) / 100);
+        const jumpSpeed = (150 + 50 * engine.game_player_value(1, PLAYER.jump)) * (1 + (engine.game_buff_value?.(1, BUFF.jump) || 0) / 100);
         const jumpReach = jumpSpeed * jumpSpeed / (2 * 460) + self.radius + ball.radius + 4;
         const above = near.y < self.y - self.radius * .4 && near.y > self.y - jumpReach;
         if (reachable && above && (!covering || ball.x > 500) && self.vy > -30 && near.vy > -160 && random() >= level.miss) held |= 4;
         const shot = forecast(ball, .1, bounce, gravity);
         const inFront = shot.x > self.x - self.radius - ball.radius - 45 && shot.x < self.x - self.radius * .2;
         const atFoot = shot.y > self.y - 25 && shot.y < self.y + 65;
-        if (inFront && atFoot && tick >= kickReady && !engine.game_player_value(1, 3) && random() >= level.miss) {
+        if (inFront && atFoot && tick >= kickReady && !engine.game_player_value(1, PLAYER.broken) && random() >= level.miss) {
           held |= 8; kickUntil = tick + 5; kickReady = tick + (difficulty === 'easy' ? 12 : 10);
         }
         planningActive = false;
@@ -108,14 +109,22 @@ export function createOpponent({ difficulty = 'normal', seed = 1 } = {}) {
             let enemyInput = opponent.vx > 25 ? 2 : opponent.vx < -25 ? 1 : 0;
             if (opponent.vy < -30) enemyInput |= 4;
             if (ball.x > opponent.x && ball.x - opponent.x < 85 && Math.abs(ball.y - opponent.y) < 65) enemyInput |= 8;
-            planned = engine.game_ai_plan(1, held, enemyInput, difficulty === 'expert' ? 1 : 0);
+            if (planner) {
+              planner.request({ side: 1, preferred: held, opponentInput: enemyInput, expert: Number(difficulty === 'expert') });
+              planned = held;
+            } else planned = engine.game_ai_plan(1, held, enemyInput, difficulty === 'expert' ? 1 : 0);
             planUntil = tick + (difficulty === 'expert' ? 4 : difficulty === 'hard' ? 4 : 5);
           }
           if (relevant && tick < planUntil) { held = planned; planningActive = true; }
         }
       }
+      if (planningActive && planner) {
+        const completed = planner.take(tick);
+        if (completed !== null) planned = completed;
+        held = planned;
+      }
       if (!planningActive) held = tick < kickUntil ? held | 8 : held & ~8;
-      if (engine.game_player_value(1, 3)) held &= ~8;
+      if (engine.game_player_value(1, PLAYER.broken)) held &= ~8;
       return held;
     },
   });

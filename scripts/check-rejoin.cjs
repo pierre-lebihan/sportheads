@@ -50,7 +50,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
     assert.equal((await state(refused)).connected, false);
     assert.match(await refused.locator('#room-status').innerText(), /complète/); await refused.close();
     await connected(guest); await settingsMatch(returning);
-    await returning.waitForFunction(() => document.querySelector('#start').textContent !== 'Chargement…' && !sportheads.snapshot().started);
+    await returning.waitForFunction(() => !sportheads.state.busy && !sportheads.state.restoringSettings && !sportheads.snapshot().started);
     assert.equal((await state(returning)).role, 'host'); assert.equal((await state(guest)).role, 'guest');
     assert.equal((await state(returning)).code, code);
     assert.equal(await returning.locator('#skin-left').inputValue(), '11');

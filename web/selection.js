@@ -1,9 +1,10 @@
 import { drawGame, drawSprite, drawPitch, getAssets } from './render.js';
 import { PLAYER_NAMES } from './players.js';
+import { PLAYABLE_PITCH_IDS } from './engine-contract.js';
 
 export { PLAYER_NAMES } from './players.js';
 // Original IDs: seven unchanged symmetric pitches, plus nine corrected layouts.
-export const PITCHES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18].map(id => ({ id, name: id === 8 ? 'Terrain libre' : `Terrain ${id}` }));
+export const PITCHES = PLAYABLE_PITCH_IDS.map(id => ({ id, name: id === 8 ? 'Terrain libre' : `Terrain ${id}` }));
 let previous = '';
 export function createCharacterSelection(container) {
   const $ = selector => container.querySelector(selector);

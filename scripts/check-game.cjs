@@ -17,6 +17,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     assert.equal(await page.locator('#play-local').isVisible(),true);
     assert.equal(await page.locator('#start').isVisible(),false);
     await goToSetup(page, 'rules');
+    await page.waitForFunction(() => !document.querySelector('#start').disabled);
     assert.equal(await page.locator('#start').isEnabled(),true);
     assert.equal(await page.locator('#target-score').inputValue(),'7');
     assert.equal(await page.locator('#clock').count(),0);

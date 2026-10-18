@@ -1,3 +1,4 @@
+import { MATCH } from './engine-contract.js';
 import { loadAssets, drawGame, drawPitch } from './render.js';
 import { PITCHES } from './selection.js';
 import { BALANCED_PITCHES } from './pitch-geometry.js';
@@ -56,7 +57,7 @@ try {
       if (corrected) detailElement.textContent = balanced ? 'Corrigé : obstacles recentrés, hauteurs alignées et angles en miroir. Le dessin suit les collisions.' : 'Avant : ' + detail;
       const ctx = canvas.getContext('2d');
       drawGame(ctx, engine, { started: false, skins: [1, 2], modernPlayers: true, blueprintFrame: id, balancedPitches: balanced,
-        goalFrames: [8, 9].map(field => engine.game_value(field) === 140 ? 2 : engine.game_value(field) === 60 ? 3 : 1) });
+        goalFrames: [MATCH.blueGoalHeight, MATCH.redGoalHeight].map(field => engine.game_value(field) === 140 ? 2 : engine.game_value(field) === 60 ? 3 : 1) });
       if ($('#show-mirror').checked) {
         ctx.save(); ctx.translate(800, 0); ctx.scale(-1, 1);
         ctx.globalAlpha = .5; ctx.filter = 'sepia(1) saturate(5) hue-rotate(330deg)';

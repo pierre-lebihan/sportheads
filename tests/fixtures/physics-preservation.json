@@ -1,0 +1,416 @@
+{
+  "sourceHashes": {
+    "body.rs": "5143c08f9d1e91ce238588cd8436b511cd416fe4c3fd16967dcfebe6cd6e4206",
+    "bonus_v2.rs": "a1ce683ba43409c71e63359623acee9eb432b670d28e009794a25673c19c16ce",
+    "broadphase.rs": "5e72a09c50624345cea644f3d8e1e7d5e6d88f28d25e6e391e41c305484dfd22",
+    "collision.rs": "ed7847fd5cf7a0e2e53d3958f0c4551e88039711462e8e834ad579bb0b02185c",
+    "contact.rs": "fb1944500b6bccaeb7669f57137e7cc6c8d500e3a7ac0f6aa5ca0268fc1e9c99",
+    "continuous.rs": "0fe3c014b3602b431fd3f43f1d0dc75141645e1df6ca0bb42e23ebbe31fc5070",
+    "game.rs": "544a2ffd79b3437f999a9fc4c2f4be14b9f07f60f59c3631a5a491855962e96c",
+    "joint.rs": "c3bc6dea42b5725f46012c29c102cf7c72d45d9f65cddef19f13db1a307081d9",
+    "lib.rs": "e64b8b6ce1f4709053a5671c47c1ceb0f9c443e51a1be49e84ca28b22e9d0263",
+    "math.rs": "9f4421a599f80488b15b38c605262c7d95b1d87f50026944982275a7edde7c90",
+    "opponent.rs": "5806621d7562ebc2c28add16cdcfe5c2c596eac3f4ca98be6c67aea574878acc",
+    "pitches.rs": "7a7748be5466e985bd1923ebfcdb3aa753c6618c5ff5fe60fb02b0e32f4c68d1",
+    "polygon.rs": "10f507a2a46f4d6a2001a99e1155659e16dd2bf82826720227ee3e02b52fa796",
+    "powerups.rs": "84ad54b888a78000540349da1566386b446f02fcf4fffaa16bd6220928bf5cc0",
+    "world.rs": "1735ebb143dd649ac49ec9fbcd38efe64e1017733b46aa517c5a5e4ba305840d"
+  },
+  "fields": {
+    "match": [
+      "phase",
+      "remainingTicks",
+      "blueScore",
+      "redScore",
+      "countdown",
+      "lastScorer",
+      "tick",
+      "sounds",
+      "blueGoalHeight",
+      "redGoalHeight",
+      "notice",
+      "noticeTicks",
+      "mode",
+      "bounce",
+      "targetScore",
+      "pitch"
+    ],
+    "body": [
+      "x",
+      "y",
+      "vx",
+      "vy",
+      "angle",
+      "omega",
+      "mass",
+      "inertia",
+      "radius",
+      "role",
+      "active"
+    ],
+    "player": [
+      "speed",
+      "jump",
+      "freeze",
+      "broken",
+      "bombed",
+      "scale",
+      "assistance"
+    ],
+    "bonus": [
+      "mode",
+      "blueCharge",
+      "redCharge",
+      "blueShield",
+      "redShield",
+      "blueSpring",
+      "redSpring",
+      "heavy",
+      "trampoline",
+      "shotTrail",
+      "blueShieldFlash",
+      "redShieldFlash",
+      "trampolineFlash",
+      "blueSpringFlash",
+      "redSpringFlash"
+    ]
+  },
+  "cases": [
+    {
+      "pitch": 2,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "96f5d0baa56d199a5612550baa0b9f34d4c00afc9864a50d358dd798200e53d7"
+    },
+    {
+      "pitch": 2,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "2606eab884fd350e615c387964be94c845ad8fef6a05be18c9c6e27850aa7092"
+    },
+    {
+      "pitch": 2,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "b3d3fba09c3700179e1f64a087f1ec0fbff81dbc726c77c89664c78464c437d2"
+    },
+    {
+      "pitch": 3,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "430d7d3b4d8d25d106ce8b3463d85e3daceadcd495cf6af69fc150772dbeed30"
+    },
+    {
+      "pitch": 3,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "f26742b8531da7150f95cd48710fb9c7a75d0a69f7470232f6071802314614eb"
+    },
+    {
+      "pitch": 3,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "48df9ea6b074e8c21098e5488619be4dfa8fa796f673460332f792982b5d8ab7"
+    },
+    {
+      "pitch": 4,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "3ff64fa0ff01fcc1a5d7ae1531bfe8b6a126f33ad94f05102a046528515cb012"
+    },
+    {
+      "pitch": 4,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "8106eec7391e32723d8ded9864850f118909bc83a3cdf59518fe592285629eca"
+    },
+    {
+      "pitch": 4,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "fbe49b3f1171b0935b8ad31143028c0181b91daec3d0aa394df8c09320384885"
+    },
+    {
+      "pitch": 5,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "31eb3350362632409dc13900e6900995c3c54d111fc63874339d5b66cf21fe66"
+    },
+    {
+      "pitch": 5,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "53f609bdd75f2eb0f4826de60881600882520dac6d0a64660c16ee315fbee183"
+    },
+    {
+      "pitch": 5,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "6034a569167d1d2dd516a13d339e4b3f47d26bcdeedcbe49cf63e3a6fb17583b"
+    },
+    {
+      "pitch": 6,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "6b4d3178c26b5ff6055937152db9aee561d87fe5324fda5131cc3b18af78c77f"
+    },
+    {
+      "pitch": 6,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "a4d47e84c61772bd90a4a596cbe30e0a66f35144279def2933a598c13281ff9b"
+    },
+    {
+      "pitch": 6,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "df678535420bf64b8cd0cc78ce6d66aa3aac9a26237b8286579aef4368dbea73"
+    },
+    {
+      "pitch": 7,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "b5b614e2058c2abe6ebe35f375150eb852e58357c3c6f2b0f310e0b29bad1ec9"
+    },
+    {
+      "pitch": 7,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "dbbcb973772bde949102f7deea71b3e5d23336096ca2f4dd440560eb8b5ed649"
+    },
+    {
+      "pitch": 7,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "12d92b102f3ff869623b9c146dbe5e5529b8a781c3efb5c677b368162cca7d40"
+    },
+    {
+      "pitch": 8,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "70e98814aacda8f2543c5180553a9e631d004af37dc900ae85b3f8a38f901ded"
+    },
+    {
+      "pitch": 8,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "dc23d1d27d0c3dcffe6b1b39b1eeff3570bcf486053eee08434c25ec0f32afe2"
+    },
+    {
+      "pitch": 8,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "3dc4f5912d22a061d1fe8e0e506ef50f18418dd3c2d6eeb26535cd9a091286da"
+    },
+    {
+      "pitch": 9,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "b0744de28bdb0762d37597056a2a6b5fb08a90195f954e82685d6978f48feccc"
+    },
+    {
+      "pitch": 9,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "6c6db2039d1a8c8b40fe99fb1bc1710b9feb0db6c1d9b06d4b3bda23d551e6b2"
+    },
+    {
+      "pitch": 9,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "dea742a0a3703b7ee5c3e31cecfaf827ab46c8fc69b70b04e18b6504eb896ab4"
+    },
+    {
+      "pitch": 10,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "bb4a4eec6e678c2805e4a62cf20188ecbcca43737da8e5419315e35312150570"
+    },
+    {
+      "pitch": 10,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "d0159a4baff8d23d9126c69bb788ac7b0576cd0c7bd6d196e693efc005085618"
+    },
+    {
+      "pitch": 10,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "5b5b48e9016e70b77d9d03bdd55d3cd6cc32023d159895f726a7f4af5e5728a3"
+    },
+    {
+      "pitch": 11,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "f12580948006a65f04e8446895fdf80175ebd80e288bc93ee08b480ad0c5a2a4"
+    },
+    {
+      "pitch": 11,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "67de3f11f53aa194cad931fce884867d97e55700d03d1893490035898b425111"
+    },
+    {
+      "pitch": 11,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "ebbd1a6b9dc4c42e80d267f1fb5540f2bb6b6fe3e8e696555d514db8789542a2"
+    },
+    {
+      "pitch": 12,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "2a9b20c0ee0e5ee72833a61d4e5cb4ed07c3557e6f7cbd3dd77f2131371229de"
+    },
+    {
+      "pitch": 12,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "f6830ff7ef51952ce41d25b13d22996d114bd59c441acaddbd5664b04159c2b0"
+    },
+    {
+      "pitch": 12,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "dad95b2789ae931caaa7b900a7cb18ea6ce534a2941897ccf5f33557e9efd875"
+    },
+    {
+      "pitch": 14,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "3e9de451c4edf2faf72600e3cacbbb78d416d8e51b4d0bd955981a716f276f31"
+    },
+    {
+      "pitch": 14,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "fdc477271f17edd5a2e5f0c215315f0bc2b33a573ad7bfbce76ad9b6dd0c10df"
+    },
+    {
+      "pitch": 14,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "08da10b4a36dcdf2b0d707d8b73f052272cba9fff11ded2253f71003d2427fc1"
+    },
+    {
+      "pitch": 15,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "d7496a0b524e8696252d4984251f1a71736904ef6fa196532d0af00214ad5c87"
+    },
+    {
+      "pitch": 15,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "6f5f5fcfa1e7641c26a2b49f4f050c7cfe3fa1c4d389fa188806bb140e0c6697"
+    },
+    {
+      "pitch": 15,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "13ac85d8040fd97cb20bceacdb207113edb400dee49fbf63e951bdb7eafa3009"
+    },
+    {
+      "pitch": 16,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "6b87b98fbba4191d8a3c29ff312edd2ab701978a4673ab57975a5fd887b54a44"
+    },
+    {
+      "pitch": 16,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "fba8812dbbc7a62181ccd21bd8f34bca18ee69d140a6c623144cd4d4c2de997e"
+    },
+    {
+      "pitch": 16,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "2eee935a4d79ef246f074dd11bde3fc7c628e3d573ee42f3753e62d3bbc217ee"
+    },
+    {
+      "pitch": 17,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "ea68847f7181266759e052b3747ce69301f6f4d7b01790ebf810202d0aca3d49"
+    },
+    {
+      "pitch": 17,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "528252fe1ac883b8c5323dad8d0113fdd8d2bf1c4198af22b73ed24ee38a9de2"
+    },
+    {
+      "pitch": 17,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "383cea5d19198053c65727eaedd5ef9da970dc479a7008b11970698d768b344e"
+    },
+    {
+      "pitch": 18,
+      "bonusMode": 0,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "b2a405d0c06c7a64b290086f23382a65fef7eeda957fd3013e0e48004be985a7"
+    },
+    {
+      "pitch": 18,
+      "bonusMode": 1,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "5b4309f423888f1329e700b89fe4d7b690d5b8c0c70f2cd4b2373de8252b1fdc"
+    },
+    {
+      "pitch": 18,
+      "bonusMode": 2,
+      "ticks": 600,
+      "snapshots": 21,
+      "sha256": "508fedca4ffec329917c58b2b06c4813beb36b9d5d0d3827c76c0b7f5ed7173a"
+    }
+  ]
+}

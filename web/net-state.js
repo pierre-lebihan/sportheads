@@ -1,3 +1,4 @@
+import { MATCH, BODY_ROLE, BODY, PLAYER, BONUS, BUFF, MATCH_FIELDS, BODY_FIELDS, PLAYER_FIELDS, PICKUP_FIELDS, BOMB_FIELDS, EFFECT_FIELDS, encodeFields, decodeFrame } from './engine-contract.js';
 import { PLAYER_COUNT } from './players.js';
 import { validBuffs, BUFF_STATS } from './balance.js';
 import { validBonusState, BONUS_FIELD_COUNT } from './bonuses.js';
@@ -5,8 +6,8 @@ import { validBonusState, BONUS_FIELD_COUNT } from './bonuses.js';
 // cross this boundary; the guest only reads the last validated numeric state.
 const KEYS = ['values', 'skins', 'bodies', 'players', 'pickups', 'bombs', 'effects'];
 const MAX_NUMBER = 1e12;
-const DEFAULT_VALUES = [0, 1800, 0, 0, 89, -1, 0, 0, 100, 100, 0, 0, 0, 1, 7, 8];
-const NEUTRAL_PLAYER = [1, 1, 0, 0, 0, 1, 0];
+const DEFAULT_VALUES = encodeFields(MATCH_FIELDS, { phase: 0, remainingTicks: 1800, blueScore: 0, redScore: 0, countdown: 89, lastScorer: -1, tick: 0, sounds: 0, blueGoalHeight: 100, redGoalHeight: 100, notice: 0, noticeTicks: 0, mode: 0, bounce: 1, targetScore: 7, pitch: 8 });
+const NEUTRAL_PLAYER = encodeFields(PLAYER_FIELDS, { speed: 1, jump: 1, freeze: 0, broken: 0, bombed: 0, scale: 1, assistance: 0 });
 const finite = value => typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= MAX_NUMBER;
 const integer = (value, min, max = MAX_NUMBER) => finite(value) && Number.isInteger(value) && value >= min && value <= max;
 const oneOf = (value, choices) => choices.includes(value);
@@ -33,33 +34,33 @@ export function isValidState(packet) {
     const hasBonus = Object.hasOwn(packet, 'bonus');
     if (keys.length !== KEYS.length + Number(hasBuffs) + Number(hasBonus) || !KEYS.every(key => Object.hasOwn(packet, key))
       || (hasBuffs && !validBuffs(packet.buffs)) || (hasBonus && !validBonusState(packet.bonus))) return false;
-    const bonusCount = hasBonus && packet.bonus[0] === 2 ? 23 : 18;
+    const bonusCount = hasBonus && packet.bonus[BONUS.mode] === 2 ? 23 : 18;
     const { values: v, skins, bodies, players, pickups, bombs, effects } = packet;
-    if (!row(v, 16) || !row(skins, 2) || !skins.every(skin => integer(skin, 1, PLAYER_COUNT))) return false;
-    if (!integer(v[0], 0, 3) || !integer(v[1], 0) || !integer(v[2], 0) || !integer(v[3], 0)
-      || !integer(v[4], 0) || !integer(v[5], -1, 1) || !integer(v[6], 0)
-      || !integer(v[7], 0, 127) || ![v[8], v[9]].every(height => hasBuffs ? integer(height, 30, 140) : oneOf(height, [60, 100, 140]))
-      || !integer(v[10], 0, bonusCount) || !integer(v[11], 0, 70) || !oneOf(v[12], [0, 1]) || !integer(v[13], 0, 2)
-      || !integer(v[14], 1, 99) || !integer(v[15], 2, 20)) return false;
+    if (!row(v, MATCH_FIELDS.length) || !row(skins, 2) || !skins.every(skin => integer(skin, 1, PLAYER_COUNT))) return false;
+    if (!integer(v[MATCH.phase], 0, 3) || !integer(v[MATCH.remainingTicks], 0) || !integer(v[MATCH.blueScore], 0) || !integer(v[MATCH.redScore], 0)
+      || !integer(v[MATCH.countdown], 0) || !integer(v[MATCH.lastScorer], -1, 1) || !integer(v[MATCH.tick], 0)
+      || !integer(v[MATCH.sounds], 0, 127) || ![v[MATCH.blueGoalHeight], v[MATCH.redGoalHeight]].every(height => hasBuffs ? integer(height, 30, 140) : oneOf(height, [60, 100, 140]))
+      || !integer(v[MATCH.notice], 0, bonusCount) || !integer(v[MATCH.noticeTicks], 0, 70) || !oneOf(v[MATCH.mode], [0, 1]) || !integer(v[MATCH.bounce], 0, 2)
+      || !integer(v[MATCH.targetScore], 1, 99) || !integer(v[MATCH.pitch], 2, 20)) return false;
     const roles = new Set();
-    if (!rows(bodies, 6, 11, body => {
-      const role = body[9], radius = body[8];
-      if (!integer(role, 1, 6) || roles.has(role) || body[10] !== 1
-        || body[6] <= 0 || body[7] < 0 || radius < 0 || radius > (hasBuffs && oneOf(role, [1, 2]) ? 45 : 30)) return false;
-      if (oneOf(role, [4, 5]) ? radius !== 0 : radius <= 0) return false;
+    if (!rows(bodies, 6, BODY_FIELDS.length, body => {
+      const role = body[BODY.role], radius = body[BODY.radius];
+      if (!integer(role, BODY_ROLE.blue, BODY_ROLE.streaker) || roles.has(role) || body[BODY.active] !== 1
+        || body[BODY.mass] <= 0 || body[BODY.inertia] < 0 || radius < 0 || radius > (hasBuffs && oneOf(role, [BODY_ROLE.blue, BODY_ROLE.red]) ? 45 : 30)) return false;
+      if (oneOf(role, [BODY_ROLE.blueFoot, BODY_ROLE.redFoot]) ? radius !== 0 : radius <= 0) return false;
       roles.add(role);
       return true;
-    }) || ![1, 2, 3, 4, 5].every(role => roles.has(role))) return false;
-    if (!Array.isArray(players) || players.length !== 2 || !rows(players, 2, 7, player =>
-      integer(player[0], 0, 2) && integer(player[1], 0, 2)
-      && integer(player[2], 0, 1) && integer(player[3], 0, 1) && integer(player[4], 0, 1)
-      && oneOf(player[5], [0.5, 1, 1.5]) && integer(player[6], 0, 5))) return false;
-    if (players[0][6] > 0 && players[1][6] > 0) return false;
+    }) || ![BODY_ROLE.blue, BODY_ROLE.red, BODY_ROLE.ball, BODY_ROLE.blueFoot, BODY_ROLE.redFoot].every(role => roles.has(role))) return false;
+    if (!Array.isArray(players) || players.length !== 2 || !rows(players, 2, PLAYER_FIELDS.length, player =>
+      integer(player[PLAYER.speed], 0, 2) && integer(player[PLAYER.jump], 0, 2)
+      && integer(player[PLAYER.freeze], 0, 1) && integer(player[PLAYER.broken], 0, 1) && integer(player[PLAYER.bombed], 0, 1)
+      && oneOf(player[PLAYER.scale], [0.5, 1, 1.5]) && integer(player[PLAYER.assistance], 0, 5))) return false;
+    if (players[0][PLAYER.assistance] > 0 && players[1][PLAYER.assistance] > 0) return false;
     if (hasBuffs) {
       for (const side of [0, 1]) {
-        const head = bodies.find(body => body[9] === side + 1);
-        if (Math.abs(head[8] - 20 * players[side][5] * (1 + packet.buffs[side][1] / 100)) > 1e-9
-          || ![60, 100, 140].some(base => Math.round(base * (100 - packet.buffs[side][2]) / 100) === v[8 + side])) return false;
+        const head = bodies.find(body => body[BODY.role] === BODY_ROLE.blue + side);
+        if (Math.abs(head[BODY.radius] - 20 * players[side][PLAYER.scale] * (1 + packet.buffs[side][BUFF.head] / 100)) > 1e-9
+          || ![60, 100, 140].some(base => Math.round(base * (100 - packet.buffs[side][BUFF.goal]) / 100) === v[side ? MATCH.redGoalHeight : MATCH.blueGoalHeight])) return false;
       }
     }
     if (!rows(pickups, 16, 4, pickup => integer(pickup[0], 1, bonusCount) && integer(pickup[3], 0, 600))) return false;
@@ -89,21 +90,21 @@ export function captureState(engine, skins) {
   // render state and must not grow the wire packet with every pickup.
   const total = count(engine, 'game_body_count', 100_000);
   for (let index = 0; index < total; index++) {
-    const role = engine.game_body_value(index, 9);
-    if (role === 0 || engine.game_body_value(index, 10) !== 1) continue;
-    bodies.push(Array.from({ length: 11 }, (_, field) => engine.game_body_value(index, field)));
+    const role = engine.game_body_value(index, BODY.role);
+    if (role === BODY_ROLE.obstacle || engine.game_body_value(index, BODY.active) !== 1) continue;
+    bodies.push(Array.from({ length: BODY_FIELDS.length }, (_, field) => engine.game_body_value(index, field)));
     if (bodies.length > 6) throw new RangeError('Too many active game bodies');
   }
   const packet = {
-    values: Array.from({ length: 16 }, (_, field) => engine.game_value(field)),
+    values: Array.from({ length: MATCH_FIELDS.length }, (_, field) => engine.game_value(field)),
     skins: Array.isArray(skins) ? skins.slice() : skins,
     bodies,
-    players: Array.from({ length: 2 }, (_, side) => Array.from({ length: 7 }, (_, field) => engine.game_player_value(side, field))),
+    players: Array.from({ length: 2 }, (_, side) => Array.from({ length: PLAYER_FIELDS.length }, (_, field) => engine.game_player_value(side, field))),
     buffs: Array.from({ length: 2 }, (_, side) => Array.from({ length: BUFF_STATS.length }, (_, stat) => engine.game_buff_value?.(side, stat) ?? 0)),
     bonus: Array.from({ length: BONUS_FIELD_COUNT }, (_, field) => engine.game_bonus_value?.(field) ?? 0),
-    pickups: captureRows(engine, 'game_pickup_count', 'game_pickup_value', 4, 16),
-    bombs: captureRows(engine, 'game_bomb_count', 'game_bomb_value', 2, 16),
-    effects: captureRows(engine, 'game_effect_count', 'game_effect_value', 6, 256),
+    pickups: captureRows(engine, 'game_pickup_count', 'game_pickup_value', PICKUP_FIELDS.length, 16),
+    bombs: captureRows(engine, 'game_bomb_count', 'game_bomb_value', BOMB_FIELDS.length, 16),
+    effects: captureRows(engine, 'game_effect_count', 'game_effect_value', EFFECT_FIELDS.length, 256),
   };
   if (!isValidState(packet)) throw new RangeError('Invalid authoritative game state');
   return packet;
@@ -135,6 +136,7 @@ export function createRemoteEngine() {
   });
   return Object.freeze({
     engine,
+    readFrame() { return decodeFrame(current); },
     update(packet) {
       if (!isValidState(packet)) return false;
       try {

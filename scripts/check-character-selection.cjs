@@ -1,7 +1,7 @@
 // Exercise the visible portrait grid, including actual WebRTC lobby updates.
 const assert = require('node:assert/strict');
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character-selection.cjs URL');
+const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character-selection.cjs URL [--local-only]');
 (async () => {
   const chrome = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
   const safari = await webkit.launch({ headless: true });
@@ -62,6 +62,11 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character
       assert.equal(await page.evaluate(() => sportheads.snapshot().started), true);
       await page.screenshot({ path: `evidence/vilma-dreadlocks-original-match-${browser === chrome ? 'chrome' : 'webkit'}.png` });
       await page.context().close();
+    }
+    if (process.argv.includes('--local-only')) {
+      assert.deepEqual(errors, []);
+      console.log(JSON.stringify({ passed: true, localOnly: true, checks: ['23 visible portraits', 'local and AI choices', 'random and keyboard selection', 'both camp markers', 'mobile layouts in Chromium and WebKit', 'characters preserved into the match'] }));
+      return;
     }
     const host = await pageAt(chrome), guest = await pageAt(safari);
     await host.click('#play-online'); await host.click('#create-room');

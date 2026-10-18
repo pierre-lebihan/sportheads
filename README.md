@@ -160,8 +160,32 @@ connexions WebRTC entre contextes indépendants. Ils demandent un accès Interne
 
 ## Publication
 
-GitHub Actions teste le cœur, compile le WASM et publie `_site/` après chaque push
-sur `main`. Le site contient le match, son moteur WASM et les replays numériques.
+GitHub Actions vérifie les pull requests et les pushes sur `main` : tests Rust,
+Clippy, formatage, tests JavaScript, puis scénarios navigateur sur le vrai `_site/`
+compilé. Chromium et WebKit couvrent les parties locales et IA, la préparation,
+l'équilibrage, les deux dispositions tactiles, le saut par geste, les touches
+bloquées, les formats mobiles, le plein écran et les obstacles des terrains.
+La publication Pages n'a lieu que sur `main`, après réussite de toutes ces étapes.
+Les journaux, états et captures sont disponibles dans l'artefact `browser-report`
+du workflow pendant sept jours, y compris lorsqu'un scénario échoue.
+
+Pour relancer les mêmes contrôles navigateur après compilation :
+
+```sh
+npm ci
+npx playwright install --with-deps chromium webkit
+python3 scripts/build-pages.py
+npm run test:browser
+```
+
+Le lanceur démarre et arrête son serveur local, utilise le Chromium fourni par
+la version verrouillée de Playwright et arrête la validation au premier échec.
+Chaque scénario dispose de quatre minutes maximum. Aucun serveur de salles
+externe n'est requis. Les tests WebRTC avec le PeerServer public restent
+des contrôles séparés ; ces navigateurs ne remplacent pas un essai sur iPhone
+physique ni une mesure de performances sur téléphone.
+
+Le site contient le match, son moteur WASM et les replays numériques.
 Pour revenir à une version précédente, rétablir le commit souhaité sur `main` et
 laisser le workflow Pages republier cette version.
 

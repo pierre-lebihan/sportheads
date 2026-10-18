@@ -1,0 +1,11 @@
+{
+  "name": "sportheads",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "node scripts/check-browser-ci.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.64.1"
+  }
+}

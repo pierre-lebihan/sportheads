@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const { goToSetup, setTarget, setBalance } = require('./setup-browser.cjs');
-const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs URL');
+const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs URL [--local-only]');
 (async () => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
   const pages = [], errors = [];
@@ -113,6 +113,11 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     await local.setViewportSize({ width: 390, height: 844 });
     assert.ok(await local.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
 
+    if (process.argv.includes('--local-only')) {
+      assert.deepEqual(errors, []);
+      console.log(JSON.stringify({ passed: true, localOnly: true, checks: ['home and preparation navigation', '23 distinct portraits', 'random characters and pitches', 'goal bounds 1..9', 'balance presets', 'configuration survives navigation and replay'] }));
+      return;
+    }
     const host = await pageAt(); await host.click('#play-online');
     assert.equal((await state(host)).setupStep, 'room');
     assert.equal(await host.locator('#player-choice').isVisible(), false);

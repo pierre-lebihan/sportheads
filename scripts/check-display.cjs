@@ -79,7 +79,8 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
     await desktop.waitForFunction(() => !document.fullscreenElement && document.querySelector('#fullscreen').getAttribute('aria-pressed') === 'false');
     assert.equal(await desktop.locator('#fullscreen').getAttribute('aria-pressed'), 'false');
     await desktop.click('#fullscreen-settings'); await desktop.waitForFunction(() => !!document.fullscreenElement);
-    await desktop.evaluate(() => document.exitFullscreen()); await desktop.waitForFunction(() => !document.fullscreenElement);
+    await desktop.evaluate(() => document.exitFullscreen());
+    await desktop.waitForFunction(() => !document.fullscreenElement && document.querySelector('#fullscreen-settings').textContent === 'Plein écran');
     assert.equal(await desktop.locator('#fullscreen-settings').innerText(), 'Plein écran');
     await desktop.context().close();
     const unsupported = await pageAt(chrome, true, true);

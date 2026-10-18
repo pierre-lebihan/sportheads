@@ -156,6 +156,13 @@ $('#join-code').addEventListener('input', () => { app.dispatch({ type: 'room.cod
 $('#create-room').addEventListener('click', () => connectRoom(true));
 $('#join-form').addEventListener('submit', event => { event.preventDefault(); app.dispatch({ type: 'room.code-edited', value: $('#join-code').value }); connectRoom(false); });
 $('#leave-room').addEventListener('click', leaveRoom);
+$('#reload-page').addEventListener('click', () => {
+  const url = new URL(location.href);
+  // A fresh document URL retrieves the latest HTML; its modules are revisioned.
+  url.searchParams.set('_refresh', String(Date.now()));
+  if (app.value.mode === 'online' && app.value.code) url.searchParams.set('room', app.value.code);
+  location.replace(url.href);
+});
 for (const button of document.querySelectorAll('[data-quit-match]')) button.addEventListener('click', quitMatch);
 $('#copy-code').addEventListener('click', () => copyRoom(false));$('#copy-link').addEventListener('click', () => copyRoom(true));
 $('#network-diagnostic').addEventListener('toggle', () => {if ($('#network-diagnostic').open) refreshDiagnostic();});

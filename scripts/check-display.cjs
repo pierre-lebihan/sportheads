@@ -55,7 +55,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
           for (const selector of ['#setup-steps','#setup-navigation','#online-panel','#player-choice','#performance-diagnostic','.rules-screen .launch','[data-setup-screen=home]','[data-setup-screen=difficulty]','[data-setup-screen=pitch]']) {
             assert.equal(await page.locator(selector).isVisible(),false,`match settings hide ${selector}`);
           }
-          for (const selector of ['[data-setup-screen=rules]','#target-score','#balance-controls','#quit-match-settings','#fullscreen-settings','#close-settings','#touch-settings']) {
+          for (const selector of ['[data-setup-screen=rules]','#target-score','#balance-controls','#quit-match-settings','#fullscreen-settings','#reload-page','#close-settings','#touch-settings']) {
             assert.equal(await page.locator(selector).isVisible(),true,`match settings keep ${selector}`);
           }
           await page.screenshot({path:`evidence/match-settings-${browser===chrome?'chrome':'webkit'}-${mode}.png`});
@@ -89,6 +89,16 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
     await desktop.evaluate(() => document.exitFullscreen());
     await desktop.waitForFunction(() => !document.fullscreenElement && document.querySelector('#fullscreen-settings').textContent === 'Plein écran');
     assert.equal(await desktop.locator('#fullscreen-settings').innerText(), 'Plein écran');
+    await desktop.evaluate(()=>{
+      window.reloadMarker=true;
+      const url=new URL(location.href);url.searchParams.set('room','A');url.searchParams.set('_refresh','stale');history.replaceState(null,'',url);
+    });
+    await Promise.all([desktop.waitForURL(url=>url.searchParams.get('_refresh')!=='stale'),desktop.click('#reload-page')]);
+    await desktop.waitForFunction(()=>window.ready||window.loadError);
+    assert.equal(await desktop.evaluate(()=>window.loadError),undefined);
+    assert.equal(await desktop.evaluate(()=>window.reloadMarker),undefined,'reloading creates a fresh document');
+    assert.equal(await desktop.locator('#join-code').inputValue(),'A','room links survive refresh');
+    assert.equal(await desktop.evaluate(()=>sportheads.snapshot().started),false,'refresh returns to preparation');
     await desktop.context().close();
     const unsupported = await pageAt(chrome, true, true);
     await unsupported.click('#fullscreen-settings');
@@ -104,6 +114,6 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
     assert.equal(await installed.locator('#fullscreen-settings').isDisabled(), true);
     assert.equal(await installed.locator('#fullscreen-status').isVisible(), false);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, checks: ['800x480 crop without empty bars', 'small transparent score overlay', 'side tools in landscape', 'no overlap with either touch layout', 'local and AI on Chrome/WebKit mobile 320/390/740/844', 'real fullscreen enter/exit and external exit', 'unsupported-browser guidance and standalone manifest'] }));
+    console.log(JSON.stringify({ passed: true, checks: ['800x480 crop without empty bars', 'small transparent score overlay', 'side tools in landscape', 'no overlap with either touch layout', 'local and AI on Chrome/WebKit mobile 320/390/740/844', 'real fullscreen enter/exit and external exit', 'unsupported-browser guidance and standalone manifest', 'reload retrieves a fresh document and keeps the room link'] }));
   } finally { await Promise.all([chrome.close(), safari.close()]); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

@@ -22,7 +22,8 @@ export const AVATAR_SOURCE_FRAMES = [
   { file: 'vilma-dreadlocks.png', sourceRect: [0, 0, 1, 1] },
 ];
 
-export const PORTRAIT_TILE_SIZE = 192, PORTRAIT_COLUMNS = 5, PORTRAIT_ROWS = Math.ceil(PLAYER_COUNT / PORTRAIT_COLUMNS);
+export const PORTRAIT_TILE_SIZE = 192, PORTRAIT_COLUMNS = 5;
+const PORTRAIT_ROWS = Math.ceil(PLAYER_COUNT / PORTRAIT_COLUMNS);
 // 192px per face covers the largest preview as well as the 50px match sprite.
 export const AVATAR_FRAMES = Object.freeze(AVATAR_SOURCE_FRAMES.map((source, index) => Object.freeze({
   file: 'portraits.webp', sourceRect: [(index % PORTRAIT_COLUMNS) / PORTRAIT_COLUMNS, Math.floor(index / PORTRAIT_COLUMNS) / PORTRAIT_ROWS, 1 / PORTRAIT_COLUMNS, 1 / PORTRAIT_ROWS],

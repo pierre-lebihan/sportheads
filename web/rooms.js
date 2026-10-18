@@ -6,7 +6,7 @@ const PREFIX = 'sportheads-room-v7-';
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SILENCE_TIMEOUT = 120000;
 const REALTIME_LABEL = 'sportheads-realtime-v1';
-export const NETWORK_REVISION = 7;
+const NETWORK_REVISION = 7;
 export function normalizeCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }
 export function validCode(code) { return /^(?:[A-HJ-NP-Z2-9]|[A-HJ-NP-Z2-9]{8})$/.test(code); }
 function randomCode() { return ALPHABET[crypto.getRandomValues(new Uint8Array(1))[0] & 31]; }

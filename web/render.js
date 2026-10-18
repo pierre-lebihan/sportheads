@@ -140,9 +140,7 @@ function polygons(ctx, engine) {
   }
 }
 
-/** Optional state: skins [left,right], goalFrames, powerups [{kind,x,y}],
- * bombs [{x,y}], streakers [{x,y,angle}], effects [{name,frame,x,y,scale,alpha}],
- * headEffects [{ice,bombed,speed}], footFrames [left,right], blueprintFrame. */
+/** State comes from engine-view.js; pitch previews supply their own geometry. */
 export function drawGame(ctx, engine, state = {}) {
   ctx.clearRect(0, 0, 800, 540);
   if (!getAssets()) { ctx.fillStyle = '#51874d'; ctx.fillRect(0, 0, 800, 540); return; }
@@ -160,18 +158,15 @@ export function drawGame(ctx, engine, state = {}) {
     if (pu.kind > 18) drawBonusPickup(ctx, pu.kind, pu.x, pu.y);
     else drawSprite(ctx, `pu-${pu.kind}`, 1, pu.x, pu.y);
   }
-  const aliases = { 'green-ring': 'ring-good', 'red-ring': 'ring-bad' };
   for (const effect of state.effects || []) {
-    const name = aliases[effect.kind] || effect.name || effect.kind;
-    const frame = effect.frame || (effect.age || 0) + 1;
-    drawSprite(ctx, name, frame, effect.x, effect.y, effect.width, effect.height, effect.angle || 0, effect);
+    drawSprite(ctx, effect.kind, (effect.age || 0) + 1, effect.x, effect.y, effect.width, effect.height, 0, effect);
   }
   for (const body of bodies) {
     if (body.role === BODY_ROLE.ball) {
       // updateBall maps bounce0->frame3(dead),1->frame1(normal),2->frame2.
       // B2DManager sizes the display object to the physical diameter separately.
       const bounce = state.ballBounce ?? 1;
-      const frame = state.ballFrame || (bounce === 0 ? 3 : bounce === 2 ? 2 : 1);
+      const frame = bounce === 0 ? 3 : bounce === 2 ? 2 : 1;
       if(bonus.shotTrail>0){ctx.save();ctx.strokeStyle='#f2a72a';ctx.globalAlpha=bonus.shotTrail/12;ctx.lineWidth=body.r*1.7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(body.x-engine.game_body_value(body.i, BODY.vx)*.08,body.y-engine.game_body_value(body.i, BODY.vy)*.08);ctx.lineTo(body.x,body.y);ctx.stroke();ctx.restore();}
       drawSprite(ctx, 'ball-inside', frame, body.x, body.y, body.r * 2, body.r * 2, body.angle);
       if(bonus.heavy>0){ctx.save();ctx.strokeStyle='#455a73';ctx.lineWidth=3;ctx.beginPath();ctx.arc(body.x,body.y,body.r+1,0,Math.PI*2);ctx.stroke();ctx.restore();}
@@ -179,9 +174,9 @@ export function drawGame(ctx, engine, state = {}) {
     if (body.role === BODY_ROLE.blue || body.role === BODY_ROLE.red) {
       const side = body.role - BODY_ROLE.blue;
       const scale = body.r / 20;
-      drawSprite(ctx, state.modernPlayers ? 'modern-heads' : 'heads', state.skins?.[side] || side + 1, body.x, body.y, undefined, undefined, 0, { scale, flipX: side === 1 });
-      const effect = state.players?.[side] || state.headEffects?.[side];
-      if (effect?.freeze || effect?.ice || effect?.bombed) drawSprite(ctx, 'body-effect', effect.bombed ? 3 : 2, body.x, body.y, undefined, undefined, 0, { scale });
+      drawSprite(ctx, 'modern-heads', state.skins?.[side] || side + 1, body.x, body.y, undefined, undefined, 0, { scale, flipX: side === 1 });
+      const effect = state.players?.[side];
+      if (effect?.freeze || effect?.bombed) drawSprite(ctx, 'body-effect', effect.bombed ? 3 : 2, body.x, body.y, undefined, undefined, 0, { scale });
       if (effect?.speed !== undefined && effect.speed !== 1) drawSprite(ctx, 'speed-bolt', effect.speed === 0 ? 3 : 2, body.x + 12 * scale, body.y + 3 * scale, undefined, undefined, 0, { scale });
       for(const [timer,max,color,offset] of [[(side ? bonus.redCharge : bonus.blueCharge),240,'#eba323',8],[(side ? bonus.redSpring : bonus.blueSpring),180,'#88b733',4]]) {
         if(timer<=0)continue;ctx.save();ctx.strokeStyle=color;ctx.lineWidth=offset===4?3+((side ? bonus.redSpringFlash : bonus.blueSpringFlash)||0)/3:3;ctx.beginPath();ctx.arc(body.x,body.y,body.r+offset,-Math.PI/2,-Math.PI/2+Math.PI*2*timer/max);ctx.stroke();ctx.restore();
@@ -191,14 +186,14 @@ export function drawGame(ctx, engine, state = {}) {
   for (const body of bodies) {
     if (body.role === BODY_ROLE.blueFoot || body.role === BODY_ROLE.redFoot) {
       const side = body.role - BODY_ROLE.blueFoot;
-      const frame = state.footFrames?.[side] || (state.players?.[side]?.broken ? 2 : 1);
-      drawSprite(ctx, side === 0 ? 'foot-left' : 'foot-right', frame, body.x, body.y, undefined, undefined, body.angle + Math.PI, { scale: state.footScales?.[side] || state.players?.[side]?.scale || 1 });
+      const frame = state.players?.[side]?.broken ? 2 : 1;
+      drawSprite(ctx, side === 0 ? 'foot-left' : 'foot-right', frame, body.x, body.y, undefined, undefined, body.angle + Math.PI, { scale: state.players?.[side]?.scale || 1 });
     }
   }
-  for (const bomb of state.bombs || []) drawSprite(ctx, 'bomb', 1, bomb.x, bomb.y, undefined, undefined, bomb.angle || 0);
-  for (const streaker of state.streakers || bodies.filter(body => body.role === BODY_ROLE.streaker)) {
+  for (const bomb of state.bombs || []) drawSprite(ctx, 'bomb', 1, bomb.x, bomb.y);
+  for (const streaker of bodies.filter(body => body.role === BODY_ROLE.streaker)) {
     drawSprite(ctx, 'streaker', 1, streaker.x, streaker.y, undefined, undefined, streaker.angle || 0);
-    drawSprite(ctx, 'streaker-head', 1, streaker.x, streaker.y, undefined, undefined, 0, { flipX: streaker.flipX });
+    drawSprite(ctx, 'streaker-head', 1, streaker.x, streaker.y);
   }
   for (const side of [0, 1]) {
     const frame = state.goalFrames?.[side] || 1, baseHeight = frame === 2 ? 140 : frame === 3 ? 60 : 100;
@@ -232,7 +227,6 @@ export function createAudio() {
       player.play().catch(() => effects.delete(player));
       return player;
     },
-    stop(name) { const player = players.get(name); if (player) { player.pause(); player.currentTime = 0; } },
     stopAll() { for (const player of [...players.values(), ...effects]) player.pause(); effects.clear(); },
   };
 }

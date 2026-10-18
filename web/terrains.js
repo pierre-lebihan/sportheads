@@ -56,7 +56,7 @@ try {
       engine[balanced ? 'game_start_balanced_pitch' : 'game_start_on_pitch'](1, 7, 0, id);
       if (corrected) detailElement.textContent = balanced ? 'Corrigé : obstacles recentrés, hauteurs alignées et angles en miroir. Le dessin suit les collisions.' : 'Avant : ' + detail;
       const ctx = canvas.getContext('2d');
-      drawGame(ctx, engine, { started: false, skins: [1, 2], modernPlayers: true, blueprintFrame: id, balancedPitches: balanced,
+      drawGame(ctx, engine, { started: false, skins: [1, 2], blueprintFrame: id, balancedPitches: balanced,
         goalFrames: [MATCH.blueGoalHeight, MATCH.redGoalHeight].map(field => engine.game_value(field) === 140 ? 2 : engine.game_value(field) === 60 ? 3 : 1) });
       if ($('#show-mirror').checked) {
         ctx.save(); ctx.translate(800, 0); ctx.scale(-1, 1);

@@ -38,8 +38,7 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   $('#quit-match-settings').hidden = !app.value.started;
   $('#touch-controls').hidden = !app.value.started;
   touch.update({ mode: app.value.mode, side: ownSide(), names, enabled: app.value.started && !app.value.paused && phase !== PHASE.finished && (app.value.mode !== 'online' || app.value.connected) });
-  const teamNames = names;
-  $('.team.blue span').textContent = teamNames[0];$('.team.red span').textContent = teamNames[1];
+  $('.team.blue span').textContent = names[0];$('.team.red span').textContent = names[1];
   $('.team.blue span').title = names[0];$('.team.red span').title = names[1];
   $('#score-left').textContent = state.score[0] ?? 0;$('#score-right').textContent = state.score[1] ?? 0;
   const notice = e?.game_value(MATCH.noticeTicks) > 0 ? BONUS_NAMES[e.game_value(MATCH.notice)] : '';
@@ -77,7 +76,6 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   renderSetup({ screen: app.value.setupStep, mode: app.value.mode, role: app.value.role, started: app.value.started, ready: coreReady(), busy: app.value.busy, connected: app.value.connected });
   for (const side of [0, 1]) {
     $('#' + ['skin-left', 'skin-right'][side]).disabled = app.value.mode === 'online' && (app.value.role === null || side !== ownSide());
-    $('.control-side.' + (side === 0 ? 'blue' : 'red')).dataset.own = String(app.value.mode === 'online' && app.value.role !== null && side === ownSide());
   }
   characterSelection.update({ mode: app.value.mode, role: app.value.role, connected: app.value.connected });
   for (const [buttonId, selectId] of randomChoices) $('#' + buttonId).disabled = $('#' + selectId).disabled;

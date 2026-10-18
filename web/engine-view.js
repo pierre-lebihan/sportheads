@@ -1,9 +1,9 @@
 import { MATCH, BUFF, PICKUP_FIELDS, BOMB_FIELDS, EFFECT_FIELDS, readMatch, readPlayer, readCollection } from './engine-contract.js';
 import { BONUS_FIELD_COUNT } from './bonuses.js';
-const effectNames = ['ring', 'green-ring', 'red-ring', 'explosion', 'dust', 'trail'];
+const effectNames = ['ring', 'ring-good', 'ring-bad', 'explosion', 'dust', 'trail'];
 
 export function readRenderState(engine, app) {
-  const state = { started: app.started, paused: app.paused, skins: app.config.skins.slice(), modernPlayers: true,
+  const state = { started: app.started, paused: app.paused, skins: app.config.skins.slice(),
     balancedPitches: app.mode === 'online' && app.role === 'guest' ? app.remoteBalancedPitches : true,
     blueprintFrame: app.started ? engine?.game_value(MATCH.pitch) : app.config.pitch };
   if (!engine) return state;
@@ -23,6 +23,6 @@ export function readRenderState(engine, app) {
     height: effect.kind === 4 ? 10 + effect.age / 2 : effect.height,
     alpha: effect.kind === 4 ? Math.max(0, (1 - effect.age / 10) * .6) : effect.kind === 5 ? Math.max(0, 1 - effect.age / 7) : 1,
   }));
-  state.ballBounce = match.bounce; state.ballFrame = match.bounce === 0 ? 3 : match.bounce === 2 ? 2 : 1;
+  state.ballBounce = match.bounce;
   return state;
 }

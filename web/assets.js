@@ -1,7 +1,7 @@
 import { AVATAR_FRAMES } from './players.js';
 
 const base = new URL('./assets/', import.meta.url);
-export function assetURL(file) {
+function assetURL(file) {
   const url = new URL(file, base), revision = new URL(import.meta.url).searchParams.get('v');
   if (revision) url.searchParams.set('v', revision);
   return url;

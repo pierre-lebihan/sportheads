@@ -17,7 +17,6 @@ export function layoutArena(slot, surface, touch) {
     surface.style.marginLeft = landscape && tactile && !local ? '40px' : '0';
     surface.style.width = `${800 * scale}px`;
     surface.style.height = `${480 * scale}px`;
-    surface.style.setProperty('--pitch-height', `${480 * scale}px`);
   }
   const observer = new ResizeObserver(fit);
   observer.observe(slot); observer.observe(touch);

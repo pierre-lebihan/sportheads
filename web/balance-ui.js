@@ -80,7 +80,6 @@ export function createBalanceControls(root, onChange) {
       : 'Touchez un joueur pour régler ses cinq bonus.';
   }
   return {
-    get value() { return copyBalance(config); },
     set value(next) { config = copyBalance(next); refresh(); },
     update({ disabled, skins }) {
       locked = disabled;

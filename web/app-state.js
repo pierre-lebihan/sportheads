@@ -13,7 +13,7 @@ const freeze = value => {
 };
 const cleared = { started: false, paused: false, pauseFlags: [false, false], settingsOpen: false,
   guestBalancedPitches: false, remoteBalancedPitches: false, guestStatBuffs: false, guestBonusV2: false };
-export function initialAppState() {
+function initialAppState() {
   return freeze({ ...cleared, mode: 'local', role: null, connected: false, code: '', joinCode: '', busy: false, restoringSettings: false,
     soundEnabled: true, touchLayout: 'thumbs', setupStep: 'home', lastValidTarget: 7, matchId: 0, roomNotice: { message: '', error: false },
     config: { skins: [1, 2], pitch: 8, targetScore: 7, bonusMode: 1, difficulty: 'normal', balance: createBalance() } });

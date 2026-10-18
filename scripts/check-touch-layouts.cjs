@@ -82,9 +82,19 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       assert.equal(await page.locator(kick).getAttribute('aria-pressed'), 'false', 'no automatic kick after lifting the right thumb');
       await gesture([point(1, movement, .85, .8)]); await expectInput(2);
       await gesture([point(1, movement, .85, .45)]); await expectInput(2);
-      await gesture([point(1, movement, .85, .35)]); await expectInput(6);
-      await gesture([point(1, movement, .85, .45)]); await expectInput(6);
+      await gesture([point(1, movement, .85, .25)]); await expectInput(6);
+      await gesture([point(1, movement, .85, .32)]); await expectInput(6);
       await gesture([point(1, movement, .85, .7)]); await expectInput(2);
+      await gesture([point(1, movement, 1.3, .5), point(2, kick)]); await expectInput(10);
+      assert.equal(await page.locator('[data-side="0"] [data-joystick]').getAttribute('data-mask'), '2');
+      await gesture([point(1, movement, .5, .5), point(2, kick)]); await expectInput(8);
+      await gesture([]); await expectInput(0);
+      for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 390, height: 844 }]) {
+        await page.setViewportSize(viewport); await fits();
+        await page.screenshot({ path: `evidence/joystick-${type.name()}-${viewport.width}.png` });
+      }
+      await gesture([point(1, movement, .15, .2), point(2, kick)]); await expectInput(13);
+      await page.screenshot({ path: `evidence/joystick-held-${type.name()}.png` });
       // Switch while a finger is still down; moving that old contact must not
       // resurrect the held command under the new layout.
       await page.evaluate(() => { const select = document.querySelector('#touch-layout'); select.value = 'three-fingers'; select.dispatchEvent(new Event('change')); });
@@ -96,6 +106,7 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       await gesture([]); await expectInput(0);
       for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 390, height: 844 }]) {
         await page.setViewportSize(viewport); await fits();
+        assert.ok(await page.locator('[data-side="0"] [data-action="1"]').evaluate(b => b.getBoundingClientRect().height >= 96));
         await page.screenshot({ path: `evidence/touch-three-${type.name()}-${viewport.width}.png` });
       }
       // The real settings path preserves the match, pauses it and permits this

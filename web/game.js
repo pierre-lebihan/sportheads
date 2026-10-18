@@ -391,7 +391,7 @@ function update() {
   document.body.classList.toggle('touch-device', hasTouch());
   $('#touch-settings').hidden = !hasTouch();
   $('#touch-layout-help').textContent = touch.layout === 'thumbs'
-    ? 'Pouce gauche : glissez sur le pavé pour marcher, vers le haut pour ajouter le saut. Pouce droit : Tir. Au centre, le joueur s’arrête.'
+    ? 'Pouce gauche : orientez le joystick pour marcher, vers le haut pour sauter, en diagonale pour les deux. Le centre arrête le joueur. Pouce droit : Tir.'
     : 'Pouce gauche : déplacement. Index gauche : Saut, en haut à gauche. Pouce droit : Tir. En local, Rouge a son bouton Saut en haut à droite.';
   $('#play-view').disabled = !started;
   $('#play-view').setAttribute('aria-expanded', String(!started || settingsOpen));

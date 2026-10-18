@@ -42,9 +42,10 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
       async hold(actions) {
         points = [];
         for (const [side, action] of actions) {
-          const box = await page.locator(`[data-side="${side}"] [data-action="${action}"]`).boundingBox();
+          const joystick = await page.locator('#touch-layout').inputValue() === 'thumbs' && action !== 8;
+          const box = await page.locator(`[data-side="${side}"] ${joystick ? '[data-joystick]' : `[data-action="${action}"]`}`).boundingBox();
           assert.ok(box && box.width >= 44 && box.height >= 44, 'finger-sized visible control');
-          points.push({ id: points.length + 1, x: box.x + box.width / 2, y: box.y + box.height / 2, radiusX: 5, radiusY: 5, force: 1 });
+          points.push({ id: points.length + 1, x: box.x + box.width * (joystick ? action & 1 ? .1 : action & 2 ? .9 : .5 : .5), y: box.y + box.height * (joystick && (action & 4) ? .1 : .5), radiusX: 5, radiusY: 5, force: 1 });
         }
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: points });
       },
@@ -106,6 +107,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     assert.ok(await p.locator('#start').evaluate(button => { const r = button.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }), 'small-phone start stays visible');
     await p.screenshot({ path: 'evidence/mobile-settings-small.png', fullPage: true });
     await p.setViewportSize({ width: 390, height: 844 });
+    await p.locator('#touch-settings summary').click(); await p.selectOption('#touch-layout', 'three-fingers');
     await p.locator('#bonuses').uncheck(); await p.locator('#start').tap();
     await p.waitForFunction(() => sportheads.snapshot().phase === 1);
     await fits(p);
@@ -123,7 +125,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     await p.screenshot({ path: 'evidence/mobile-local-portrait.png' });
     await local.moveOutside();
     assert.equal(await p.locator('.touch-pad [data-action="8"].pressed').count(), 2, 'kicks stay held independently while movement leaves the pad');
-    assert.equal(await p.locator('.touch-move .pressed:not([data-action="0"])').count(), 0, 'leaving the pad returns movement to neutral');
+    assert.equal(await p.locator('.touch-move .pressed:not(.index-jump)').count(), 0, 'leaving the pad returns movement to neutral');
     assert.equal(await p.evaluate(() => scrollY), 0, 'multi-touch does not scroll');
     await local.release(); assert.equal(await p.locator('.touch-pad .pressed').count(), 0);
     await local.hold([[0, 2], [0, 8]]); await local.release(true);
@@ -166,6 +168,21 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     assert.equal(await p.locator('.touch-pad button:enabled').count(), 0);
     await p.locator('#again').tap();
     assert.equal((await state(p)).phase, 0); assert.deepEqual((await state(p)).score, [0, 0]);
+    await fits(p);
+    await p.evaluate(() => { const select = document.querySelector('#touch-layout'); select.value = 'thumbs'; select.dispatchEvent(new Event('change')); });
+    await p.waitForFunction(() => sportheads.snapshot().phase === 1);
+    before = await bodies(p);
+    await local.hold([[0, 6], [0, 8], [1, 5], [1, 8]]); await waitTicks(p, 8);
+    after = await bodies(p);
+    for (const [side, mask] of [[0, '6'], [1, '5']]) {
+      assert.equal(await p.locator(`[data-side="${side}"] [data-joystick]`).getAttribute('data-mask'), mask);
+      const a = before.find(b => b.role === side + 1), b = after.find(b => b.role === side + 1);
+      assert.ok(side ? b.x < a.x - 5 : b.x > a.x + 5, 'both local joysticks drive movement');
+      assert.ok(b.y < a.y - 10, 'both local joysticks add jump');
+    }
+    assert.equal(await p.locator('.touch-actions .pressed').count(), 2, 'both players also hold manual kick');
+    await local.release(); assert.equal(await p.locator('.touch-pad .pressed').count(), 0);
+    await p.screenshot({ path: 'evidence/joystick-local-small.png' });
     await fits(p); await p.close();
 
     const host = await mobile({ width: 390, height: 844 }), h = host.page;
@@ -215,7 +232,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     await guest.hold([[1, 1]]); await g.close(); await h.waitForFunction(() => !sportheads.snapshot().connected);
     assert.equal((await state(h)).paused, true); assert.equal(await h.locator('.touch-pad button:enabled').count(), 0);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, url, checks: ['portrait and landscape', '320px phone', 'six simultaneous fingers', 'move+jump+kick both players', 'capture and cancellation', 'pause/blur/restart clear input', 'independent fingers on one action', 'mobile victory and replay', 'keyboard/touch coexistence', 'settings and return', 'real mobile WebRTC host/guest input isolation', 'disconnect'], physicalDeviceTested: false }));
+    console.log(JSON.stringify({ passed: true, url, checks: ['portrait and landscape', '320px phone', 'six simultaneous fingers', 'two local joysticks with jump and manual kick', 'move+jump+kick both players', 'capture and cancellation', 'pause/blur/restart clear input', 'independent fingers on one action', 'mobile victory and replay', 'keyboard/touch coexistence', 'settings and return', 'real mobile WebRTC host/guest input isolation', 'disconnect'], physicalDeviceTested: false }));
   } catch (error) {
     for (const [index, page] of pages.entries()) if (!page.isClosed()) {
       console.error(index, await state(page).catch(() => null));

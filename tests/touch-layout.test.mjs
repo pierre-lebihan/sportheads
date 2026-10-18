@@ -1,34 +1,44 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { movementMask, readTouchLayout, saveTouchLayout } from '../web/touch-layout.js';
-const rect = { left: 10, top: 20, width: 150, height: 100 };
+import { movementMask, joystickVector, readTouchLayout, saveTouchLayout } from '../web/touch-layout.js';
+const rect = { left: 10, top: 20, width: 136, height: 136 };
 const at = (layout, x, y, previous) => movementMask(layout, rect, rect.left + x * rect.width, rect.top + y * rect.height, previous);
-
-test('one thumb can move, add jump, reverse, stop moving and release jump independently', () => {
-  assert.equal(at('thumbs', .1, .8), 1);
-  assert.equal(at('thumbs', .1, .2, 1), 5);
-  assert.equal(at('thumbs', .9, .2, 5), 6);
-  assert.equal(at('thumbs', .5, .2, 6), 4);
-  assert.equal(at('thumbs', .5, .8, 4), 0);
-  assert.equal(at('thumbs', .9, .8), 2);
+const angle = (degrees, previous = 0, radius = .8) => {
+  const radians = degrees * Math.PI / 180;
+  return at('thumbs', .5 + Math.cos(radians) * radius / 2, .5 - Math.sin(radians) * radius / 2, previous);
+};
+test('angular joystick covers left, right, jump, diagonals and neutral', () => {
+  for (const [degrees, mask] of [[0, 2], [25, 2], [45, 6], [90, 4], [135, 5], [155, 1], [180, 1], [225, 1], [270, 0], [315, 2]]) assert.equal(angle(degrees), mask, `${degrees} degrees`);
+  assert.equal(at('thumbs', .5, .5), 0);
 });
-test('jump activation has a deliberate threshold and does not flicker near its border', () => {
-  assert.equal(at('thumbs', .1, .45, 1), 1);
-  assert.equal(at('thumbs', .1, .35, 1), 5);
-  assert.equal(at('thumbs', .1, .45, 5), 5);
-  assert.equal(at('thumbs', .1, .57, 5), 5);
-  assert.equal(at('thumbs', .1, .6, 5), 1);
+test('dead zone and separate jump thresholds prevent accidental jumps and flicker', () => {
+  assert.equal(angle(0, 0, .2), 0);
+  assert.equal(angle(0, 2, .2), 2);
+  assert.equal(angle(0, 2, .1), 0);
+  assert.equal(angle(30), 2);
+  assert.equal(angle(40), 6);
+  assert.equal(angle(30, 6), 6);
+  assert.equal(angle(20, 6), 2);
+  assert.equal(at('thumbs', .5, .5, 6), 0);
 });
-test('three-finger movement never adds jump; leaving the pad releases movement', () => {
+test('stick keeps the angle outside the base and clamps its visible handle', () => {
+  assert.equal(at('thumbs', 2, .5), 2);
+  assert.equal(at('thumbs', -1, -1), 5);
+  const vector = joystickVector(rect, 1000, -1000);
+  assert.ok(Math.abs(Math.hypot(vector.x, vector.y) - 1) < 1e-10);
+  assert.ok(vector.distance > 1);
+  assert.equal(at('thumbs', NaN, .2), 0);
+  assert.equal(movementMask('thumbs', { ...rect, width: 0 }, 20, 30), 0);
+});
+test('three-finger movement uses full-height buttons and never adds jump', () => {
   for (const y of [.1, .5, .9]) {
     assert.equal(at('three-fingers', .1, y, 5), 1);
     assert.equal(at('three-fingers', .9, y, 6), 2);
   }
-  assert.equal(at('three-fingers', .4, .5), 1, 'the full left button is usable');
-  assert.equal(at('three-fingers', .6, .5), 2, 'the full right button is usable');
-  assert.equal(at('three-fingers', .5, .5), 0, 'the gap between buttons is neutral');
-  for (const [x, y] of [[-.01, .5], [1.01, .5], [.5, -.01], [.5, 1.01], [NaN, .2]]) assert.equal(at('thumbs', x, y, 5), 0);
-  assert.equal(movementMask('thumbs', { ...rect, width: 0 }, 20, 30), 0);
+  assert.equal(at('three-fingers', .4, .5), 1);
+  assert.equal(at('three-fingers', .6, .5), 2);
+  assert.equal(at('three-fingers', .5, .5), 0);
+  for (const [x, y] of [[-.01, .5], [1.01, .5], [.5, -.01], [.5, 1.01]]) assert.equal(at('three-fingers', x, y, 5), 0);
 });
 test('layout preferences reject invalid values and tolerate unavailable storage', t => {
   let stored;

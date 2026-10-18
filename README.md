@@ -23,7 +23,7 @@ La sélection affiche les deux portraits face à face et une grille de personnag
 Choisissez les deux camps en local ou contre l’IA ; en ligne, chacun choisit le sien
 et voit les changements de l’adversaire en direct avant la validation du créateur.
 
-- Sur mobile : disposition **2 pouces** (déplacement et saut sur le même pavé)
+- Sur mobile : disposition **2 pouces** (joystick pour le déplacement et le saut)
   ou **3 doigts** (Saut séparé en haut). Choix personnel mémorisé dans
   **Commandes tactiles**, modifiable via les réglages pendant le match. Tir reste manuel.
 - Gauche au clavier : A/Q, D, W/Z et espace.
@@ -50,7 +50,7 @@ l’IA joue Rouge ; les deux personnages sont au choix. **Facile** réagit en en
 trajectoires, **Difficile** réagit en 100 ms avec davantage d’anticipation et moins
 d’erreurs. Normal est présélectionné. La difficulté reste verrouillée pendant le
 match ; elle peut être revue après sa fin. Les bonus, terrains et aides restent
-disponibles. Sur mobile, seul le pavé du joueur humain s’affiche ; au clavier,
+disponibles. Sur mobile, seule la manette du joueur humain s’affiche ; au clavier,
 les flèches/P ou Q/A, D, Z/W et espace contrôlent Bleu.
 
 Les trois niveaux partagent des règles de placement : couvrir quand le ballon

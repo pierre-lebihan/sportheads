@@ -9,14 +9,32 @@ export function saveTouchLayout(value) {
   try { localStorage.setItem(KEY, value); } catch { /* The layout still works for this page. */ }
 }
 
-// Sliding upwards adds jump without changing horizontal direction. Separate
-// activation/release thresholds prevent flicker around the jump-zone border.
+// A fixed-center stick keeps its angle outside the base; only releasing the
+// finger ends the gesture. The visual handle is clamped to the circular base.
+export function joystickVector(rect, clientX, clientY) {
+  const radius = Math.min(rect.width, rect.height) / 2;
+  if (!(radius > 0)) return { x: 0, y: 0, distance: 0 };
+  const x = (clientX - rect.left - rect.width / 2) / radius;
+  const y = (clientY - rect.top - rect.height / 2) / radius;
+  if (![x, y].every(Number.isFinite)) return { x: 0, y: 0, distance: 0 };
+  const distance = Math.hypot(x, y), divisor = Math.max(1, distance);
+  return { x: x / divisor, y: y / divisor, distance };
+}
+
 export function movementMask(layout, rect, clientX, clientY, previous = 0) {
   if (!rect.width || !rect.height) return 0;
+  if (layout === 'thumbs') {
+    const { x, y, distance } = joystickVector(rect, clientX, clientY);
+    if (distance < (previous ? .18 : .24)) return 0;
+    const length = Math.hypot(x, y), horizontal = x / length, upwards = -y / length;
+    // Broad horizontal sectors; the narrow top sector jumps on the spot.
+    const direction = horizontal < -.3826834324 ? 1 : horizontal > .3826834324 ? 2 : 0;
+    const jump = upwards >= ((previous & 4) ? .4 : .55);
+    return direction | (jump ? 4 : 0);
+  }
   const x = (clientX - rect.left) / rect.width, y = (clientY - rect.top) / rect.height;
   if (![x, y].every(Number.isFinite) || x < 0 || x > 1 || y < 0 || y > 1) return 0;
-  const gap = layout === 'three-fingers' ? 1 / rect.width : .16;
+  const gap = 1 / rect.width;
   const direction = x < .5 - gap ? 1 : x > .5 + gap ? 2 : 0;
-  const jump = layout === 'thumbs' && (y < .4 || ((previous & 4) !== 0 && y < .58));
-  return direction | (jump ? 4 : 0);
+  return direction;
 }

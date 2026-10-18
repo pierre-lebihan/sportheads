@@ -21,7 +21,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-touch-rel
       page.on('pageerror', error => errors.push(error.message));
       await page.goto(url); await page.waitForFunction(() => window.ready || window.loadError);
       assert.equal(await page.evaluate(() => window.loadError), undefined);
-      await goToSetup(page, 'rules'); await page.locator('#bonuses').uncheck(); await page.click('#start');
+      await goToSetup(page, 'rules'); await page.locator('#touch-settings summary').click(); await page.selectOption('#touch-layout', 'three-fingers'); await page.locator('#bonuses').uncheck(); await page.click('#start');
       await page.waitForFunction(() => sportheads.snapshot().phase === 1);
       const left = page.locator('[data-side="0"] [data-action="1"]'), right = page.locator('[data-side="0"] [data-action="2"]');
       await page.evaluate(() => { window.dropPointerRelease = true; });
@@ -51,6 +51,23 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-touch-rel
       await page.mouse.down(); assert.equal(await left.getAttribute('aria-pressed'), 'true');
       await page.mouse.move(1, 1); assert.equal(await left.getAttribute('aria-pressed'), 'false', 'leaving the movement pad returns it to neutral');
       await page.mouse.up(); assert.equal(await left.getAttribute('aria-pressed'), 'false');
+      await page.click('#play-view'); await page.selectOption('#touch-layout', 'thumbs');
+      await page.click('#close-settings'); await page.click('#resume');
+      const stick = page.locator('[data-side="0"] [data-joystick]');
+      await page.evaluate(() => { window.dropPointerRelease = true; window.dropTouchRelease = true; });
+      await stick.tap({ position: { x: 12, y: 68 } });
+      assert.equal(await stick.getAttribute('data-mask'), '1', 'withheld end events leave a detectable stale joystick');
+      await page.evaluate(() => { window.dropPointerRelease = false; window.dropTouchRelease = false; });
+      await stick.tap({ position: { x: 124, y: 68 } });
+      assert.equal(await stick.getAttribute('data-mask'), '0', 'next native gesture clears the stale joystick');
+      assert.equal(await stick.getAttribute('aria-pressed'), 'false');
+      assert.equal(await stick.evaluate(b => b.style.getPropertyValue('--stick-x')), '0px');
+      const base = await stick.boundingBox();
+      await page.mouse.move(base.x + 12, base.y + 68); await page.mouse.down();
+      assert.equal(await stick.getAttribute('data-mask'), '1');
+      await page.mouse.move(1, 1);
+      assert.notEqual(await stick.getAttribute('data-mask'), '0', 'joystick keeps its angle beyond the base');
+      await page.mouse.up(); assert.equal(await stick.getAttribute('data-mask'), '0');
       assert.deepEqual(errors, []);
       console.log(JSON.stringify({ passed: true, browser: name, checks: ['lost pointer release', 'repeated taps', 'next gesture repairs missing touchend', 'keyboard remains independent', 'pause and resume', 'mouse capture and release'] }));
     } finally { await browser.close(); }

@@ -1,6 +1,6 @@
 # Jouer sur téléphone ou tablette
 
-Ouvrir le site dans le navigateur du téléphone. Les réglages, les 12 joueurs récents,
+Ouvrir le site dans le navigateur du téléphone. Les réglages, les personnages,
 les terrains, les aides individuelles et les salles restent accessibles. Le jeu et ses menus occupent
 le viewport dès l'ouverture ; aucune installation ni
 autorisation de plein écran n'est nécessaire.
@@ -12,12 +12,13 @@ autorisation de plein écran n'est nécessaire.
   et ne modifie que son propre personnage.
 - Dans les réglages, **Commandes tactiles → Disposition sur cet appareil**
   propose deux choix, mémorisés sur le téléphone :
-  - **2 pouces** (par défaut) : glisser sur le pavé gauche pour marcher ;
-    monter vers une diagonale ajoute le saut, monter au centre saute sur place.
-    Revenir en bas retire le saut, revenir au centre arrête le déplacement.
-    Le pouce droit garde le bouton Tir, entièrement manuel.
+  - **2 pouces** (par défaut) : joystick circulaire de 136 px à gauche. L’angle
+    choisit gauche/droite, les diagonales hautes ajoutent le saut et le haut
+    saute sur place. La poignée suit le doigt ; la zone neutre au centre arrête
+    le joueur. Le pouce droit garde le bouton Tir, entièrement manuel.
   - **3 doigts** : pouce gauche pour marcher, index gauche sur Saut en haut
-    à gauche et pouce droit sur Tir. En local, Rouge a son Saut en haut à droite.
+    à gauche et pouce droit sur Tir. Les boutons gauche/droite font 96 px de haut.
+    En local, Rouge a son Saut en haut à droite.
   Un seuil distinct d’activation et de relâchement évite les oscillations à la
   limite de la zone de saut. Le choix reste modifiable pendant un match via la
   roue dentée, sans redémarrer la partie. Il est personnel, même pour l’invité
@@ -51,8 +52,10 @@ le match suivant se lance depuis le salon. Les deux joueurs doivent recharger
 la page après la mise à jour vers le protocole de salles 7.
 
 Les doigts sur Tir et sur le Saut séparé gardent leur action jusqu'au
-relâchement, même hors bouton. Le doigt sur le pavé suit les zones traversées ;
-sortir du pavé annule son déplacement et son saut. Changer de disposition
+relâchement, même hors bouton. Le joystick conserve l’angle si le doigt dépasse
+son cercle et borne la poignée à sa base ; relâcher le doigt le recentre et annule
+ses actions. Les boutons du mode 3 doigts s’annulent quand le doigt quitte leur
+zone de déplacement. Changer de disposition
 relâche tous les contacts ; les anciens doigts ne sont pas réactivés par un mouvement.
 Les contrôles tactiles suivent les identifiants natifs des doigts et réconcilient
 leur état avec la liste complète `TouchEvent.touches`. Un `pointerup` perdu ne

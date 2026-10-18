@@ -9,6 +9,7 @@ import { balanceToAssists, assistsToBalance, balanceLabel } from './balance.js';
 import { PREPARATION_STEPS, validSetupStep, renderSetup } from './setup-ui.js';
 import { layoutArena } from './arena-ui.js';
 import { createTouchControls } from './touch-controls.js';
+import { AI_LEVELS, createOpponent } from './opponent.js';
 
 const $ = selector => document.querySelector(selector);
 const randomChoices = [['random-player-0', 'skin-left'], ['random-player-1', 'skin-right'], ['random-pitch', 'pitch']];
@@ -24,9 +25,18 @@ let matchId = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, re
 let remoteInput = 0, lastInputAt = 0, soundTick = -1, soundMatch = -1, busy = false;
 let settingsOpen = false, setupStep = 'home', lastValidTarget = 7;
 let restoringSettings = false, recoveryTimer;
+let opponent = null;
 const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
 const touch = createTouchControls($('#touch-controls'), sendInput);
 function clearInput() { keys.clear(); touch.clear(); }
+for (const level of AI_LEVELS) {
+  const label = document.createElement('label'), radio = document.createElement('input');
+  radio.type = 'radio'; radio.name = 'ai-level'; radio.value = level.id; radio.checked = level.id === 'normal';
+  const text = document.createElement('span'), title = document.createElement('strong'), detail = document.createElement('small');
+  title.textContent = level.label; detail.textContent = level.description; text.append(title, detail); label.append(radio, text);
+  radio.addEventListener('change', update); $('#ai-difficulty').append(label);
+}
+const difficulty = () => AI_LEVELS.find(level => level.id === $('[name="ai-level"]:checked').value);
 
 for (const [id, selected] of [['skin-left', 1], ['skin-right', 2]]) {
   for (let i = 1; i <= PLAYER_COUNT; i++) { const option = new Option(PLAYER_NAMES[i - 1], i); option.selected = i === selected; $('#' + id).add(option); }
@@ -40,7 +50,7 @@ const skins = () => [+$('#skin-left').value, +$('#skin-right').value];
 const ownSide = () => role === 'guest' ? 1 : 0;
 const targetScore = () => +$('#target-score').value;
 const validTarget = () => Number.isInteger(targetScore()) && targetScore() >= 1 && targetScore() <= 99;
-const canStart = () => !!core && !restoringSettings && validTarget() && (mode === 'local' || (role === 'host' && room?.connected));
+const canStart = () => !!core && !restoringSettings && validTarget() && (mode !== 'online' || (role === 'host' && room?.connected));
 function input() {
   let mask = touch.mask();
   for (const key of keys) { const bit = bindings[key] || 0; mask |= mode === 'local' || bit < 16 ? bit : bit >> 4; }
@@ -48,7 +58,7 @@ function input() {
 }
 function snapshot() {
   const e = engine();
-  return { started, paused, mode, role, connected: !!room?.connected, code: room?.code || '', matchId, setupStep,
+  return { started, paused, mode, role, difficulty: mode === 'ai' ? difficulty().id : null, connected: !!room?.connected, code: room?.code || '', matchId, setupStep,
     phase: e?.game_value(0), targetScore: started ? e?.game_value(14) : targetScore(), pitch: started ? e?.game_value(15) : +$('#pitch').value,
     assists: started ? [0, 1].map(side => e?.game_player_value(side, 6)) : assists(), remainingTicks: e?.game_value(1), score: [e?.game_value(2), e?.game_value(3)], countdown: e?.game_value(4), tick: e?.game_value(6) };
 }
@@ -100,12 +110,14 @@ function reset() {
   audio.unlock();
   core.game_start_on_pitch(crypto.getRandomValues(new Uint32Array(1))[0], targetScore(), +$('#bonuses').checked, +$('#pitch').value);
   applyAssists();
+  opponent = mode === 'ai' ? createOpponent({ difficulty: difficulty().id, seed: crypto.getRandomValues(new Uint32Array(1))[0] }) : null;
   settingsOpen = false; setupStep = 'rules';
   started = true; paused = false; pauseFlags = [false, false]; previousPhase = -1;
   remoteInput = 0; matchId++; clearInput(); accumulator = 0; last = 0;
   canvas.focus({ preventScroll: true }); music(); update(); broadcast();
 }
 function clearMatch() {
+  opponent = null;
   settingsOpen = false;
   started = false; paused = false; pauseFlags = [false, false]; clearInput(); remoteInput = 0;
   last = 0; accumulator = 0; previousPhase = -1; receivedSequence = -1; receivedInput = -1;
@@ -119,10 +131,9 @@ function leaveRoom() {
   roomStatus('Créez une salle ou saisissez le code de votre adversaire.'); update();
 }
 function selectMode(next) {
-  leaveRoom(); mode = next; setupStep = next === 'local' ? 'players' : 'room';
-  $('#online-panel').hidden = mode !== 'online'; $('#online-controls').hidden = mode !== 'online';
-  $('#play-local').setAttribute('aria-pressed', String(mode === 'local'));
-  $('#play-online').setAttribute('aria-pressed', String(mode === 'online'));
+  leaveRoom(); mode = next; setupStep = next === 'local' ? 'players' : next === 'ai' ? 'difficulty' : 'room';
+  $('#online-panel').hidden = mode !== 'online'; $('#online-controls').hidden = mode === 'local';
+  for (const name of ['local', 'online', 'ai']) $('#play-' + name).setAttribute('aria-pressed', String(mode === name));
   update();
 }
 function onMessage(message) {
@@ -258,6 +269,7 @@ async function copyRoom(link) {
 for (const id of ['start', 'again', 'restart']) $('#' + id).addEventListener('click', reset);
 $('#play-local').addEventListener('click', () => selectMode('local'));
 $('#play-online').addEventListener('click', () => selectMode('online'));
+$('#play-ai').addEventListener('click', () => selectMode('ai'));
 $('#create-room').addEventListener('click', () => connectRoom(true));
 $('#join-form').addEventListener('submit', event => { event.preventDefault(); connectRoom(false); });
 $('#leave-room').addEventListener('click', leaveRoom);
@@ -289,9 +301,10 @@ $('#play-view').addEventListener('click', () => {
 $('#close-settings').addEventListener('click', closeSettings);
 function navigateSetup(direction) {
   if (mode === 'online' && role === 'guest' && room?.connected) return;
-  const index = PREPARATION_STEPS.indexOf(setupStep);
-  if (direction > 0 && index >= 0 && index < 2) setupStep = PREPARATION_STEPS[index + 1];
-  else if (direction < 0 && index > 0) setupStep = PREPARATION_STEPS[index - 1];
+  const steps = mode === 'ai' ? ['difficulty', ...PREPARATION_STEPS] : PREPARATION_STEPS;
+  const index = steps.indexOf(setupStep);
+  if (direction > 0 && index >= 0 && index < steps.length - 1) setupStep = steps[index + 1];
+  else if (direction < 0 && index > 0) setupStep = steps[index - 1];
   else if (direction < 0 && setupStep === 'players' && mode === 'online') { leaveRoom(); setupStep = 'room'; }
   else if (direction < 0) setupStep = 'home';
   update(); broadcast(); $('#setup-panel').scrollTop = 0;
@@ -316,7 +329,7 @@ window.addEventListener('keydown', event => {
   if (['SELECT', 'INPUT', 'BUTTON'].includes(event.target.tagName) && event.code !== 'Escape') return;
   if (event.code === 'Escape' && settingsOpen) { event.preventDefault(); closeSettings(); return; }
   if (event.code === 'Escape') { if (started) { event.preventDefault(); pause(!pauseFlags[ownSide()]); } return; }
-  if (bindings[event.code] && started && !paused && engine().game_value(0) !== 3 && (mode === 'local' || room?.connected)) {
+  if (bindings[event.code] && started && !paused && engine().game_value(0) !== 3 && (mode !== 'online' || room?.connected)) {
     event.preventDefault(); keys.add(event.code); sendInput();
   }
 });
@@ -348,17 +361,17 @@ function update() {
   const e = engine(), state = snapshot(), phase = state.phase;
   // Tick/position changes belong to the canvas, not to the preparation menus.
   const uiKey = JSON.stringify([!!core, mode, role, state.connected, started, paused, settingsOpen, setupStep, busy, restoringSettings,
-    pauseFlags, phase, state.score, state.targetScore, state.pitch, state.assists, matchId, skins(), $('#target-score').value, $('#pitch').value, $('#balance').value, $('#bonuses').checked,
+    pauseFlags, phase, state.score, state.targetScore, state.pitch, state.assists, state.difficulty, matchId, skins(), $('#target-score').value, $('#pitch').value, $('#balance').value, $('#bonuses').checked,
     e?.game_value(10), (e?.game_value(11) || 0) > 0, hasTouch()]);
   if (uiKey === lastUiKey) return;
   lastUiKey = uiKey;
-  const names = ['Bleu', 'Rouge'];
+  const names = mode === 'ai' ? ['Vous · Bleu', 'IA · Rouge'] : ['Bleu', 'Rouge'];
   document.body.classList.toggle('touch-device', hasTouch());
   $('#play-view').disabled = !started;
   $('#play-view').setAttribute('aria-expanded', String(!started || settingsOpen));
   $('#close-settings').hidden = !started;
   $('#touch-controls').hidden = !started;
-  touch.update({ mode, side: ownSide(), names, enabled: started && !paused && phase !== 3 && (mode === 'local' || !!room?.connected) });
+  touch.update({ mode, side: ownSide(), names, enabled: started && !paused && phase !== 3 && (mode !== 'online' || !!room?.connected) });
   const teamNames = names.map((name, side) => `${name}${state.assists[side] ? ' +' + state.assists[side] * 10 + '%' : ''}`);
   $('.team.blue span').textContent = teamNames[0]; $('.team.red span').textContent = teamNames[1];
   $('.team.blue span').title = names[0]; $('.team.red span').title = names[1];
@@ -367,18 +380,18 @@ function update() {
   $('#bonus-notice').textContent = notice; $('#bonus-notice').hidden = !notice;
   $('#welcome').hidden = started && !settingsOpen; $('#finished').hidden = !started || phase !== 3 || settingsOpen; $('#paused').hidden = !started || !paused || phase === 3 || settingsOpen;
   $('#start').disabled = !canStart();
-  $('#start').textContent = !core ? 'Chargement…' : mode === 'local' ? 'Commencer' : room?.connected ? 'Lancer le match' : 'En attente d’un adversaire';
-  $('#welcome-title').textContent = mode === 'local' ? 'À vous de jouer.' : room?.connected ? 'Vous êtes deux !' : 'Invitez un adversaire.';
-  $('#welcome-detail').textContent = mode === 'local' ? 'Marquez plus de buts que votre adversaire. Jouez à deux avec les commandes tactiles ou le clavier.'
+  $('#start').textContent = !core ? 'Chargement…' : mode !== 'online' ? 'Commencer' : room?.connected ? 'Lancer le match' : 'En attente d’un adversaire';
+  $('#welcome-title').textContent = mode === 'ai' ? `Contre l’IA · ${difficulty().label}` : mode === 'local' ? 'À vous de jouer.' : room?.connected ? 'Vous êtes deux !' : 'Invitez un adversaire.';
+  $('#welcome-detail').textContent = mode === 'ai' ? 'Vous jouez Bleu. L’IA joue Rouge avec les mêmes règles.' : mode === 'local' ? 'Marquez plus de buts que votre adversaire. Jouez à deux avec les commandes tactiles ou le clavier.'
     : room?.connected ? role === 'host' ? 'Vous jouez Bleu. Votre adversaire joue Rouge. Lancez le match quand vous êtes prêts.' : 'Vous jouez Rouge. Le créateur de la salle va lancer le match.'
       : 'Créez une salle, partagez son code et retrouvez-vous sur le terrain.';
   $('#pause').disabled = !started || phase === 3 || (mode === 'online' && !room?.connected);
   const pauseLabel = pauseFlags[ownSide()] ? 'Reprendre' : 'Pause';
   $('#pause').textContent = pauseFlags[ownSide()] ? '▶' : 'Ⅱ';
   $('#pause').setAttribute('aria-label', pauseLabel); $('#pause').title = pauseLabel;
-  const mayResume = mode === 'local' || (!!room?.connected && pauseFlags[ownSide()]);
+  const mayResume = mode !== 'online' || (!!room?.connected && pauseFlags[ownSide()]);
   $('#resume').disabled = !mayResume; $('#resume').textContent = mayResume ? 'Reprendre' : 'Adversaire en pause';
-  $('#pause-detail').textContent = mode === 'local' ? 'Le temps vous attend.' : !room?.connected ? 'Votre adversaire est déconnecté. Il peut revenir avec le même code.'
+  $('#pause-detail').textContent = mode !== 'online' ? 'Le temps vous attend.' : !room?.connected ? 'Votre adversaire est déconnecté. Il peut revenir avec le même code.'
     : pauseFlags[ownSide()] ? 'Vous avez mis le match en pause. Chaque joueur doit reprendre pour continuer.' : 'Votre adversaire a mis le match en pause.';
   $('#restart').hidden = mode === 'online'; $('#restart').disabled = !started;
   $('#again').disabled = !canStart(); $('#again').textContent = mode === 'online' && role === 'guest' ? 'Le créateur peut relancer'
@@ -386,6 +399,7 @@ function update() {
   $('#create-room').disabled = !core || busy; $('#join-room').disabled = !core || busy;
   $('#bonuses').disabled = mode === 'online' && (role === 'guest' || started);
   const settingsLocked = (started && phase !== 3) || (mode === 'online' && role === 'guest');
+  for (const radio of document.querySelectorAll('[name="ai-level"]')) radio.disabled = started && phase !== 3;
   for (const id of ['target-score', 'pitch', 'balance']) $('#' + id).disabled = !!settingsLocked;
   const balance = +$('#balance').value;
   $('#balance-status').textContent = balanceLabel(balance);
@@ -401,7 +415,7 @@ function update() {
   for (const [buttonId, selectId] of randomChoices) $('#' + buttonId).disabled = $('#' + selectId).disabled;
   $('#status').textContent = mode === 'online' && !room?.connected ? 'Salle privée · En attente d’un adversaire'
     : !started ? 'Choisissez vos joueurs et votre terrain' : phase === 0 ? 'Préparez-vous…' : phase === 2 ? `But pour ${names[e.game_value(5)]} !`
-      : phase === 3 ? 'Match terminé' : mode === 'online' ? `Duel à distance · Vous jouez ${role === 'host' ? 'Bleu' : 'Rouge'}` : 'Duel local · À vous de jouer';
+      : phase === 3 ? 'Match terminé' : mode === 'ai' ? `Contre l’IA · ${difficulty().label} · Vous jouez Bleu` : mode === 'online' ? `Duel à distance · Vous jouez ${role === 'host' ? 'Bleu' : 'Rouge'}` : 'Duel local · À vous de jouer';
   if (started && phase === 3) {
     const [a, b] = state.score; $('#result').textContent = `${names[a > b ? 0 : 1]} remporte le match !`;
     $('#final-score').textContent = `${names[0]} ${a} — ${b} ${names[1]}`;
@@ -411,11 +425,12 @@ function update() {
 }
 function animate(time) {
   const elapsed = last ? Math.min(time - last, 250) : 0; last = time;
-  if (core && started && !paused && engine().game_value(0) !== 3 && (mode === 'local' || (role === 'host' && room?.connected))) {
+  if (core && started && !paused && engine().game_value(0) !== 3 && (mode !== 'online' || (role === 'host' && room?.connected))) {
     accumulator += elapsed;
     let advanced = false;
     while (accumulator >= 1000 / 30) {
-      const mask = mode === 'local' ? input() : input() | ((performance.now() - lastInputAt < 350 ? remoteInput : 0) << 4);
+      const mask = mode === 'local' ? input() : mode === 'ai' ? input() | (opponent.step(core) << 4)
+        : input() | ((performance.now() - lastInputAt < 350 ? remoteInput : 0) << 4);
       core.game_tick(mask); playSounds(core.game_value(7)); accumulator -= 1000 / 30; advanced = true;
     }
     if (advanced) broadcast();

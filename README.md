@@ -7,13 +7,13 @@ est écrit en Rust et compilé en WebAssembly. Le navigateur gère l'affichage e
 les entrées ; la physique, les commandes, le score, les remises en jeu et
 l’objectif de buts sont dans le cœur indépendant du navigateur.
 
-Deux choix : **sur le même écran** ou **à distance dans une salle privée**.
+Trois choix : **Contre l’IA**, **2 joueurs sur le même écran** ou **En ligne dans une salle privée**.
 Le premier à atteindre l’objectif de buts gagne : **7 par défaut**, réglable
 de 1 à 99, sans limite de temps. Choisissez parmi **19 terrains**, les **18 bonus**
 et **12 joueurs récents** avec aperçu. Les portraits des joueurs sont des caricatures originales ; les autres sprites, animations et sons viennent du
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
-Un match simple entre deux humains, en local ou à distance. Un **curseur à sept
+Un match simple contre l’IA ou entre deux humains. Un **curseur à sept
 positions** équilibre le duel : Bleu +30 / +20 / +10 %, neutre, Rouge +10 / +20 /
 +30 %. Un seul joueur est aidé à la fois, sur la vitesse, le saut et la frappe.
 Le centre est le réglage par défaut. L'aide est choisie avant le match puis
@@ -35,6 +35,22 @@ bande, sans recouvrir le ballon. « Retour au match » ferme le menu. Voir [comm
 La préparation se déroule dans le jeu : **mode → joueurs → terrain → paramètres**.
 Les boutons **Aléatoire** choisissent immédiatement un autre joueur ou terrain et actualisent son aperçu. Recliquez autant que vous voulez avant de continuer ; en ligne, chacun garde les mêmes droits que pour le choix manuel.
 En local, les deux personnages sont choisis sur le même écran.
+
+Contre l’IA : **difficulté → joueurs → terrain → paramètres**. Vous jouez Bleu,
+l’IA joue Rouge ; les deux personnages sont au choix. **Facile** réagit en environ
+333 ms et manque des occasions, **Normal** réagit en 200 ms et anticipe les
+trajectoires, **Difficile** réagit en 100 ms avec davantage d’anticipation et moins
+d’erreurs. Normal est présélectionné. La difficulté reste verrouillée pendant le
+match ; elle peut être revue après sa fin. Les bonus, terrains et aides restent
+disponibles. Sur mobile, seul le pavé du joueur humain s’affiche ; au clavier,
+les flèches/P ou Q/A, D, Z/W et espace contrôlent Bleu.
+
+L’IA est un contrôleur local dans `web/opponent.js`, indépendant de celle du
+Flash. Il lit l’état public du match et produit les quatre commandes humaines.
+L’estimation de vol tient compte de la gravité et des rebonds sur les limites ;
+elle est corrigée à chaque décision à partir de la physique réelle, notamment
+après un obstacle ou un bonus. Aucun serveur ni modèle externe n’est utilisé,
+et la difficulté ne modifie pas les caractéristiques physiques des personnages.
 
 À distance : choisir **En ligne**, créer une salle et partager son code de
 huit caractères ou son lien. L'autre joueur clique sur **Rejoindre**, puis
@@ -96,6 +112,7 @@ python3 scripts/serve.py --port 8765 --directory .
 node scripts/physics-parity.cjs
 node scripts/match-parity.cjs
 node scripts/check-game.cjs http://127.0.0.1:8765/_site/
+node scripts/check-ai.cjs http://127.0.0.1:8765/_site/
 node --test tests/*.test.mjs
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
 node scripts/check-setup.cjs http://127.0.0.1:8765/_site/

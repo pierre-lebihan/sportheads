@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27white%27 stroke=%27%23244875%27 stroke-width=%273%27/%3E%3Cpath d=%27M16 8 24 14 21 23 11 23 8 14Z%27 fill=%27%23244875%27/%3E%3C/svg%3E">
   <meta name="theme-color" content="#244875">
-  <meta name="description" content="Jouez à Sportheads à deux sur le même écran ou à distance dans une salle privée. Partagez le code et entrez sur le terrain !">
-  <title>Sportheads — à deux, ici ou à distance</title>
+  <meta name="description" content="Jouez à Sportheads contre l’IA à trois niveaux, à deux sur le même écran ou à distance dans une salle privée.">
+  <title>Sportheads — contre l’IA ou à deux</title>
   <link rel="stylesheet" href="./game.css">
   <script type="module" src="./game.js"></script>
 </head>
 <body class="play-view">
   <main>
-    <section class="arena" aria-label="Sportheads, match de football à deux">
+    <section class="arena" aria-label="Sportheads, match de football">
       <div class="field-wrap">
         <div id="game-surface" class="game-surface">
           <div class="match-bar" aria-label="Commandes du match">
@@ -48,7 +48,12 @@
           <header class="setup-heading"><a class="wordmark" href="./">Sportheads<span aria-hidden="true">⚽</span></a><button id="close-settings" hidden>Retour au match</button></header>
           <section data-setup-screen="home" class="mode-screen">
             <h1>Comment jouez-vous ?</h1>
-            <div class="play-modes" role="group" aria-label="Où jouez-vous ?"><button id="play-local"><strong>2 joueurs</strong><span>Sur le même écran</span></button><button id="play-online"><strong>En ligne</strong><span>Créer ou rejoindre une salle</span></button></div>
+            <div class="play-modes" role="group" aria-label="Comment jouez-vous ?"><button id="play-local"><strong>2 joueurs</strong><span>Sur le même écran</span></button><button id="play-online"><strong>En ligne</strong><span>Créer ou rejoindre une salle</span></button><button id="play-ai"><strong>Contre l’IA</strong><span>Trois niveaux de difficulté</span></button></div>
+          </section>
+          <section data-setup-screen="difficulty" hidden class="difficulty-screen">
+            <h1>Choisissez votre adversaire</h1>
+            <fieldset id="ai-difficulty" class="difficulty-options"><legend class="sr-only">Difficulté de l’IA</legend></fieldset>
+            <p>Vous jouez Bleu, l’IA joue Rouge.</p>
           </section>
     <section id="online-panel" class="room-panel" aria-label="Salle privée" hidden>
       <div data-setup-screen="room"><h1>Votre salle privée</h1><div id="room-actions" class="room-actions">
@@ -65,7 +70,7 @@
       <details id="network-diagnostic" hidden><summary>Détails de connexion</summary><pre id="network-report"></pre><button id="copy-diagnostic">Copier le diagnostic</button><span id="diagnostic-copy-status" role="status"></span></details>
       <p class="room-help">Deux joueurs maximum. La salle reste accessible tant qu’un joueur garde cet onglet ouvert.</p>
     </section>
-          <ol id="setup-steps" class="setup-steps" aria-label="Préparation du match" hidden><li>Joueurs</li><li>Terrain</li><li>Paramètres</li></ol>
+          <ol id="setup-steps" class="setup-steps" aria-label="Préparation du match" hidden><li id="difficulty-step" hidden>Niveau</li><li>Joueurs</li><li>Terrain</li><li>Paramètres</li></ol>
           <p id="setup-readonly" class="readonly-notice" role="status" hidden></p>
           <div data-setup-screen="players" hidden class="step-heading"><h1 id="players-title">Choisissez vos joueurs</h1><p id="players-detail">Chacun sa tête, chacun son camp.</p></div>
     <section id="player-choice" hidden class="controls" aria-label="Choix des joueurs">
@@ -95,7 +100,7 @@
             <div class="launch"><h2 id="welcome-title">À vous de jouer.</h2><p id="welcome-detail">Le premier à atteindre l’objectif gagne.</p><p id="guest-wait" hidden>Le créateur lancera le match lorsque vous serez prêts.</p></div>
           </section>
           <div id="setup-navigation" hidden class="setup-navigation"><button id="setup-back">Précédent</button><button id="setup-next" class="primary">Continuer</button><button id="start" class="primary" disabled hidden>Chargement…</button></div>
-          <details class="help"><summary>Commandes et projet</summary><p>Bleu : Q/A, D, Z/W et Espace. Rouge : flèches et P. Échap : pause.</p><p id="online-controls" hidden>À distance : flèches et P, ou Q/A, D, Z/W et Espace. Vous contrôlez uniquement votre joueur.</p><p>Sur mobile : maintenez les flèches, combinez Saut et Tir. Essayez le mode paysage.</p><nav aria-label="Projet"><a href="./physics.html">Comparaisons physiques</a><a href="https://github.com/pierre-lebihan/sportheads">GitHub</a></nav></details>
+          <details class="help"><summary>Commandes et projet</summary><p>Bleu : Q/A, D, Z/W et Espace. Rouge : flèches et P. Échap : pause.</p><p id="online-controls" hidden>En ligne ou contre l’IA : flèches et P, ou Q/A, D, Z/W et Espace. Vous contrôlez uniquement votre joueur.</p><p>Sur mobile : maintenez les flèches, combinez Saut et Tir. Essayez le mode paysage.</p><nav aria-label="Projet"><a href="./physics.html">Comparaisons physiques</a><a href="https://github.com/pierre-lebihan/sportheads">GitHub</a></nav></details>
         </section>
       </div>
       <div id="paused" class="cover" hidden><div class="cover-panel"><h2>Pause</h2><p id="pause-detail">Le temps vous attend.</p><button id="resume" class="primary">Reprendre</button></div></div>

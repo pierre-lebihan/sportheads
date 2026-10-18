@@ -28,7 +28,7 @@ for old, new in replacements.items():
         raise SystemExit(f'Expected exactly one occurrence of {old}')
     html = html.replace(old, new)
 (site / 'physics.html').write_text(html)
-browser_files = ('index.html', 'game.js', 'game.css', 'render.js', 'rooms.js', 'ice-diagnostics.js', 'ice-signaling.js', 'net-state.js', 'net-render.js', 'selection.js', 'players.js', 'touch-controls.js', 'balance.js', 'arena-ui.js', 'setup-ui.js')
+browser_files = ('index.html', 'game.js', 'game.css', 'render.js', 'rooms.js', 'ice-diagnostics.js', 'ice-signaling.js', 'net-state.js', 'net-render.js', 'selection.js', 'players.js', 'touch-controls.js', 'balance.js', 'arena-ui.js', 'setup-ui.js', 'opponent.js')
 # Every app module uses the same revision, including its transitive imports.
 # A refreshed page must not mix a new UI with cached networking code.
 revision = hashlib.sha256(b''.join((root / 'web' / name).read_bytes() for name in browser_files)).hexdigest()[:12]

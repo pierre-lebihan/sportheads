@@ -86,7 +86,7 @@ export function createTouchControls(root, onChange) {
       root.dataset.mode = mode;
       for (const pad of root.querySelectorAll('[data-side]')) {
         const index = +pad.dataset.side;
-        pad.hidden = mode === 'online' && index !== side;
+        pad.hidden = mode !== 'local' && index !== side;
         pad.querySelector('.touch-name').textContent = state.names[index];
         for (const button of pad.querySelectorAll('button')) button.disabled = !enabled || pad.hidden;
       }

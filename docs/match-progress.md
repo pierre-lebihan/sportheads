@@ -53,8 +53,13 @@ rejouer, perte de focus et absence de débordement sur écran étroit.
 
 ## Suite de la phase 1
 
-L'interface expose seulement deux modes : sur le même écran et à distance
-avec code de salle. Les matchs se gagnent au nombre de buts, sans chronomètre,
+L'interface expose trois modes : contre une IA locale à trois niveaux,
+sur le même écran et à distance avec code de salle. L’IA utilise les commandes
+humaines, sans changer la physique du noyau ; elle ne reprend pas celle du Flash.
+`tests/opponent.test.mjs` couvre les réactions, les matchs complets, les 19 terrains
+et les 18 bonus ; `scripts/check-ai.cjs URL` vérifie le parcours, le clavier,
+les commandes mobiles, les pauses et les revanches dans Chrome et WebKit.
+Les matchs se gagnent au nombre de buts, sans chronomètre,
 avec buts classiques. Les variantes historiques chronométrées restent testées
 dans le noyau pour les comparaisons Flash mais ne sont plus proposées. Les bonus peuvent toujours modifier temporairement les buts.
 Les 12 joueurs récents sont sélectionnables avec leur nom et leur portrait.

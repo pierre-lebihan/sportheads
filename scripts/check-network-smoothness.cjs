@@ -46,7 +46,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-network-s
   }
   try {
     const host = await pageAt(); await host.click('#play-online'); await host.click('#create-room');
-    await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
+    await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]$/.test(document.querySelector('#room-code').textContent));
     const share = new URL(url); share.searchParams.set('room', await host.locator('#room-code').innerText());
     const guest = await pageAt(share.href); await guest.click('#join-room');
     await host.waitForFunction(() => sportheads.snapshot().connected); await goToSetup(host, 'rules');

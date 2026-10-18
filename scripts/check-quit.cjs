@@ -55,7 +55,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-quit.cjs 
       await host.click('#play-online');await host.click('#create-room');
       await host.waitForFunction(()=>!document.querySelector('#room-details').hidden
         && document.querySelector('#room-code').textContent===sportheads.snapshot().code
-        && /^[A-HJ-NP-Z2-9]{8}$/.test(sportheads.snapshot().code));
+        && /^[A-HJ-NP-Z2-9]$/.test(sportheads.snapshot().code));
       const code=await host.locator('#room-code').innerText(), share=new URL(url);share.searchParams.set('room',code);
       await guest.goto(share.href);await guest.waitForFunction(()=>window.ready||window.loadError);await guest.click('#join-room');
       await Promise.all([host,guest].map(p=>p.waitForFunction(()=>sportheads.snapshot().connected)));

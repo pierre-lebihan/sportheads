@@ -63,7 +63,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-cross-bro
     for (const [hostBrowser, guestBrowser] of [[chrome, safari], [safari, chrome]]) {
       let host = await pageAt(hostBrowser);
       await host.click('#play-online'); await host.click('#create-room');
-      await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
+      await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]$/.test(document.querySelector('#room-code').textContent));
       const share = new URL(url); share.searchParams.set('room', await host.locator('#room-code').innerText());
       const guest = await pageAt(guestBrowser, share.href); await guest.click('#join-room');
       await Promise.all([host, guest].map(page => page.waitForFunction(() => sportheads.snapshot().connected)));

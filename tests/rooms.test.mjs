@@ -85,15 +85,17 @@ function setup(t, plans = []) {
 
 const flush = () => Promise.resolve();
 
-test('room codes normalize spaces, hyphens and case, and require eight unambiguous characters', async t => {
+test('room codes normalize spaces, hyphens and case, and accept one unambiguous character and legacy eight-character links', async t => {
   assert.equal(normalizeCode(' abcd-2345\n'), 'ABCD2345');
   assert.equal(validCode('ABCD2345'), true);
+  for (const code of 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789') assert.equal(validCode(code), true);
+  for (const code of ['', 'AA', 'I', 'O', '0', '1', 'a', '!']) assert.equal(validCode(code), false, code);
   for (const code of ['ABCD234', 'ABCD23456', 'ABCDI234', 'ABCDO234', 'ABCD0234', 'ABCD1234', 'abcd2345', 'ABCD!234']) {
     assert.equal(validCode(code), false, code);
   }
   const { peers, createRoom } = setup(t);
   const { room } = createRoom();
-  await assert.rejects(room.join('INVALID'), /8 caractères/);
+  await assert.rejects(room.join('INVALID'), /le caractère/);
   assert.equal(peers.length, 0, 'invalid codes must not open a signalling connection');
   await room.join(' abcd-2345 ');
   assert.equal(room.code, 'ABCD2345');
@@ -112,6 +114,14 @@ test('joining an occupied guest seat reserves the vacant creator seat and connec
   assert.equal(room.role, 'host'); assert.equal(room.returningHost, true);
   room.connection.openChannel();
   assert.equal(room.connected, true); assert.deepEqual(events.ready, ['host']);
+});
+
+test('a single lowercase character joins the same named room as its uppercase code', async t => {
+  const { peers, createRoom } = setup(t);
+  const { room } = createRoom(); await room.join(' a ');
+  assert.equal(room.code, 'A');
+  assert.equal(peers[0].id, 'sportheads-room-v7-A-guest');
+  assert.equal(peers[0].target, 'sportheads-room-v7-A');
 });
 
 test('two occupied seats reject a third join and release both failed peers', async t => {
@@ -205,11 +215,14 @@ test('creation retries an unavailable ID with a new peer and destroys the failed
   const { peers, createRoom } = setup(t, ['unavailable-id', 'open']);
   const { room, events } = createRoom();
   const code = await room.create();
-  assert.equal(peers.length, 2);
+  assert.equal(peers.length, 3);
   assert.equal(peers[0].destroyed, true);
+  assert.equal(peers[2].destroyed, true, 'the temporary guest reservation must be released');
   assert.equal(peers[1].destroyed, false);
   assert.equal(room.peer, peers[1]);
   assert.equal(validCode(code), true);
+  assert.equal(code.length, 1);
+  assert.notEqual(peers[0].id, peers[1].id, 'an occupied code is never retried');
   assert.equal(peers[1].id, 'sportheads-room-v7-' + code);
   assert.deepEqual(events.errors, []);
   assert.deepEqual(events.ready, []);
@@ -233,6 +246,34 @@ test('closing during peer open promptly rejects the pending operation and clears
   t.mock.timers.tick(30000);
   assert.deepEqual(events.errors, []);
   assert.deepEqual(events.ready, []);
+});
+
+test('creation skips a short code held by a surviving guest and releases both attempted seats', async t => {
+  const { peers, createRoom } = setup(t, ['open', 'unavailable-id', 'open', 'open']);
+  const { room, events } = createRoom(); const code = await room.create();
+  assert.equal(peers.length, 4);
+  assert.ok(peers[0].destroyed && peers[1].destroyed && peers[3].destroyed);
+  assert.notEqual(peers[0].id, peers[2].id);
+  assert.equal(room.peer, peers[2]); assert.equal(peers[2].destroyed, false);
+  assert.equal(peers[2].id, 'sportheads-room-v7-' + code);
+  assert.deepEqual(events.errors, []); assert.equal(room.reservation, null);
+});
+
+test('all 32 occupied codes are tried once and reported without opening an existing room', async t => {
+  const { peers, createRoom } = setup(t, Array(32).fill('unavailable-id'));
+  const { room } = createRoom();
+  await assert.rejects(room.create(), /Tous les codes de salle sont occupés/);
+  assert.equal(peers.length, 32); assert.equal(new Set(peers.map(peer => peer.id)).size, 32);
+  assert.ok(peers.every(peer => peer.destroyed));
+});
+
+test('closing during the guest-seat check cancels and releases both reservations', async t => {
+  const { peers, createRoom } = setup(t, ['open', 'pending']);
+  const { room } = createRoom(); const pending = assert.rejects(room.create(), /annulée/);
+  await flush(); await flush(); assert.ok(room.reservation);
+  room.close(); await pending;
+  assert.equal(peers.length, 2); assert.ok(peers.every(peer => peer.destroyed));
+  assert.equal(room.reservation, null);
 });
 
 test('a throwing welcome send never marks the host ready or connected', async t => {

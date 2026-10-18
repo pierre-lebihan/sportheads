@@ -70,7 +70,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character
     }
     const host = await pageAt(chrome), guest = await pageAt(safari);
     await host.click('#play-online'); await host.click('#create-room');
-    await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
+    await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]$/.test(document.querySelector('#room-code').textContent));
     const code = await host.locator('#room-code').innerText();
     await guest.click('#play-online'); await guest.fill('#join-code', code); await guest.click('#join-room');
     await Promise.all([host, guest].map(page => page.waitForFunction(() => sportheads.snapshot().connected)));

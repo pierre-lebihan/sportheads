@@ -34,7 +34,7 @@ const url=process.argv[2];assert.ok(url,'Usage: node scripts/check-bonuses.cjs U
    await page.context().close();console.log(JSON.stringify({passed:true,browser:name,mobile:true,modes:3,newBonuses:5,pauseFreezesTimers:true}));
   }
   const host=await pageAt(chrome);await host.click('#play-online');await host.click('#create-room');
-  await host.waitForFunction(()=>!document.querySelector('#room-details').hidden&&/^[A-HJ-NP-Z2-9]{8}$/.test(sportheads.snapshot().code));
+  await host.waitForFunction(()=>!document.querySelector('#room-details').hidden&&/^[A-HJ-NP-Z2-9]$/.test(sportheads.snapshot().code));
   const share=new URL(url);share.searchParams.set('room',await host.locator('#room-code').innerText());const guest=await pageAt(safari,share.href);await guest.click('#join-room');
   await Promise.all([host,guest].map(page=>page.waitForFunction(()=>sportheads.snapshot().connected)));
   await goToSetup(host,'rules');await guest.waitForFunction(()=>sportheads.snapshot().setupStep==='rules');

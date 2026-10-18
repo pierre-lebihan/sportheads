@@ -197,7 +197,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     const host = await mobile({ width: 390, height: 844 }), h = host.page;
     await h.locator('#play-online').tap();
     await h.locator('#create-room').tap();
-    await h.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
+    await h.waitForFunction(() => /^[A-HJ-NP-Z2-9]$/.test(document.querySelector('#room-code').textContent));
     const link = new URL(url); link.searchParams.set('room', await h.locator('#room-code').innerText());
     const guest = await mobile({ width: 844, height: 390 }, link.href), g = guest.page;
     await g.locator('#join-room').tap(); await h.waitForFunction(() => sportheads.snapshot().connected);

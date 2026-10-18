@@ -122,7 +122,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     assert.equal((await state(host)).setupStep, 'room');
     assert.equal(await host.locator('#player-choice').isVisible(), false);
     await host.click('#create-room');
-    await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
+    await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]$/.test(document.querySelector('#room-code').textContent));
     assert.equal(await host.locator('#random-player-1').isEnabled(), false);
     await spamRandom(host, '#random-player-0', '#skin-left', '#player-preview-0');
     await goToSetup(host, 'pitch'); await host.selectOption('#pitch', '3');

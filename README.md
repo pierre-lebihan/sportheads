@@ -83,8 +83,8 @@ Les simulations se font sur des copies indépendantes du match : elles ne change
 ni le match réel, ni son aléatoire, ni les caractéristiques physiques des joueurs.
 Le mode fonctionne entièrement sur l’appareil, sans serveur ni modèle externe.
 
-À distance : choisir **En ligne**, créer une salle et partager son code de
-huit caractères ou son lien. L'autre joueur clique sur **Rejoindre**, puis
+À distance : choisir **En ligne**, créer une salle et partager son code
+d'un caractère ou son lien. L'autre joueur clique sur **Rejoindre**, puis
 le créateur choisit son joueur, le terrain, puis les paramètres et lance le match. Le créateur joue Bleu, l'invité Rouge ; chacun peut
 utiliser les flèches et P ou les touches Q/A, D, Z/W et espace.
 

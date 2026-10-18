@@ -24,7 +24,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
   }
   try {
     const host = await pageAt(); await host.click('#play-online'); await host.click('#create-room');
-    await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
+    await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]$/.test(document.querySelector('#room-code').textContent));
     const code = await host.locator('#room-code').innerText(), share = new URL(url); share.searchParams.set('room', code);
     const guest = await pageAt(share.href); await guest.click('#join-room');
     await Promise.all([connected(host), connected(guest)]);

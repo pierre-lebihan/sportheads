@@ -1,5 +1,5 @@
 import { PHASE, MATCH, decodeFrame, encodeFrame } from './engine-contract.js';
-import { Room, normalizeCode, validCode } from './rooms.js';
+import { Room, normalizeCode, validCode, CODE_HELP } from './rooms.js';
 import { captureState, createRemoteEngine } from './net-state.js';
 import { createRemoteView } from './net-render.js';
 import { PITCHES } from './selection.js';
@@ -124,7 +124,7 @@ async function connectRoom(create) {
   const core = getCore();
   if (!core || app.value.busy) return;
   const code = normalizeCode(app.value.joinCode);
-  if (!create && !validCode(code)) {roomStatus('Entrez les 8 caractères du code de la salle.', true);$('#join-code').focus();return;}
+  if (!create && !validCode(code)) {roomStatus(CODE_HELP, true);$('#join-code').focus();return;}
   app.dispatch({ type: "connection.changed", restoringSettings: false });clearTimeout(recoveryTimer);
   room?.close(); clearMatch(); app.dispatch({ type: 'room.connecting', create });
   const candidate = new Room({

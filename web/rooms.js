@@ -8,8 +8,9 @@ const SILENCE_TIMEOUT = 120000;
 const REALTIME_LABEL = 'sportheads-realtime-v1';
 export const NETWORK_REVISION = 7;
 export function normalizeCode(value) { return String(value).toUpperCase().replace(/[\s-]/g, ''); }
-export function validCode(code) { return /^[A-HJ-NP-Z2-9]{8}$/.test(code); }
-function randomCode() { return Array.from(crypto.getRandomValues(new Uint8Array(8)), n => ALPHABET[n & 31]).join(''); }
+export function validCode(code) { return /^(?:[A-HJ-NP-Z2-9]|[A-HJ-NP-Z2-9]{8})$/.test(code); }
+function randomCode() { return ALPHABET[crypto.getRandomValues(new Uint8Array(1))[0] & 31]; }
+export const CODE_HELP = 'Entrez le caractère du code de la salle.';
 
 // Only matchmaking passes through PeerServer. Match snapshots and inputs use
 // encrypted WebRTC data channels; the creator is the sole simulation owner.
@@ -59,19 +60,29 @@ export class Room {
 
   async create() {
     this.role = 'host';
-    for (let attempt = 0; attempt < 3; attempt++) {
-      this.code = randomCode();
-      try { await this.openPeer(PREFIX + this.code); return this.code; }
+    const first = ALPHABET.indexOf(randomCode());
+    for (let attempt = 0; attempt < ALPHABET.length; attempt++) {
+      this.code = ALPHABET[(first + attempt) % ALPHABET.length];
+      try {
+        await this.openPeer(PREFIX + this.code);
+        // A surviving guest still owns this room while its creator is away.
+        // Check that seat too before offering this short code to a new host.
+        const reservation = this.reservation = new Room({});
+        await reservation.openPeer(PREFIX + this.code + '-guest');
+        return this.code;
+      }
       catch (error) {
         this.peer?.destroy();
-        if (error.type !== 'unavailable-id' || attempt === 2 || this.closed) throw error;
+        if (error.type !== 'unavailable-id' || this.closed) throw error;
       }
+      finally { this.reservation?.close(); this.reservation = null; }
     }
+    throw new Error('Tous les codes de salle sont occupés. Réessayez après avoir fermé une salle.');
   }
 
   async join(value) {
     this.code = normalizeCode(value);
-    if (!validCode(this.code)) throw new Error('Entrez les 8 caractères du code de la salle.');
+    if (!validCode(this.code)) throw new Error(CODE_HELP);
     this.role = 'guest';
     // PeerServer atomically reserves each of the room's two named seats.
     // The surviving guest keeps its seat when the creator's page disappears.
@@ -285,6 +296,7 @@ export class Room {
   fail(message) { if (!this.closed) { this.close(); this.onError(message); } }
   close() {
     this.closed = true; this.connected = false;
+    this.reservation?.close();
     this.cancelOpen?.(); clearTimeout(this.reconnectTimer);
     clearTimeout(this.timer); clearInterval(this.heartbeat); clearInterval(this.statsTimer);
     const connection = this.connection; this.connection = null;

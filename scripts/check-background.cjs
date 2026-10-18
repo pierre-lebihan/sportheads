@@ -37,7 +37,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-backgroun
   try {
     const host = await mobile(), h = host.page;
     await h.click('#play-online'); await h.click('#create-room');
-    await h.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
+    await h.waitForFunction(() => /^[A-HJ-NP-Z2-9]$/.test(document.querySelector('#room-code').textContent));
     const code = await h.locator('#room-code').innerText();
     await h.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(url).origin });
     await h.click('#copy-link');

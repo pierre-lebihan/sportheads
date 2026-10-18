@@ -31,7 +31,7 @@ if (!url) throw new Error('Usage: node scripts/check-signaling.cjs URL');
     }
     const host = await open(safari), guest = await open(chrome);
     await host.click('#create-room');
-    await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]{8}$/.test(document.querySelector('#room-code').textContent));
+    await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]$/.test(document.querySelector('#room-code').textContent));
     const code = await host.locator('#room-code').innerText();
     assert.equal(await host.locator('#network-diagnostic').isVisible(), true, 'a waiting creator can inspect diagnostics without an error');
     await host.click('#network-diagnostic summary');

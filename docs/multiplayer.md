@@ -7,7 +7,7 @@ distance. Les deux utilisent le même cœur Rust/WASM, sans IA. Le premier à at
 ## Créer et rejoindre
 
 1. Le créateur choisit « En ligne », puis « Créer une salle ».
-2. Il partage le code de huit caractères ou le lien qui contient `?room=CODE`.
+2. Il partage le code d’un caractère ou le lien qui contient `?room=CODE`.
 3. L'invité saisit le code, ou ouvre le lien et clique sur « Rejoindre ».
 4. Le créateur prépare les écrans Joueurs, Terrain, puis Paramètres et lance
    la partie. Il joue Bleu ; l'invité joue Rouge.
@@ -40,8 +40,12 @@ Les réglages et le partage du code sont accessibles dans le menu du jeu,
 ouvert avec la roue dentée au-dessus du terrain.
 
 Le code est tiré avec `crypto.getRandomValues`, sur un alphabet de 32 caractères
-sans 0, 1, I ou O : 40 bits aléatoires. Les collisions d'identifiant sont reprises
-avec un nouveau code. Le code constitue l'invitation : aucune liste publique de
+sans 0, 1, I ou O. Pour faciliter les tests, les nouvelles salles utilisent
+un seul caractère ; les anciens codes de huit caractères restent acceptés.
+Le choix commence à un caractère aléatoire, puis essaie les autres sans répétition
+si un code est occupé. Les deux places doivent être libres : un invité qui attend
+le retour du créateur conserve sa salle. Si les 32 codes sont occupés, la création
+affiche un message explicite. Le code constitue l'invitation : aucune liste publique de
 salles, aucun compte ni historique. Il faut partager le code avec son adversaire.
 
 ## Synchronisation

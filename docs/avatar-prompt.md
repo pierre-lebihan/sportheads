@@ -51,3 +51,14 @@ La photo personnelle n’est pas publiée.
 ```text
 undefined
 ```
+
+## Maël
+
+Outil intégré `image_gen.imagegen`, fond transparent. Fichier final :
+`web/assets/mael.png`, une cellule carrée. L’homme au premier plan en bas à droite
+sur la photo fournie sert de référence d’identité ; le portrait Corentin sert
+de référence de style. La photo personnelle n’est pas publiée.
+
+```text
+undefined
+```

@@ -10,7 +10,7 @@ l’objectif de buts sont dans le cœur indépendant du navigateur.
 Trois choix : **Contre l’IA**, **2 joueurs sur le même écran** ou **En ligne dans une salle privée**.
 Le premier à atteindre l’objectif de buts gagne : **7 par défaut**, réglable
 de 1 à 9 avec les boutons − et +, sans limite de temps. Choisissez parmi **16 terrains symétriques**, les **18 bonus**
-et **18 personnages : 12 joueurs récents, Pierre, Vilma, Thibaud, Marie, Corentin et Pierre Nomad** avec aperçu. Les portraits des joueurs sont des caricatures originales ; les autres sprites, animations et sons viennent du
+et **19 personnages : 12 joueurs récents, Pierre, Vilma, Thibaud, Marie, Corentin, Pierre Nomad et Maël** avec aperçu. Les portraits des joueurs sont des caricatures originales ; les autres sprites, animations et sons viennent du
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
 Un match simple contre l’IA ou entre deux humains. Un **curseur à onze

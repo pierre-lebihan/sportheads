@@ -30,7 +30,7 @@ test('actual WASM survives snapshot round trips through every bonus and body rep
   for (let kind = 0; kind <= 18; kind++) {
     if (kind) host.game_collect(kind, kind % 2);
     for (let tick = 0; tick < 3; tick++) host.game_tick(0);
-    const original = captureState(host, [[13, 14], [15, 16], [17, 17], [13, 18], [19, 19], [20, 21]][kind % 6]);
+    const original = captureState(host, [[13, 14], [15, 16], [17, 17], [13, 18], [19, 19], [20, 21], [22, 22]][kind % 7]);
     assert.ok(isValidState(original), `bonus ${kind}`);
     assert.ok(original.bodies.length >= 5 && original.bodies.length <= 6);
     assert.equal(new Set(original.bodies.map(body => body[9])).size, original.bodies.length);
@@ -83,7 +83,7 @@ test('malformed and oversized packets cannot mutate the last accepted state', as
     packet => { packet.values.push(1); },
     packet => { delete packet.values[0]; },
     packet => { packet.skins[0] = 0; },
-    packet => { packet.skins[1] = 22; },
+    packet => { packet.skins[1] = 23; },
     packet => { packet.bodies[0][0] = NaN; },
     packet => { packet.bodies[0][1] = 1e12 + 1; },
     packet => { packet.bodies[0][8] = 31; },

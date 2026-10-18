@@ -7,7 +7,7 @@ import { PLAYER_NAMES, PITCHES, createCharacterSelection, updateSelectionPreview
 import { PLAYER_COUNT } from './players.js';
 import { balanceToAssists, assistsToBalance, balanceLabel } from './balance.js';
 import { PREPARATION_STEPS, validSetupStep, renderSetup } from './setup-ui.js';
-import { layoutArena } from './arena-ui.js';
+import { layoutArena, setupFullscreen } from './arena-ui.js';
 import { createTouchControls } from './touch-controls.js';
 import { AI_LEVELS, createOpponent } from './opponent.js';
 
@@ -461,4 +461,5 @@ try {
   $('#status').textContent = 'Le jeu n’a pas pu se charger. Rechargez la page pour réessayer.'; window.loadError = error.message;
 }
 layoutArena($('.field-wrap'), $('#game-surface'), $('#touch-controls'));
+setupFullscreen($('.arena'), $('#fullscreen'), $('#fullscreen-settings'), $('#fullscreen-status'), () => { clearInput(); sendInput(); last = 0; accumulator = 0; });
 requestAnimationFrame(animate);

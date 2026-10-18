@@ -71,14 +71,15 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
       const arena = document.querySelector('.arena').getBoundingClientRect();
       const visible = [...document.querySelectorAll('.touch-pad:not([hidden]) button, .match-bar button:not([hidden])')].filter(button => button.getClientRects().length);
       const field = document.querySelector('#field').getBoundingClientRect();
-      const toolbar = document.querySelector('.match-bar').getBoundingClientRect();
       const score = document.querySelector('.scoreboard').getBoundingClientRect();
+      const overlay = getComputedStyle(document.querySelector('.match-bar'));
       return document.body.classList.contains('play-view') && document.documentElement.scrollWidth <= innerWidth
         && arena.top >= 0 && arena.bottom <= innerHeight + 1
-        && toolbar.bottom <= field.top + .5 && score.bottom <= field.top + .5
-        && score.left >= toolbar.left && score.right <= toolbar.right
-        && visible.every(button => { const r = button.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; });
-    }), 'arena and controls fit; the toolbar and compact score never cover the pitch');
+        && Math.abs(field.height / field.width - .6) < .001
+        && score.top >= field.top && score.bottom <= field.bottom
+        && overlay.backgroundColor === 'rgba(0, 0, 0, 0)' && overlay.pointerEvents === 'none'
+        && visible.every(button => { const r = button.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth + .5 && r.top >= 0 && r.bottom <= innerHeight + .5; });
+    }), 'cropped pitch and controls fit, with a transparent score overlay');
   }
   try {
     const local = await mobile({ width: 390, height: 844 }), p = local.page;

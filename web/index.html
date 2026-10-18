@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2714%27 fill=%27white%27 stroke=%27%23244875%27 stroke-width=%273%27/%3E%3Cpath d=%27M16 8 24 14 21 23 11 23 8 14Z%27 fill=%27%23244875%27/%3E%3C/svg%3E">
   <meta name="theme-color" content="#244875">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="./manifest.webmanifest">
   <meta name="description" content="Jouez à Sportheads contre l’IA à trois niveaux, à deux sur le même écran ou à distance dans une salle privée.">
   <title>Sportheads — contre l’IA ou à deux</title>
   <link rel="stylesheet" href="./game.css">
@@ -16,7 +18,7 @@
       <div class="field-wrap">
         <div id="game-surface" class="game-surface">
           <div class="match-bar" aria-label="Commandes du match">
-            <div class="bar-tools"><button id="play-view" aria-label="Réglages" title="Réglages" aria-expanded="true">⚙</button><button id="sound" aria-label="Couper le son" title="Couper le son" aria-pressed="true">♫</button></div>
+            <div class="bar-tools"><button id="play-view" aria-label="Réglages" title="Réglages" aria-expanded="true">⚙</button><button id="sound" aria-label="Couper le son" title="Couper le son" aria-pressed="true">♫</button><button id="fullscreen" aria-label="Plein écran" title="Plein écran" aria-pressed="false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/></svg></button></div>
             <div class="scoreboard" role="group" aria-label="Score">
               <div class="team blue"><span class="sr-only">Bleu</span><strong id="score-left">0</strong></div>
               <span class="score-divider" aria-hidden="true">—</span>
@@ -24,10 +26,11 @@
             </div>
             <div class="bar-tools"><button id="pause" aria-label="Pause" title="Pause" disabled>Ⅱ</button><button id="restart" aria-label="Recommencer" title="Recommencer" disabled>↻</button></div>
           </div>
-          <canvas id="field" width="800" height="540" tabindex="0" aria-label="Terrain. Bleu : Q ou A, D, Z ou W et espace. Rouge : flèches et P."></canvas>
+          <canvas id="field" width="800" height="480" tabindex="0" aria-label="Terrain. Bleu : Q ou A, D, Z ou W et espace. Rouge : flèches et P."></canvas>
           <span id="status" class="sr-only" role="status" aria-live="polite">Préparez votre match</span>
           <p id="bonus-notice" class="bonus-notice" role="status" hidden></p>
-          <div class="ground-bar">
+        </div>
+        <div class="ground-bar">
       <div id="touch-controls" class="touch-controls" aria-label="Commandes tactiles">
         <div class="touch-pad blue" data-side="0" role="group" aria-label="Commandes Bleu">
           <span class="touch-name">Bleu</span>
@@ -46,7 +49,6 @@
           <div class="touch-actions"><button type="button" data-action="8" aria-label="Rouge : frapper" disabled><span aria-hidden="true">⚽</span><small>Tir</small></button></div>
         </div>
       </div>
-          </div>
         </div>
       </div>
       <div id="welcome" class="cover setup-cover">
@@ -114,6 +116,7 @@
             <div class="launch"><h2 id="welcome-title">À vous de jouer.</h2><p id="welcome-detail">Le premier à atteindre l’objectif gagne.</p><p id="guest-wait" hidden>Le créateur lancera le match lorsque vous serez prêts.</p></div>
           </section>
           <div id="setup-navigation" hidden class="setup-navigation"><button id="setup-back">Précédent</button><button id="setup-next" class="primary">Continuer</button><button id="start" class="primary" disabled hidden>Chargement…</button></div>
+          <div class="display-settings"><button id="fullscreen-settings" type="button">Plein écran</button><p id="fullscreen-status" role="status" hidden></p></div>
           <details id="touch-settings" class="touch-settings" hidden><summary>Commandes tactiles</summary>
             <label for="touch-layout">Disposition sur cet appareil</label>
             <select id="touch-layout"><option value="thumbs">2 pouces · saut sur le pavé</option><option value="three-fingers">3 doigts · saut séparé en haut</option></select>

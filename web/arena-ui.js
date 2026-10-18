@@ -1,27 +1,62 @@
-// Reserve a touch-sized toolbar ABOVE the original scene, so the HUD never
-// covers the ball. The original last 60 pixels remain the below-ground bar.
+// Display only the playable 800 x 480 scene. Touch controls reserve space only
+// where they are actually used; landscape tools share the controller gutters.
 export function layoutArena(slot, surface, touch) {
   function fit() {
     const tactile = document.body.classList.contains('touch-device');
     const landscape = innerWidth > innerHeight;
-    const width = Math.max(80, slot.clientWidth - (tactile && landscape ? 344 : 0));
+    const local = touch.dataset.mode === 'local';
+    const gutters = landscape ? tactile ? 152 + (local ? 152 : 112) : 120 : 0;
+    const width = Math.max(80, slot.clientWidth - gutters);
     const indexHeight = tactile && !landscape && !touch.hidden && touch.dataset.layout === 'three-fingers' ? 64 : 0;
     slot.style.paddingTop = `${indexHeight}px`;
     const controllerHeight = tactile && !landscape && !touch.hidden ? touch.offsetHeight : 0;
-    const toolbarHeight = 44;
-    const minimumBar = controllerHeight;
     const height = slot.clientHeight - indexHeight;
-    const scale = Math.max(.1, Math.min(width / 800, (height - toolbarHeight) / 540, (height - toolbarHeight - minimumBar) / 480));
-    const bar = Math.max(60 * scale, minimumBar);
+    const scale = Math.max(.1, Math.min(width / 800, (height - controllerHeight) / 480));
+    // Different left/right control widths shift the field while preserving both
+    // gutters: a single-player kick button needs less room than a second pad.
+    surface.style.marginLeft = landscape && tactile && !local ? '40px' : '0';
     surface.style.width = `${800 * scale}px`;
-    surface.style.height = `${toolbarHeight + 480 * scale + bar}px`;
-    surface.style.setProperty('--toolbar-height', `${toolbarHeight}px`);
+    surface.style.height = `${480 * scale}px`;
     surface.style.setProperty('--pitch-height', `${480 * scale}px`);
-    surface.style.setProperty('--bar-height', `${bar}px`);
   }
   const observer = new ResizeObserver(fit);
   observer.observe(slot); observer.observe(touch);
   new MutationObserver(fit).observe(touch, { attributes: true, attributeFilter: ['data-layout', 'data-mode', 'hidden'] });
   window.addEventListener('resize', fit);
+  document.addEventListener('fullscreenchange', fit);
+  document.addEventListener('webkitfullscreenchange', fit);
   fit();
+}
+
+export function setupFullscreen(arena, button, settingsButton, status, onChange) {
+  const current = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const request = arena.requestFullscreen || arena.webkitRequestFullscreen;
+  const enabled = arena.requestFullscreen ? document.fullscreenEnabled : document.webkitFullscreenEnabled;
+  const supported = !!request && enabled !== false;
+  function update() {
+    const active = current() === arena;
+    button.hidden = !supported;
+    button.setAttribute('aria-pressed', String(active));
+    button.title = active ? 'Quitter le plein écran' : 'Plein écran';
+    button.setAttribute('aria-label', button.title);
+    settingsButton.textContent = active ? 'Quitter le plein écran' : 'Plein écran';
+    if (!supported) {
+      status.hidden = false;
+      status.textContent = 'Ce navigateur ne propose pas le plein écran. Ajoutez le jeu à l’écran d’accueil depuis le menu de partage, puis ouvrez son icône pour jouer sans barre d’adresse.';
+    }
+  }
+  async function toggle() {
+    if (!supported) { update(); return; }
+    try {
+      if (current()) await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else await request.call(arena, { navigationUI: 'hide' });
+      status.hidden = true;
+    } catch {
+      status.hidden = false;
+      status.textContent = 'Le navigateur a refusé le plein écran. Vous pouvez continuer à jouer dans cette vue.';
+    }
+  }
+  button.addEventListener('click', toggle); settingsButton.addEventListener('click', toggle);
+  for (const event of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(event, () => { update(); onChange(); });
+  update();
 }

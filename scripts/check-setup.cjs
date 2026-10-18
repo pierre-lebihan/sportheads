@@ -97,7 +97,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
       const surface = document.querySelector('#game-surface').getBoundingClientRect();
       const canvas = document.querySelector('#field').getBoundingClientRect();
       const dock = document.querySelector('.ground-bar').getBoundingClientRect();
-      return dock.top >= canvas.top + canvas.width * .6 - 1 && dock.bottom <= surface.bottom + 1
+      return Math.abs(surface.height - canvas.height) < 1 && (!dock.height || dock.top >= canvas.bottom - 1)
         && [...document.querySelectorAll('button,input,select')].every(control => control.closest('.arena'));
     }));
     await finish(local); await local.click('#again'); assert.deepEqual((await state(local)).assists, [1, 0]);

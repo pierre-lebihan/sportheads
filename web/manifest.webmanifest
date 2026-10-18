@@ -1,0 +1,10 @@
+{
+  "id": "./",
+  "name": "Sportheads",
+  "short_name": "Sportheads",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#b9d4e5",
+  "theme_color": "#244875"
+}

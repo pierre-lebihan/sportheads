@@ -24,9 +24,21 @@ autorisation de plein écran n'est nécessaire.
 - À distance, seules les commandes de son propre joueur sont visibles.
 - En paysage, les commandes entourent le terrain. En portrait, elles sont
   placées dans la bande sous le terrain. Les zones sûres de l'écran sont conservées.
-- Pause, réglages et son sont dans une bande au-dessus du terrain, avec un
-  score compact Bleu — Rouge. Cette bande ne recouvre aucune partie du terrain ;
-  l'objectif de buts reste uniquement dans les paramètres.
+- Le rendu conserve les 800 × 480 pixels du terrain et coupe les 60 pixels
+  inutilisés sous le sol. Les commandes en portrait réservent uniquement leur
+  hauteur réelle ; il n’y a plus de bande de décor vide ni de barre blanche en haut.
+- Le score compact Bleu — Rouge flotte en haut du terrain : sans fond,
+  semi-transparent et sans intercepter les gestes. L’objectif reste dans les paramètres.
+- En paysage, réglages, son et plein écran sont à gauche, pause et redémarrage
+  à droite. Ils partagent les marges des manettes. Les zones de saut séparées
+  sont placées sous ces boutons pour éviter les chevauchements.
+- **Plein écran** est disponible dans les réglages, ainsi que sur le bord gauche
+  en paysage lorsque le navigateur autorise l’[API Fullscreen](https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullscreen).
+  Le bouton permet aussi de quitter ce mode et suit les sorties déclenchées par
+  le navigateur. Les commandes maintenues sont relâchées lors de la transition.
+  Si l’API est indisponible, le jeu propose l’ajout à l’écran d’accueil ; son
+  manifeste demande une ouverture autonome, sans barre d’adresse. Cela n’ajoute
+  pas de mode hors ligne ni de sauvegarde de partie.
 - Pause arrête le match. La roue dentée ouvre les réglages
   dans le jeu et met en pause ; Retour au match ferme le menu. Reprendre
   relance ensuite la partie.
@@ -57,6 +69,7 @@ du navigateur restent disponibles dans les menus, hors des manettes.
 node scripts/check-mobile.cjs http://127.0.0.1:8766/
 node scripts/check-touch-release.cjs http://127.0.0.1:8766/
 node scripts/check-touch-layouts.cjs http://127.0.0.1:8766/
+node scripts/check-display.cjs http://127.0.0.1:8766/
 ```
 
 Le test utilise les vrais événements multi-touch de Chrome via CDP, le WASM

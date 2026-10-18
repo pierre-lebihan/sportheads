@@ -70,8 +70,9 @@ La préparation du match est découpée en écrans : choix du mode, puis joueurs
 terrain, et enfin paramètres (objectif, bonus et curseur). Le mode en ligne
 intercale la création ou la jonction à une salle. Le créateur décide des étapes ;
 l’invité suit les écrans et voit leurs valeurs en lecture seule, tout en gardant
-son seul choix de personnage modifiable. Le score discret et les boutons
-réglages, son, pause et redémarrage occupent la barre au-dessus du terrain.
-La bande sous le sol accueille les commandes tactiles ; elle s'agrandit sur petit
-écran pour conserver des cibles tactiles lisibles. La physique conserve le même repère
-800 × 540.
+son seul choix de personnage modifiable. Le score discret flotte en haut du terrain,
+sans bande de fond. Les boutons sont dans les marges latérales en paysage et dans
+les coins du terrain en portrait. Le rendu du match est recadré à 800 × 480 :
+les 60 pixels inutilisés sous le sol sont supprimés de l’affichage. La physique
+conserve son repère historique. En portrait, seules les commandes tactiles
+réservent de la place sous le terrain. Le bouton Plein écran complète ces dispositions.

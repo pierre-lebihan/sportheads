@@ -1,18 +1,20 @@
-import { TOUCH_LAYOUTS, movementMask, joystickVector, readTouchLayout, saveTouchLayout } from './touch-layout.js';
+import { TOUCH_LAYOUTS, movementMask, joystickVector, joystickGesture, readTouchLayout, saveTouchLayout } from './touch-layout.js';
 
 // Native contact snapshots repair missed releases. Every finger owns its own
 // action; sliding changes only the movement contact, never the kick/index.
 export function createTouchControls(root, onChange) {
   const pointers = new Map(), touches = new Map(), buttons = [...root.querySelectorAll('[data-action]')];
   let mode = 'local', side = 0, enabled = false, touchEvents = 'ontouchstart' in window, layout = readTouchLayout();
+  let pendingJumps = 0, jumpSequence = 0;
   root.dataset.layout = layout;
   const contacts = () => [...touches.values(), ...pointers.values()];
-  function masks() {
+  function masks(kind) {
     const result = [0, 0];
-    for (const contact of contacts()) result[contact.side] |= contact.action;
+    for (const contact of contacts()) result[contact.side] |= kind === 'legacy' && contact.gesture ? contact.gesture.mask : contact.action;
+    if (kind === 'pulse') { result[0] |= pendingJumps & 4; result[1] |= (pendingJumps >> 4) & 4; }
     return result;
   }
-  function paint() {
+  function paint(notify = true) {
     const held = contacts();
     for (const button of buttons) {
       const index = +button.closest('[data-side]').dataset.side, action = +button.dataset.action;
@@ -26,11 +28,22 @@ export function createTouchControls(root, onChange) {
       const travel = Math.max(0, stick.clientWidth / 2 - 29);
       stick.style.setProperty('--stick-x', `${(contact?.vector?.x || 0) * travel}px`);
       stick.style.setProperty('--stick-y', `${(contact?.vector?.y || 0) * travel}px`);
-      stick.dataset.mask = String(contact?.action || 0);
+      stick.dataset.mask = String((contact?.action || 0) | (contact ? (pendingJumps >> (index * 4)) & 4 : 0));
       stick.classList.toggle('pressed', layout === 'thumbs' && !!contact);
       stick.setAttribute('aria-pressed', String(layout === 'thumbs' && !!contact));
     }
-    onChange();
+    if (notify) onChange();
+  }
+  function updateMovement(contact, x, y) {
+    const rect = contact.movement.getBoundingClientRect();
+    if (layout === 'thumbs') {
+      contact.gesture = joystickGesture(rect, x, y, contact.gesture);
+      contact.vector = contact.gesture.vector; contact.action = contact.gesture.mask & ~4;
+      if (contact.gesture.jump) { pendingJumps |= 4 << (contact.side * 4); jumpSequence++; }
+    } else {
+      contact.action = movementMask(layout, rect, x, y, contact.action);
+      contact.vector = joystickVector(rect, x, y);
+    }
   }
   function createContact(target, x, y) {
     if (!enabled) return;
@@ -41,16 +54,16 @@ export function createTouchControls(root, onChange) {
     if (button && (!movement || (layout === 'three-fingers' && +button.dataset.action === 4))) {
       return { button, side: +pad.dataset.side, action: +button.dataset.action };
     }
-    if (movement) return { button: movement, movement, side: +pad.dataset.side,
-      vector: joystickVector(movement.getBoundingClientRect(), x, y),
-      action: movementMask(layout, movement.getBoundingClientRect(), x, y) };
+    if (movement) {
+      const contact = { button: movement, movement, side: +pad.dataset.side, action: 0 };
+      updateMovement(contact, x, y); return contact;
+    }
   }
   function move(contact, x, y) {
     if (!contact.movement) return false;
-    const action = movementMask(layout, contact.movement.getBoundingClientRect(), x, y, contact.action);
-    const vector = joystickVector(contact.movement.getBoundingClientRect(), x, y);
-    const changed = action !== contact.action || (layout === 'thumbs' && (vector.x !== contact.vector.x || vector.y !== contact.vector.y));
-    contact.action = action; contact.vector = vector; return changed;
+    const action = contact.action, vector = contact.vector, sequence = jumpSequence;
+    updateMovement(contact, x, y);
+    return action !== contact.action || sequence !== jumpSequence || (layout === 'thumbs' && (vector.x !== contact.vector.x || vector.y !== contact.vector.y));
   }
   function removePointer(id) {
     const contact = pointers.get(id);
@@ -72,7 +85,8 @@ export function createTouchControls(root, onChange) {
     if (event.type === 'touchmove' && touches.size && event.cancelable) event.preventDefault();
   }
   function clear() {
-    if (!pointers.size && !touches.size) return;
+    if (!pointers.size && !touches.size && !pendingJumps) return;
+    pendingJumps = 0;
     touches.clear(); for (const id of pointers.keys()) removePointer(id); paint();
   }
   root.addEventListener('touchstart', event => {
@@ -121,7 +135,9 @@ export function createTouchControls(root, onChange) {
       if (!TOUCH_LAYOUTS.includes(value) || value === layout) return;
       clear(); layout = value; root.dataset.layout = layout; saveTouchLayout(layout);
     },
-    mask() { const [blue, red] = masks(); return mode === 'local' ? blue | (red << 4) : side === 0 ? blue : red; },
+    mask(kind = 'pulse') { const [blue, red] = masks(kind); return mode === 'local' ? blue | (red << 4) : side === 0 ? blue : red; },
+    get jumpSequence() { return jumpSequence; },
+    consumeJumps() { if (pendingJumps) { pendingJumps = 0; paint(false); } },
     clear,
     update(state) {
       if (mode !== state.mode || side !== state.side || !state.enabled) clear();

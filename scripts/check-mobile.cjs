@@ -10,6 +10,15 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     const context = await browser.newContext({ viewport, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
     await context.addInitScript(() => {
       window.dropPointerRelease = false; window.lastRemoteInput = null;
+      window.simulationInputs = [];
+      const instantiate = WebAssembly.instantiateStreaming;
+      WebAssembly.instantiateStreaming = async (...args) => {
+        const result = await instantiate(...args), e = result.instance.exports;
+        return { ...result, instance: { exports: { ...e, game_tick(mask) {
+          simulationInputs.push(mask); if (simulationInputs.length > 300) simulationInputs.shift();
+          return e.game_tick(mask);
+        } } } };
+      };
       for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) window.addEventListener(type, event => {
         if (window.dropPointerRelease) event.stopImmediatePropagation();
       }, true);
@@ -174,7 +183,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     before = await bodies(p);
     await local.hold([[0, 6], [0, 8], [1, 5], [1, 8]]); await waitTicks(p, 8);
     after = await bodies(p);
-    for (const [side, mask] of [[0, '6'], [1, '5']]) {
+    for (const [side, mask] of [[0, '2'], [1, '1']]) {
       assert.equal(await p.locator(`[data-side="${side}"] [data-joystick]`).getAttribute('data-mask'), mask);
       const a = before.find(b => b.role === side + 1), b = after.find(b => b.role === side + 1);
       assert.ok(side ? b.x < a.x - 5 : b.x > a.x + 5, 'both local joysticks drive movement');
@@ -228,6 +237,17 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     assert.equal(await g.locator('.touch-pad .pressed').count(), 0); await guest.release();
     await g.screenshot({ path: 'evidence/mobile-online-landscape.png' });
     await g.locator('#resume').tap(); await h.waitForFunction(() => !sportheads.snapshot().paused);
+    await g.locator('#play-view').click(); await g.selectOption('#touch-layout', 'thumbs');
+    await g.locator('#close-settings').click(); await g.locator('#resume').click();
+    await Promise.all([h,g].map(page => page.waitForFunction(() => !sportheads.snapshot().paused && sportheads.snapshot().phase === 1)));
+    await h.evaluate(() => { simulationInputs.length = 0; });
+    await guest.hold([[1, 4]]); await waitTicks(h, 65);
+    assert.equal(await h.evaluate(() => simulationInputs.filter(mask => mask & 64).length), 1, 'repeated network packets produce one guest joystick jump');
+    await guest.release();
+    await h.evaluate(() => { simulationInputs.length = 0; });
+    await guest.hold([[1, 4]]); await waitTicks(h, 8);
+    assert.equal(await h.evaluate(() => simulationInputs.filter(mask => mask & 64).length), 1, 'a new guest gesture permits another jump');
+    await guest.release();
     await h.screenshot({ path: 'evidence/mobile-online-portrait.png' });
     await guest.hold([[1, 1]]); await g.close(); await h.waitForFunction(() => !sportheads.snapshot().connected);
     assert.equal((await state(h)).paused, true); assert.equal(await h.locator('.touch-pad button:enabled').count(), 0);

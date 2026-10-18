@@ -38,3 +38,13 @@ export function movementMask(layout, rect, clientX, clientY, previous = 0) {
   const direction = x < .5 - gap ? 1 : x > .5 + gap ? 2 : 0;
   return direction;
 }
+
+// Leaving the jump sector sideways is not enough to rearm it. A new upward
+// gesture must start from the neutral center or the bottom half of the stick.
+export function joystickGesture(rect, clientX, clientY, previous = { armed: true, mask: 0 }) {
+  const vector = joystickVector(rect, clientX, clientY);
+  const mask = movementMask('thumbs', rect, clientX, clientY, previous.mask);
+  const reset = vector.distance < .24 || vector.y >= 0;
+  const jump = !reset && previous.armed && !!(mask & 4);
+  return { vector, mask, jump, armed: reset || (previous.armed && !jump) };
+}

@@ -16,6 +16,11 @@ autorisation de plein écran n'est nécessaire.
     choisit gauche/droite, les diagonales hautes ajoutent le saut et le haut
     saute sur place. La poignée suit le doigt ; la zone neutre au centre arrête
     le joueur. Le pouce droit garde le bouton Tir, entièrement manuel.
+    Chaque remontée déclenche une seule tentative de saut. Maintenir le haut
+    ou une diagonale haute ne fait pas resauter à l’atterrissage ; le déplacement
+    horizontal continue. Pour resauter, revenir au centre ou dans la moitié
+    basse, puis remonter. Changer de diagonale dans la moitié haute ne réarme
+    pas le saut. Relâcher puis reprendre le joystick commence un nouveau geste.
   - **3 doigts** : pouce gauche pour marcher, index gauche sur Saut en haut
     à gauche et pouce droit sur Tir. Les boutons gauche/droite font 96 px de haut.
     En local, Rouge a son Saut en haut à droite.
@@ -72,6 +77,15 @@ Les interruptions du navigateur, la perte de focus, les pauses et le démarrage
 d'un autre match relâchent les commandes. Le tactile n'annule pas une touche
 du clavier qui serait maintenue en même temps. Le défilement et les gestes
 du navigateur restent disponibles dans les menus, hors des manettes.
+
+Le saut du joystick est envoyé au moteur pendant un seul pas de simulation.
+Un geste bref reste en attente jusqu’à ce pas ; une pause l’annule. Le clavier
+et le bouton Saut de la disposition à trois doigts conservent leur fonctionnement.
+En ligne, un compteur de gestes distinct des touches maintenues permet à l’hôte
+de ne jouer chaque impulsion qu’une seule fois, même si les paquets se répètent.
+Le premier envoi d’un nouveau geste passe par le canal fiable. Les anciens
+clients restent compatibles avec les commandes maintenues historiques ; les
+deux appareils doivent actualiser le jeu pour bénéficier du saut unique en ligne.
 
 ## Validation
 

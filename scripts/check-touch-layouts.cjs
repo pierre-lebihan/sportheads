@@ -29,6 +29,7 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       const movement = '[data-side="0"] [data-movement]', jump = '[data-side="0"] [data-action="4"]', kick = '[data-side="0"] [data-action="8"]';
       const point = (id, selector, x = .5, y = .5) => ({ id, selector, x, y });
       async function gesture(spec) {
+        await page.evaluate(() => { inputLog.length = 0; });
         const points = await page.evaluate(spec => spec.map(point => {
           const r = document.querySelector(point.selector).getBoundingClientRect();
           return { id: point.id, x: r.left + r.width * point.x, y: r.top + r.height * point.y };
@@ -53,6 +54,11 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
         try { await page.waitForFunction(expected => inputLog.length && (inputLog.at(-1) & 15) === expected, expected, { timeout: 5000 }); }
         catch (error) { console.error(JSON.stringify(await page.evaluate(expected => ({ expected, inputs: inputLog.slice(-5), touches: touchTrace, state: sportheads.snapshot(), pressed: [...document.querySelectorAll('.touch-pad .pressed')].map(e => e.dataset.action) }), expected))); throw error; }
       };
+      const expectJump = async held => {
+        await page.waitForFunction(() => inputLog.some(mask => mask & 4));
+        await expectInput(held);
+        assert.equal(await page.evaluate(() => inputLog.filter(mask => mask & 4).length), 1, 'one gesture reaches exactly one simulation tick');
+      };
       async function fits() {
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         assert.ok(await page.evaluate(() => {
@@ -73,27 +79,31 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       await setTarget(page, 9); await page.selectOption('#bonuses', '0'); await page.click('#start');
       await page.waitForFunction(() => sportheads.snapshot().phase === 1);
       await gesture([point(1, movement, .15, .8), point(2, kick)]); await expectInput(9);
-      await gesture([point(1, movement, .15, .2), point(2, kick)]); await expectInput(13);
-      await gesture([point(1, movement, .85, .2), point(2, kick)]); await expectInput(14);
-      await gesture([point(1, movement, .5, .2), point(2, kick)]); await expectInput(12);
+      await gesture([point(1, movement, .15, .2), point(2, kick)]); await expectJump(9);
+      await gesture([point(1, movement, .85, .2), point(2, kick)]); await expectInput(10);
+      assert.equal(await page.evaluate(() => inputLog.some(mask => mask & 4)), false, 'switching upper diagonals does not jump again');
+      await gesture([point(1, movement, .5, .2), point(2, kick)]); await expectInput(8);
       await gesture([point(1, movement, .5, .8), point(2, kick)]); await expectInput(8);
-      await gesture([point(1, movement, .85, .2), point(2, kick)]); await expectInput(14);
-      await gesture([point(1, movement, .85, .2)]); await expectInput(6);
+      await gesture([point(1, movement, .85, .2), point(2, kick)]); await expectJump(10);
+      await gesture([point(1, movement, .85, .2)]); await expectInput(2);
       assert.equal(await page.locator(kick).getAttribute('aria-pressed'), 'false', 'no automatic kick after lifting the right thumb');
       await gesture([point(1, movement, .85, .8)]); await expectInput(2);
       await gesture([point(1, movement, .85, .45)]); await expectInput(2);
-      await gesture([point(1, movement, .85, .25)]); await expectInput(6);
-      await gesture([point(1, movement, .85, .32)]); await expectInput(6);
+      await gesture([point(1, movement, .85, .25)]); await expectJump(2);
+      await gesture([point(1, movement, .85, .32)]); await expectInput(2);
+      await page.waitForFunction(tick => sportheads.snapshot().tick >= tick + 65, await page.evaluate(() => sportheads.snapshot().tick));
+      assert.equal(await page.evaluate(() => inputLog.some(mask => mask & 4)), false, 'holding a diagonal beyond landing never repeats the jump');
       await gesture([point(1, movement, .85, .7)]); await expectInput(2);
       await gesture([point(1, movement, 1.3, .5), point(2, kick)]); await expectInput(10);
       assert.equal(await page.locator('[data-side="0"] [data-joystick]').getAttribute('data-mask'), '2');
       await gesture([point(1, movement, .5, .5), point(2, kick)]); await expectInput(8);
+      await gesture([point(1, movement, .5, .2), point(2, kick)]); await expectJump(8);
       await gesture([]); await expectInput(0);
       for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 390, height: 844 }]) {
         await page.setViewportSize(viewport); await fits();
         await page.screenshot({ path: `evidence/joystick-${type.name()}-${viewport.width}.png` });
       }
-      await gesture([point(1, movement, .15, .2), point(2, kick)]); await expectInput(13);
+      await gesture([point(1, movement, .15, .2), point(2, kick)]); await expectJump(9);
       await page.screenshot({ path: `evidence/joystick-held-${type.name()}.png` });
       // Switch while a finger is still down; moving that old contact must not
       // resurrect the held command under the new layout.
@@ -118,7 +128,7 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       assert.equal(await page.evaluate(() => sportheads.snapshot().matchId), match);
       await page.screenshot({ path: 'evidence/touch-layout-settings.png' });
       await page.click('#close-settings'); await page.click('#resume');
-      await gesture([point(1, movement, .15, .2), point(2, kick)]); await expectInput(13);
+      await gesture([point(1, movement, .15, .2), point(2, kick)]); await expectJump(9);
       await page.click('#pause');
       assert.equal(await page.locator('.touch-pad .pressed').count(), 0);
       await page.click('#resume'); await gesture([point(1, movement, .85, .2), point(2, kick)]); await expectInput(0);

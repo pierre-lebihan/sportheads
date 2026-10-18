@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { movementMask, joystickVector, readTouchLayout, saveTouchLayout } from '../web/touch-layout.js';
+import { movementMask, joystickVector, joystickGesture, readTouchLayout, saveTouchLayout } from '../web/touch-layout.js';
 const rect = { left: 10, top: 20, width: 136, height: 136 };
 const at = (layout, x, y, previous) => movementMask(layout, rect, rect.left + x * rect.width, rect.top + y * rect.height, previous);
 const angle = (degrees, previous = 0, radius = .8) => {
@@ -39,6 +39,24 @@ test('three-finger movement uses full-height buttons and never adds jump', () =>
   assert.equal(at('three-fingers', .6, .5), 2);
   assert.equal(at('three-fingers', .5, .5), 0);
   for (const [x, y] of [[-.01, .5], [1.01, .5], [.5, -.01], [.5, 1.01]]) assert.equal(at('three-fingers', x, y, 5), 0);
+});
+test('joystick jumps once and only rearms at the center or in the lower half', () => {
+  let state;
+  const move = (x, y) => state = joystickGesture(rect, rect.left + x * rect.width, rect.top + y * rect.height, state);
+  assert.equal(move(.85, .2).jump, true);
+  for (const [x, y] of [[.85,.2],[.15,.2],[.5,.1],[.85,.45],[.85,.2]]) {
+    assert.equal(move(x, y).jump, false, 'holding, switching upper diagonals or skimming the upper edge cannot rearm');
+  }
+  assert.equal(move(.85,.5).armed, true, 'the horizontal center line rearms while retaining movement');
+  assert.equal(move(.85,.2).jump, true);
+  assert.equal(move(.5,.5).armed, true);
+  assert.equal(move(.5,.2).jump, true);
+  assert.equal(move(.5,.42).jump, false, 'returning into the dead zone must not itself trigger a jump');
+  assert.equal(state.armed, true);
+  assert.equal(move(.5,.2).jump, true);
+  assert.equal(move(.15,.8).armed, true);
+  assert.equal(move(.15,.2).jump, true);
+  assert.equal(move(.15,.2).jump, false);
 });
 test('layout preferences reject invalid values and tolerate unavailable storage', t => {
   let stored;

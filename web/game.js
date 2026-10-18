@@ -32,6 +32,7 @@ let started = false, paused = false, pauseFlags = [false, false], soundEnabled =
 let last = 0, accumulator = 0, previousPhase = -1, lastBroadcast = 0;
 let matchId = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, receivedInput = -1;
 let remoteInput = 0, lastInputAt = 0, soundTick = -1, soundMatch = -1, busy = false;
+let remoteJumpPending = false, receivedJump = null, sentJump = null;
 let settingsOpen = false, setupStep = 'home', lastValidTarget = 7;
 let restoringSettings = false, recoveryTimer;
 let opponent = null;
@@ -42,7 +43,7 @@ const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer:
 const touch = createTouchControls($('#touch-controls'), sendInput);
 $('#touch-layout').value = touch.layout;
 $('#touch-layout').addEventListener('change', () => { clearInput(); touch.setLayout($('#touch-layout').value); update(); });
-function clearInput() { keys.clear(); touch.clear(); }
+function clearInput() { keys.clear(); touch.clear(); remoteJumpPending = false; }
 for (const level of AI_LEVELS) {
   const label = document.createElement('label'), radio = document.createElement('input');
   radio.type = 'radio'; radio.name = 'ai-level'; radio.value = level.id; radio.checked = level.id === 'normal';
@@ -69,8 +70,8 @@ const validTarget = () => Number.isInteger(targetScore()) && targetScore() >= 1 
 const peerUpdateNeeded = () => mode === 'online' && role === 'host' && room?.connected
   && ((!!BALANCED_PITCHES[+$('#pitch').value] && !guestBalancedPitches) || !guestStatBuffs || (bonusMode() === 2 && !guestBonusV2));
 const canStart = () => !!core && !restoringSettings && validTarget() && !peerUpdateNeeded() && (mode !== 'online' || (role === 'host' && room?.connected));
-function input() {
-  let mask = touch.mask();
+function input(kind = 'pulse') {
+  let mask = touch.mask(kind);
   for (const key of keys) { const bit = bindings[key] || 0; mask |= mode === 'local' || bit < 16 ? bit : bit >> 4; }
   return mask;
 }
@@ -98,7 +99,14 @@ function roomStatus(message, error = false) {
   if (room && (error || $('#network-diagnostic').open)) refreshDiagnostic();
 }
 function sendInput() {
-  if (mode === 'online' && role === 'guest' && room?.connected) room.send({ type: 'input', sequence: ++inputSequence, mask: paused ? 0 : input(), skin: +$('#skin-right').value, pitchGeometry, statBuffs: 1, bonusV2: 1 }, { volatile: started && !paused });
+  if (mode !== 'online' || role !== 'guest' || !room?.connected) return;
+  const jump = touch.jumpSequence;
+  // The legacy mask keeps older hosts working. New hosts apply only held
+  // controls plus a single tick per gesture counter, even if packets repeat.
+  if (room.send({ type: 'input', sequence: ++inputSequence, mask: paused ? 0 : input('legacy'), heldMask: paused ? 0 : input('held'), jump,
+    skin: +$('#skin-right').value, pitchGeometry, statBuffs: 1, bonusV2: 1 }, { volatile: started && !paused && jump === sentJump })) {
+    sentJump = jump; touch.consumeJumps();
+  }
 }
 function broadcast() {
   if (mode !== 'online' || role !== 'host' || !room?.connected) return;
@@ -183,8 +191,13 @@ function onMessage(message) {
     }
     if (message.type === 'input' && Number.isSafeInteger(message.sequence) && message.sequence > receivedInput
       && Number.isInteger(message.mask) && message.mask >= 0 && message.mask <= 15
+      && (message.heldMask === undefined || (Number.isInteger(message.heldMask) && message.heldMask >= 0 && message.heldMask <= 15 && Number.isSafeInteger(message.jump) && message.jump >= 0))
       && Number.isInteger(message.skin) && message.skin >= 1 && message.skin <= PLAYER_COUNT) {
-      receivedInput = message.sequence; remoteInput = message.mask; lastInputAt = performance.now();
+      receivedInput = message.sequence; remoteInput = message.heldMask ?? message.mask; lastInputAt = performance.now();
+      if (message.heldMask !== undefined) {
+        if (receivedJump !== null && message.jump > receivedJump && started && !paused && core.game_value(0) === 1) remoteJumpPending = true;
+        receivedJump = Math.max(receivedJump ?? 0, message.jump);
+      }
       const supportsBalanced = message.pitchGeometry === pitchGeometry;
       const supportsBuffs = message.statBuffs === 1, supportsV2 = message.bonusV2 === 1;
       const changed = +$('#skin-right').value !== message.skin || guestBalancedPitches !== supportsBalanced || guestStatBuffs !== supportsBuffs || guestBonusV2 !== supportsV2;
@@ -235,7 +248,7 @@ async function connectRoom(create) {
     onReady: () => {
       if (room !== candidate) return;
       role = candidate.role;
-      remoteInput = 0; receivedInput = -1; busy = false;
+      remoteInput = 0; receivedInput = -1; receivedJump = null; sentJump = null; busy = false;
       roomStatus(role === 'host' ? 'Votre adversaire est là. Vous êtes Bleu : lancez le match quand vous êtes prêts.' : 'Vous êtes Rouge. Le créateur de la salle va lancer le match.');
       $('#room-details').hidden = false; $('#room-actions').hidden = true; $('#room-code').textContent = candidate.code;
       if (role === 'host' && candidate.returningHost) {
@@ -416,7 +429,7 @@ function update() {
   document.body.classList.toggle('touch-device', hasTouch());
   $('#touch-settings').hidden = !hasTouch();
   $('#touch-layout-help').textContent = touch.layout === 'thumbs'
-    ? 'Pouce gauche : orientez le joystick pour marcher, vers le haut pour sauter, en diagonale pour les deux. Le centre arrête le joueur. Pouce droit : Tir.'
+    ? 'Pouce gauche : orientez le joystick pour marcher. Une remontée déclenche un seul saut, même en diagonale. Revenez au centre ou dans la moitié basse, puis remontez pour resauter. Pouce droit : Tir.'
     : 'Pouce gauche : déplacement. Index gauche : Saut, en haut à gauche. Pouce droit : Tir. En local, Rouge a son bouton Saut en haut à droite.';
   $('#play-view').disabled = !started;
   $('#play-view').setAttribute('aria-expanded', String(!started || settingsOpen));
@@ -484,8 +497,9 @@ function animate(time) {
     let advanced = false;
     while (accumulator >= 1000 / 30) {
       const mask = mode === 'local' ? input() : mode === 'ai' ? input() | (opponent.step(core) << 4)
-        : input() | ((performance.now() - lastInputAt < 350 ? remoteInput : 0) << 4);
-      core.game_tick(mask); playSounds(core.game_value(7)); accumulator -= 1000 / 30; advanced = true;
+        : input() | ((performance.now() - lastInputAt < 350 ? remoteInput | (remoteJumpPending ? 4 : 0) : 0) << 4);
+      core.game_tick(mask); touch.consumeJumps(); remoteJumpPending = false;
+      playSounds(core.game_value(7)); accumulator -= 1000 / 30; advanced = true;
     }
     if (advanced) broadcast();
     update();

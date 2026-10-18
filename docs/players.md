@@ -30,11 +30,11 @@ des réglages de la page ; un rechargement revient aux valeurs par défaut.
 ## Joueurs récents
 
 Mbappé, Haaland, Lamine Yamal, Dembélé, Bellingham, Palmer, Pedri, Vitinha,
-Hakimi, Nuno Mendes, Van Dijk et Donnarumma, plus Pierre et Vilma, dessinés à partir de leur photo. Le choix est cosmétique : mêmes
+Hakimi, Nuno Mendes, Van Dijk et Donnarumma, plus Pierre, Vilma, Thibaud et Marie, dessinés à partir de leur photo. Le choix est cosmétique : mêmes
 corps physiques et même hauteur de référence pour la condition de saut.
 Les différences de niveau proviennent uniquement des aides et des bonus.
 
-La sélection présente les deux portraits face à face et une grille de 14 personnages.
+La sélection présente les deux portraits face à face et une grille de 16 personnages.
 En local et contre l’IA, touchez le camp Bleu ou Rouge puis une case pour choisir
 son personnage. Le bouton Aléatoire reste disponible pour chaque camp. Les repères
 Bleu/Rouge indiquent les deux choix, y compris quand ils portent sur la même case.
@@ -51,7 +51,8 @@ intégré imagegen. L'atlas transparent `web/assets/modern-players.png` contient
 4 colonnes et 3 rangées, dans l'ordre de `web/players.js`. Le renderer découpe
 les cellules directement à l'affichage ; le fichier original est conservé.
 Les deux portraits personnels sont dans `web/assets/pierre-vilma.png`, deux cellules
-carrées côte à côte (Pierre puis Vilma). La photo de référence reste hors du dépôt.
+carrées côte à côte (Pierre puis Vilma). L’atlas `web/assets/thibaud-marie.png` utilise le même format (Thibaud puis Marie).
+Les photos de référence restent hors du dépôt.
 Le [prompt de création](avatar-prompt.md) documente leur provenance.
 
 ## Terrains et vérifications

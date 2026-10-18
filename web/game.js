@@ -143,6 +143,13 @@ function leaveRoom() {
   $('#room-details').hidden = true; $('#room-actions').hidden = false;
   roomStatus('Créez une salle ou saisissez le code de votre adversaire.'); update();
 }
+function quitMatch() {
+  if (!started) return;
+  leaveRoom(); setupStep = 'home';
+  const url = new URL(location.href); url.searchParams.delete('room');
+  history.replaceState(history.state, '', url);
+  update(); $('#play-' + mode).focus({ preventScroll: true });
+}
 function selectMode(next) {
   leaveRoom(); mode = next; setupStep = next === 'local' ? 'players' : next === 'ai' ? 'difficulty' : 'room';
   $('#online-panel').hidden = mode !== 'online'; $('#online-controls').hidden = mode === 'local';
@@ -292,6 +299,7 @@ $('#play-ai').addEventListener('click', () => selectMode('ai'));
 $('#create-room').addEventListener('click', () => connectRoom(true));
 $('#join-form').addEventListener('submit', event => { event.preventDefault(); connectRoom(false); });
 $('#leave-room').addEventListener('click', leaveRoom);
+for (const button of document.querySelectorAll('[data-quit-match]')) button.addEventListener('click', quitMatch);
 $('#copy-code').addEventListener('click', () => copyRoom(false)); $('#copy-link').addEventListener('click', () => copyRoom(true));
 $('#network-diagnostic').addEventListener('toggle', () => { if ($('#network-diagnostic').open) refreshDiagnostic(); });
 $('#copy-diagnostic').addEventListener('click', async () => {
@@ -403,6 +411,7 @@ function update() {
   $('#play-view').disabled = !started;
   $('#play-view').setAttribute('aria-expanded', String(!started || settingsOpen));
   $('#close-settings').hidden = !started;
+  $('#quit-match-settings').hidden = !started;
   $('#touch-controls').hidden = !started;
   touch.update({ mode, side: ownSide(), names, enabled: started && !paused && phase !== 3 && (mode !== 'online' || !!room?.connected) });
   const teamNames = names;

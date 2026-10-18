@@ -42,6 +42,8 @@ manette tactile. Le décor inutile sous le sol est recadré ; seules les command
 utilisées prennent de la place. Le score est discret, sans fond, en haut du terrain.
 En paysage, réglages, son, pause et plein écran occupent les marges latérales.
 La roue dentée ouvre le menu et met en pause. « Retour au match » ferme le menu.
+« Quitter le match » revient au choix du mode depuis la pause, les réglages ou
+la fin du match. En ligne, il quitte aussi la salle ; l’adversaire est mis en pause.
 Le bouton **Plein écran** existe aussi dans les réglages. Si le navigateur ne le permet
 pas, le jeu indique comment l’ouvrir depuis l’écran d’accueil. Voir [commandes mobiles](docs/mobile.md).
 

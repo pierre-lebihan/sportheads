@@ -60,6 +60,7 @@
       <div id="welcome" class="cover setup-cover">
         <section id="setup-panel" class="setup-panel" role="dialog" aria-label="Préparation du match">
           <header class="setup-heading"><a class="wordmark" href="./">Sportheads<span aria-hidden="true">⚽</span></a><button id="close-settings" hidden>Retour au match</button></header>
+          <button id="quit-match-settings" data-quit-match class="quit-match" hidden>Quitter le match</button>
           <section data-setup-screen="home" class="mode-screen">
             <h1>Comment jouez-vous ?</h1>
             <div class="play-modes" role="group" aria-label="Comment jouez-vous ?"><button id="play-local"><strong>2 joueurs</strong><span>Sur le même écran</span></button><button id="play-online"><strong>En ligne</strong><span>Créer ou rejoindre une salle</span></button><button id="play-ai"><strong>Contre l’IA</strong><span>Quatre niveaux, jusqu’à Expert</span></button></div>
@@ -123,8 +124,8 @@
           <details class="help"><summary>Commandes et projet</summary><p>Bleu : Q/A, D, Z/W et Espace. Rouge : flèches et P. Échap : pause.</p><p id="online-controls" hidden>En ligne ou contre l’IA : flèches et P, ou Q/A, D, Z/W et Espace. Vous contrôlez uniquement votre joueur.</p><p>Sur mobile : choisissez votre disposition dans Commandes tactiles. Le bouton Tir reste toujours manuel. Essayez le mode paysage.</p><nav aria-label="Projet"><a href="./physics.html">Comparaisons physiques</a><a href="https://github.com/pierre-lebihan/sportheads">GitHub</a></nav></details>
         </section>
       </div>
-      <div id="paused" class="cover" hidden><div class="cover-panel"><h2>Pause</h2><p id="pause-detail">Le temps vous attend.</p><button id="resume" class="primary">Reprendre</button></div></div>
-      <div id="finished" class="cover" hidden><div class="cover-panel"><p class="fixture">Coup de sifflet final</p><h2 id="result">Fin du match</h2><p id="final-score"></p><button id="again" class="primary">Rejouer</button></div></div>
+      <div id="paused" class="cover" hidden><div class="cover-panel"><h2>Pause</h2><p id="pause-detail">Le temps vous attend.</p><button id="resume" class="primary">Reprendre</button><button data-quit-match class="quit-match">Quitter le match</button></div></div>
+      <div id="finished" class="cover" hidden><div class="cover-panel"><p class="fixture">Coup de sifflet final</p><h2 id="result">Fin du match</h2><p id="final-score"></p><button id="again" class="primary">Rejouer</button><button data-quit-match class="quit-match">Quitter le match</button></div></div>
     </section>
   </main>
 </body>

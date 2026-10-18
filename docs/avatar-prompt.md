@@ -97,3 +97,14 @@ La photo personnelle n’est pas publiée.
 ```text
 undefined
 ```
+
+## Vilma Dreadlocks
+
+Outil intégré `image_gen.imagegen`, fond transparent. Fichier final :
+`web/assets/vilma-dreadlocks.png`, une cellule carrée. La nouvelle photo sert de
+référence de coiffure et de visage ; le portrait Vilma existant sert de référence
+de style. La Vilma originale reste disponible. La photo personnelle n’est pas publiée.
+
+```text
+undefined
+```

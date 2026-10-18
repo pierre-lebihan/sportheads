@@ -62,3 +62,14 @@ de référence de style. La photo personnelle n’est pas publiée.
 ```text
 undefined
 ```
+
+## Baptiste et Jerem
+
+Outil intégré `image_gen.imagegen`, fond transparent. Fichier final :
+`web/assets/baptiste-jerem.png`, deux cellules carrées (Baptiste puis Jerem).
+Baptiste est en haut sur la photo fournie ; Jerem est à droite avec son bonnet bleu.
+L’atlas Thibaud/Marie sert de référence de style. La photo personnelle n’est pas publiée.
+
+```text
+Use case: stylized-concept. Asset type: ONE production game sprite atlas, exactly TWO equal square cells side by side, 2 columns and 1 row, canvas aspect ratio 2:1, true transparent alpha background. Input image 1 is identity reference: Baptiste is the man at the TOP of the photo leaning forward with round black glasses and tongue out; Jerem is the man at the RIGHT of the photo wearing a teal blue knitted beanie. Ignore the man at bottom left. Input image 2 is STYLE ONLY: match the polished hand-drawn arcade big-head football caricatures, clean dark outlines, clean cel shading, expressive recognizable faces, not photorealistic. LEFT CELL = Baptiste: fair warm skin, voluminous tousled curly medium brown hair, ROUND black eyeglasses, dark eyebrows, short dark beard and moustache along jaw, playful big open-mouth grin with his tongue sticking out just as in photo, lively wide eyes visible through glasses. RIGHT CELL = Jerem: fair skin, dark messy wavy hair peeking from a ribbed TEAL BLUE beanie worn back on head, narrow youthful oval face, light sparse moustache and chin stubble rather than full beard, warm broad smile showing upper teeth, gentle expressive eyes. Preserve both specific identities and expressions from reference. Both heads nearly frontal, very slightly turned toward RIGHT, consistent orientation and equal apparent scale. Each ENTIRE head including all hair/beanie/ears/glasses/tiny neck stub centered within central 86 percent of its square cell, generous transparent padding all around. Exactly TWO heads, one per cell. No shoulders, no torso, no clothes except Jerem's beanie, no kitchen, no microphone, no other people, no background, no text, no numbers, no labels, no logos, no grid lines, no shadows outside portraits. Transparent pixels separate cells. No clipped hat or hair.
+```

@@ -39,3 +39,15 @@ de référence de style. La photo personnelle n’est pas publiée.
 ```text
 undefined
 ```
+
+## Pierre Nomad
+
+Outil intégré `image_gen.imagegen`, fond transparent. Fichier final :
+`web/assets/pierre-nomad.png`, une cellule carrée. La nouvelle photo de Pierre
+sert de référence de visage, cheveux et expression ; le portrait Pierre existant
+sert de référence de style. Le personnage original reste disponible.
+La photo personnelle n’est pas publiée.
+
+```text
+undefined
+```

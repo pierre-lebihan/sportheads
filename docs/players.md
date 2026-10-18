@@ -30,11 +30,11 @@ des réglages de la page ; un rechargement revient aux valeurs par défaut.
 ## Joueurs récents
 
 Mbappé, Haaland, Lamine Yamal, Dembélé, Bellingham, Palmer, Pedri, Vitinha,
-Hakimi, Nuno Mendes, Van Dijk et Donnarumma, plus Pierre, Vilma, Thibaud, Marie et Corentin, dessinés à partir de leur photo. Le choix est cosmétique : mêmes
+Hakimi, Nuno Mendes, Van Dijk et Donnarumma, plus Pierre, Vilma, Thibaud, Marie, Corentin et Pierre Nomad, dessinés à partir de leur photo. Le choix est cosmétique : mêmes
 corps physiques et même hauteur de référence pour la condition de saut.
 Les différences de niveau proviennent uniquement des aides et des bonus.
 
-La sélection présente les deux portraits face à face et une grille de 17 personnages.
+La sélection présente les deux portraits face à face et une grille de 18 personnages.
 En local et contre l’IA, touchez le camp Bleu ou Rouge puis une case pour choisir
 son personnage. Le bouton Aléatoire reste disponible pour chaque camp. Les repères
 Bleu/Rouge indiquent les deux choix, y compris quand ils portent sur la même case.
@@ -53,6 +53,8 @@ les cellules directement à l'affichage ; le fichier original est conservé.
 Les deux portraits personnels sont dans `web/assets/pierre-vilma.png`, deux cellules
 carrées côte à côte (Pierre puis Vilma). L’atlas `web/assets/thibaud-marie.png` utilise le même format (Thibaud puis Marie).
 Corentin possède son portrait carré dans `web/assets/corentin.png`.
+La variante Pierre Nomad, cheveux longs et moue de la photo, utilise
+`web/assets/pierre-nomad.png`. Elle se choisit séparément et conserve le Pierre original.
 Les photos de référence restent hors du dépôt.
 Le [prompt de création](avatar-prompt.md) documente leur provenance.
 

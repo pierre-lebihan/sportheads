@@ -13,6 +13,7 @@ use std::collections::VecDeque;
 pub const DT: f64 = 1.0 / 96.0;
 pub const ITERATIONS: usize = 48;
 
+#[derive(Clone)]
 struct Pair {
     a: usize,
     b: usize,
@@ -27,6 +28,7 @@ struct Island {
     joints: Vec<usize>,
 }
 
+#[derive(Clone)]
 pub struct World {
     pub bodies: Vec<Body>,
     pub joints: Vec<Revolute>,

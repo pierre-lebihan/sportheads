@@ -8,6 +8,7 @@ pub mod continuous;
 pub mod game;
 pub mod joint;
 pub mod math;
+pub mod opponent;
 pub mod pitches;
 mod polygon;
 pub mod powerups;
@@ -217,6 +218,19 @@ pub extern "C" fn game_reset(seed: u32) {
 #[no_mangle]
 pub extern "C" fn game_tick(keys: u32) {
     GAME.with(|g| g.borrow_mut().step(keys));
+}
+/// Evaluate commands on private copies. Never advance or modify the live game.
+#[no_mangle]
+pub extern "C" fn game_ai_plan(side: u32, preferred: u32, opponent_input: u32, expert: u32) -> u32 {
+    GAME.with(|g| {
+        opponent::plan(
+            &g.borrow(),
+            side as usize,
+            preferred,
+            opponent_input,
+            expert != 0,
+        )
+    })
 }
 #[no_mangle]
 pub extern "C" fn game_value(field: u32) -> f64 {

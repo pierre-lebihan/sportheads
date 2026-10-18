@@ -14,6 +14,7 @@ struct Bound {
     id: usize,
     lower: bool,
 }
+#[derive(Clone)]
 struct Pair {
     a: usize,
     b: usize,
@@ -21,6 +22,7 @@ struct Pair {
     removed: bool,
     finalized: bool,
 }
+#[derive(Clone)]
 pub struct Broadphase {
     lower: Vec2,
     upper: Vec2,

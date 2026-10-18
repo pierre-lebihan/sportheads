@@ -49,6 +49,7 @@ pub struct VisualEffect {
     pub width: f64,
     pub height: f64,
 }
+#[derive(Clone)]
 pub struct Game {
     pub world: World,
     /// Left, then right, throughout this API.

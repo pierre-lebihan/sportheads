@@ -6,6 +6,22 @@ import { captureState, isValidState, createRemoteEngine } from '../web/net-state
 const bytes = await readFile(new URL('../probe/physics-core.wasm', import.meta.url));
 async function wasm() { return (await WebAssembly.instantiate(bytes)).instance.exports; }
 
+test('Expert evaluates real physics through bounded plans without modifying the live state', async () => {
+  assert.deepEqual(AI_LEVELS.map(level => level.id), ['easy', 'normal', 'hard', 'expert']);
+  const e = await wasm(); e.game_probe_start(550, 430, 40, 0);
+  let calls = 0;
+  const observed = { ...e, game_ai_plan(...args) {
+    const before = captureState(e, [1, 2]); calls++;
+    const result = e.game_ai_plan(...args);
+    assert.deepEqual(captureState(e, [1, 2]), before);
+    return result;
+  } };
+  const ai = createOpponent({ difficulty: 'expert' });
+  for (let tick = 0; tick < 90; tick++) e.game_tick(ai.step(observed) << 4);
+  assert.ok(calls > 0 && calls <= 30, `bounded decision frequency: ${calls}`);
+  assert.deepEqual([0, 1].map(side => e.game_player_value(side, 6)), [0, 0]);
+});
+
 async function decision(difficulty, { ball, human, self }, seed = 1) {
   const e = await wasm(); e.game_probe_start(400, 400, 0, 0);
   const packet = captureState(e, [1, 2]), view = createRemoteEngine();
@@ -36,7 +52,7 @@ test('all levels respect an opponent screening the ball but still contest a safe
   }
 });
 
-test('actual matches keep all three levels out of the opposing goal area when the ball is trapped there', async () => {
+test('actual matches keep all four levels out of the opposing goal area when the ball is trapped there', async () => {
   for (const { id } of AI_LEVELS) for (const seed of [1, 2, 3]) {
     const e = await wasm(); e.game_probe_start(120, 440, 0, 0);
     const ai = createOpponent({ difficulty: id, seed }); let minimum = 600;
@@ -66,7 +82,7 @@ test('each level has a finite reaction delay; decisions cannot edit the actual m
     }
     assert.ok(first > 0, 'no level reacts instantaneously'); firstMoves.push(first);
   }
-  assert.ok(firstMoves[0] > firstMoves[1] && firstMoves[1] > firstMoves[2], firstMoves.join(','));
+  assert.ok(firstMoves.every((value, index) => index === 0 || firstMoves[index - 1] > value), firstMoves.join(','));
 });
 
 test('countdowns, goals, frozen and bombed players release all held controls', async () => {

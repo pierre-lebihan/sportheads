@@ -31,7 +31,7 @@ if (!url) throw new Error('Usage: node scripts/check-ai.cjs URL');
       assert.ok(await page.locator('#play-ai').isVisible());
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       await page.screenshot({ path: `evidence/ai-home-${mobile ? 'mobile' : 'desktop'}-${browser === chrome ? 'chrome' : 'webkit'}.png` });
-      for (const level of ['easy', 'normal', 'hard']) {
+      for (const level of ['easy', 'normal', 'hard', 'expert']) {
         await page.click('#play-ai');
         assert.equal(await page.evaluate(() => sportheads.snapshot().setupStep), 'difficulty');
         await page.locator(`[name="ai-level"][value="${level}"]`).check();
@@ -59,9 +59,9 @@ if (!url) throw new Error('Usage: node scripts/check-ai.cjs URL');
           assert.ok(await page.locator('.touch-pad.blue').isVisible());
           assert.equal(await page.locator('.touch-pad.red').isVisible(), false);
           if (cdp) {
-            const box = await page.locator('.touch-pad.blue [data-action="2"]').boundingBox();
+            const box = await page.locator('.touch-pad.blue [data-joystick]').boundingBox();
             await page.evaluate(() => { inputLog.length = 0; });
-            await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2, id: 77 }] });
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width * .85, y: box.y + box.height / 2, id: 77 }] });
             await page.waitForFunction(() => inputLog.some(mask => (mask & 15) === 2));
             await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
             await page.waitForFunction(() => !document.querySelector('.touch-pad.blue .pressed'));
@@ -107,7 +107,7 @@ if (!url) throw new Error('Usage: node scripts/check-ai.cjs URL');
       assert.ok(await page.evaluate(() => inputLog.every(mask => mask === 0)), 'returning to local play stops all AI inputs');
       if (mobile) assert.ok(await page.locator('.touch-pad.red').isVisible());
       assert.equal(await page.locator('#difficulty-step').isVisible(), false);
-      console.log(JSON.stringify({ passed: true, browser: browser === chrome ? 'Chromium' : 'WebKit', mobile, levels: 3, noServer: true, replay: true }));
+      console.log(JSON.stringify({ passed: true, browser: browser === chrome ? 'Chromium' : 'WebKit', mobile, levels: 4, noServer: true, replay: true }));
       await context.close();
     }
     assert.deepEqual(errors, []);

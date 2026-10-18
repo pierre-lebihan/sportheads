@@ -45,26 +45,27 @@ Les boutons **Aléatoire** choisissent immédiatement un autre joueur ou terrain
 En local, les deux personnages sont choisis sur le même écran.
 
 Contre l’IA : **difficulté → joueurs → terrain → paramètres**. Vous jouez Bleu,
-l’IA joue Rouge ; les deux personnages sont au choix. **Facile** réagit en environ
-333 ms et manque des occasions, **Normal** réagit en 200 ms et anticipe les
-trajectoires, **Difficile** réagit en 100 ms avec davantage d’anticipation et moins
-d’erreurs. Normal est présélectionné. La difficulté reste verrouillée pendant le
-match ; elle peut être revue après sa fin. Les bonus, terrains et aides restent
-disponibles. Sur mobile, seule la manette du joueur humain s’affiche ; au clavier,
-les flèches/P ou Q/A, D, Z/W et espace contrôlent Bleu.
+l’IA joue Rouge ; les deux personnages sont au choix. Quatre niveaux : **Facile**
+(300 ms de réaction), **Normal** (environ 167 ms), **Difficile** (environ 67 ms)
+et **Expert** (environ 33 ms). Normal est présélectionné. La difficulté reste
+verrouillée pendant le match ; elle peut être revue après sa fin. Les bonus,
+terrains et aides restent disponibles. Sur mobile, seule la manette du joueur
+humain s’affiche ; au clavier, les flèches/P ou Q/A, D, Z/W et espace contrôlent Bleu.
 
-Les trois niveaux partagent des règles de placement : couvrir quand le ballon
-est près du but adverse, éviter de dépasser un adversaire qui protège le ballon,
-se replier quand le ballon passe derrière et contester les occasions accessibles
-au milieu du terrain. La précision et le temps de réaction restent propres à
-chaque difficulté ; ces règles n’ajoutent aucune aide physique.
+Tous les niveaux protègent leur but, évitent de s’enfermer sous le but adverse,
+freinent avant une interception et préparent leurs frappes. Les niveaux Normal
+et Difficile utilisent une simulation des actions dans les situations proches ;
+Expert l’utilise plus tôt, sans erreur volontaire, avec une anticipation plus
+longue et deux réponses adverses estimées. Il compare jusqu’à douze combinaisons
+de déplacement, saut et frappe sur dix-huit ticks de la physique réelle, avec
+les obstacles, les contacts et les bonus déjà visibles.
+Le calcul est borné et réutilisé entre les décisions pour préserver la fluidité.
+Voir [le fonctionnement et les commandes de validation](docs/opponent.md).
 
-L’IA est un contrôleur local dans `web/opponent.js`, indépendant de celle du
-Flash. Il lit l’état public du match et produit les quatre commandes humaines.
-L’estimation de vol tient compte de la gravité et des rebonds sur les limites ;
-elle est corrigée à chaque décision à partir de la physique réelle, notamment
-après un obstacle ou un bonus. Aucun serveur ni modèle externe n’est utilisé,
-et la difficulté ne modifie pas les caractéristiques physiques des personnages.
+Le contrôleur local `web/opponent.js` utilise le planificateur `src/opponent.rs`.
+Les simulations se font sur des copies indépendantes du match : elles ne changent
+ni le match réel, ni son aléatoire, ni les caractéristiques physiques des joueurs.
+Le mode fonctionne entièrement sur l’appareil, sans serveur ni modèle externe.
 
 À distance : choisir **En ligne**, créer une salle et partager son code de
 huit caractères ou son lien. L'autre joueur clique sur **Rejoindre**, puis

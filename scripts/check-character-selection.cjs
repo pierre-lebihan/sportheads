@@ -20,7 +20,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character
     for (const browser of [chrome, safari]) {
       const page = await pageAt(browser);
       await page.click('#play-local');
-      assert.equal(await page.locator('.character-tile').count(), 12);
+      assert.equal(await page.locator('.character-tile').count(), 14);
       await tile(page, 3).click(); await page.click('#choose-side-1'); await tile(page, 5).click();
       assert.deepEqual(await skins(page), [3, 5]);
       assert.equal(await page.locator('#fighter-name-0').innerText(), 'Lamine Yamal');
@@ -43,13 +43,24 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character
         await page.locator('#character-roster').scrollIntoViewIfNeeded();
         await page.screenshot({ path: `evidence/character-selection-${browser === chrome ? 'chrome' : 'webkit'}-${width}.png` });
       }
+      await page.click('#choose-side-0'); await tile(page, 13).click();
+      await page.click('#choose-side-1'); await tile(page, 14).click();
+      assert.deepEqual(await skins(page), [13, 14]);
+      assert.equal(await page.locator('#fighter-name-0').innerText(), 'Pierre');
+      assert.equal(await page.locator('#fighter-name-1').innerText(), 'Vilma');
+      await page.screenshot({ path: `evidence/pierre-vilma-${browser === chrome ? 'chrome' : 'webkit'}.png` });
       await page.click('#setup-next');
       assert.equal(await page.evaluate(() => sportheads.snapshot().setupStep), 'pitch');
-      await page.click('#setup-back'); assert.deepEqual(await skins(page), [2, 3]);
+      await page.click('#setup-back'); assert.deepEqual(await skins(page), [13, 14]);
       await page.click('#setup-back'); await page.click('#play-ai'); await page.click('#setup-next');
-      await page.click('#choose-side-1'); await tile(page, 12).click();
+      await page.click('#choose-side-1'); await tile(page, 14).click();
       assert.equal(await page.locator('#fighter-role-1').innerText(), 'IA');
-      assert.equal((await skins(page))[1], 12, 'human chooses the AI character');
+      assert.equal((await skins(page))[1], 14, 'human chooses Vilma as the AI character');
+      await page.click('#choose-side-0'); await tile(page, 13).click();
+      await page.click('#setup-next'); await page.click('#setup-next'); await page.click('#start');
+      assert.deepEqual(await skins(page), [13, 14]);
+      assert.equal(await page.evaluate(() => sportheads.snapshot().started), true);
+      await page.screenshot({ path: `evidence/pierre-vilma-match-${browser === chrome ? 'chrome' : 'webkit'}.png` });
       await page.context().close();
     }
     const host = await pageAt(chrome), guest = await pageAt(safari);
@@ -73,18 +84,27 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character
     assert.equal(await tile(host, 6).getAttribute('data-red'), 'true');
     await host.screenshot({ path: 'evidence/character-selection-online-host.png' });
     await guest.screenshot({ path: 'evidence/character-selection-online-guest.png' });
+    await tile(host, 13).click(); await tile(guest, 14).click();
+    await Promise.all([host, guest].map(page => page.waitForFunction(() => document.querySelector('#fighter-name-0').textContent === 'Pierre' && document.querySelector('#fighter-name-1').textContent === 'Vilma')));
+    assert.deepEqual(await skins(host), [13, 14]); assert.deepEqual(await skins(guest), [13, 14]);
     assert.equal(await guest.locator('#setup-next').isVisible(), false);
     await host.click('#setup-next');
     await guest.waitForFunction(() => sportheads.snapshot().setupStep === 'pitch');
     assert.equal(await guest.locator('#character-roster').isVisible(), false);
     assert.equal(await guest.locator('#skin-right').isVisible(), true);
-    await guest.selectOption('#skin-right', '10');
-    await host.waitForFunction(() => document.querySelector('#skin-right').value === '10');
+    await guest.selectOption('#skin-right', '13');
+    await host.waitForFunction(() => document.querySelector('#skin-right').value === '13');
     await host.click('#setup-back');
     await guest.waitForFunction(() => sportheads.snapshot().setupStep === 'players');
-    assert.equal(await guest.locator('#fighter-name-1').innerText(), 'Nuno Mendes');
-    assert.equal(await tile(guest, 10).getAttribute('aria-pressed'), 'true');
+    assert.equal(await guest.locator('#fighter-name-1').innerText(), 'Pierre');
+    assert.equal(await tile(guest, 13).getAttribute('aria-pressed'), 'true');
+    await tile(guest, 14).click();
+    await host.waitForFunction(() => document.querySelector('#skin-right').value === '14');
+    await host.click('#setup-next'); await host.click('#setup-next'); await host.click('#start');
+    await guest.waitForFunction(() => sportheads.snapshot().started);
+    assert.deepEqual(await skins(host), [13, 14]); assert.deepEqual(await skins(guest), [13, 14]);
+    await guest.screenshot({ path: 'evidence/pierre-vilma-online-match.png' });
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, checks: ['12 visible portraits', 'choose either camp in local and AI', 'shared character markers', 'random targets the correct camp', 'keyboard', '320/390/844/1280 layout in Chrome and WebKit', 'live bidirectional choices before validation', 'online ownership', 'host validation and guest compact choice'] }));
+    console.log(JSON.stringify({ passed: true, checks: ['14 visible portraits', 'choose either camp in local and AI', 'shared character markers', 'random targets the correct camp', 'keyboard', '320/390/844/1280 layout in Chrome and WebKit', 'live bidirectional choices before validation', 'online ownership', 'host validation and guest compact choice'] }));
   } finally { await Promise.all([chrome.close(), safari.close()]); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

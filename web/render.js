@@ -1,4 +1,4 @@
-import { AVATAR_ATLAS, PLAYER_COUNT } from './players.js';
+import { AVATAR_FRAMES } from './players.js';
 import { BALANCED_PITCHES } from './pitch-geometry.js';
 // Original vector sprites exported from the SWF; all registration points and
 // timeline frames come from assets/manifest.json, without a Flash runtime.
@@ -21,9 +21,8 @@ export function loadAssets() {
     const response = await fetch(new URL('manifest.json', base));
     if (!response.ok) throw new Error('Les graphismes du jeu ne sont pas disponibles.');
     manifest = await response.json();
-    manifest.sprites['modern-heads'] = { frames: Array.from({ length: PLAYER_COUNT }, (_, index) => ({
-      file: AVATAR_ATLAS, width: 50, height: 50, originX: 25, originY: 25,
-      sourceRect: [(index % 4) / 4, Math.floor(index / 4) / 3, 1 / 4, 1 / 3],
+    manifest.sprites['modern-heads'] = { frames: AVATAR_FRAMES.map(frame => ({
+      ...frame, width: 50, height: 50, originX: 25, originY: 25,
     })) };
     const pending = [...new Map(Object.values(manifest.sprites).flatMap(sprite => sprite.frames).map(frame => [frame.file, frame])).values()];
     // Bound concurrent SVG decoding (several animation frames reuse one file).
@@ -54,7 +53,7 @@ export function drawSprite(ctx, name, number, x, y, width, height, angle = 0, op
   const frame = sprite.frames[index];
   const image = imageFor(frame);
   if (!image.complete || !image.naturalWidth) return false;
-  const sx = (width === undefined ? 1 : width / frame.width) * (options.scale ?? 1) * (options.scaleX ?? 1) * (options.flipX ? -1 : 1);
+  const sx = (width === undefined ? 1 : width / frame.width) * (options.scale ?? 1) * (options.scaleX ?? 1) * (!!options.flipX !== !!frame.flipX ? -1 : 1);
   const sy = (height === undefined ? 1 : height / frame.height) * (options.scale ?? 1) * (options.scaleY ?? 1) * (options.flipY ? -1 : 1);
   ctx.save();
   ctx.translate(x, y); ctx.rotate(angle); ctx.scale(sx, sy);

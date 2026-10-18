@@ -88,7 +88,7 @@ export function createOpponent({ difficulty = 'normal', seed = 1 } = {}) {
         const arrival = ball.vx > 30 ? clamp((self.x - ball.x) / ball.vx, .08, .3) : .12;
         const near = forecast(ball, difficulty === 'easy' ? .05 : arrival, bounce);
         const reachable = Math.abs(near.x - (self.x + self.vx * .08)) < self.radius + ball.radius + 30;
-        const jumpSpeed = 150 + 50 * engine.game_player_value(1, 1);
+        const jumpSpeed = (150 + 50 * engine.game_player_value(1, 1)) * (1 + (engine.game_buff_value?.(1, 0) || 0) / 100);
         const jumpReach = jumpSpeed * jumpSpeed / (2 * 460) + self.radius + ball.radius + 4;
         const above = near.y < self.y - self.radius * .4 && near.y > self.y - jumpReach;
         if (reachable && above && (!covering || ball.x > 500) && self.vy > -30 && near.vy > -160 && random() >= level.miss) held |= 4;

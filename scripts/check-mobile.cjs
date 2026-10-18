@@ -146,7 +146,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     await local.release(); await p.locator('#resume').tap();
     await p.locator('#play-view').tap();
     assert.equal(await p.locator('#welcome').isVisible(), true);
-    assert.equal(await p.locator('.arena #balance').count(), 1);
+    assert.equal(await p.locator('.arena #balance-controls').count(), 1);
     assert.equal((await state(p)).paused, true, 'returning to settings pauses');
     await p.locator('#close-settings').tap(); await fits(p); await p.locator('#resume').tap();
     // A fresh match cannot inherit held fingers.
@@ -198,7 +198,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     await g.selectOption('#touch-layout', 'three-fingers');
     assert.equal(await h.locator('#touch-layout').inputValue(), 'thumbs', 'guest layout is a private device setting');
     assert.equal(await g.locator('#touch-layout').isEnabled(), true, 'personal layout stays editable when room settings are read-only');
-    assert.equal(await g.locator('#balance').isEnabled(), false);
+    assert.equal(await g.locator('[data-balance-preset=manual]').isEnabled(), false);
     assert.equal(await g.locator('#skin-right').isEnabled(), true);
     await g.screenshot({ path: 'evidence/setup-mobile-guest-rules.png' });
     await h.locator('#start').tap();

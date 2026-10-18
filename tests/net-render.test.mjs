@@ -43,7 +43,8 @@ test('pause, new matches, teleports and body replacement display exact authority
   view.advance(500); near(x(), 105);
   head[0] = 120; remote.update(packet); view.update({ active: true, key: 'match-2' }, 600); near(x(), 120);
   head[0] = 500; remote.update(packet); view.update({ active: true, key: 'match-2' }, 620); near(x(), 500);
-  head[0] = 510; head[8] = 30; remote.update(packet); view.update({ active: true, key: 'match-2' }, 640); near(x(), 510);
+  head[0] = 510; head[8] = 30; packet.players[0][5] = 1.5;
+  assert.equal(remote.update(packet), true); view.update({ active: true, key: 'match-2' }, 640); near(x(), 510);
 });
 
 test('finite but extreme velocities have bounded visual displacement', async () => {

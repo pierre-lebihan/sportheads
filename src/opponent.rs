@@ -44,7 +44,7 @@ fn evaluate(game: &Game, side: usize) -> f64 {
     if px < 280.0 {
         score -= (280.0 - px) * 3.0;
     }
-    if threatening && ball.position.y > 460.0 - game.powerups.goal_height[side] as f64 - br {
+    if threatening && ball.position.y > 460.0 - game.goal_height(side) as f64 - br {
         score -= (bx - 560.0).max(0.0) * 0.8;
     }
     // Do not leave the ground for balls we cannot affect.

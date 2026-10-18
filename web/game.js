@@ -6,7 +6,8 @@ import { createRemoteView } from './net-render.js';
 import { PLAYER_NAMES, PITCHES, createCharacterSelection, updateSelectionPreviews } from './selection.js';
 import { PLAYER_COUNT } from './players.js';
 import { BALANCED_PITCHES } from './pitch-geometry.js';
-import { balanceToAssists, assistsToBalance, balanceLabel, ASSIST_PERCENTS } from './balance.js';
+import { createBalance, validBalance } from './balance.js';
+import { createBalanceControls } from './balance-ui.js';
 import { PREPARATION_STEPS, validSetupStep, renderSetup } from './setup-ui.js';
 import { layoutArena, setupFullscreen } from './arena-ui.js';
 import { createTouchControls } from './touch-controls.js';
@@ -29,7 +30,7 @@ let restoringSettings = false, recoveryTimer;
 let opponent = null;
 const pitchGeometry = 'balanced-v1';
 let guestBalancedPitches = false, remoteBalancedPitches = false;
-let guestExtendedAssists = false;
+let guestStatBuffs = false;
 const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
 const touch = createTouchControls($('#touch-controls'), sendInput);
 $('#touch-layout').value = touch.layout;
@@ -51,14 +52,14 @@ for (const pitch of PITCHES) { const option = new Option(pitch.name, pitch.id); 
 const characterSelection = createCharacterSelection($('#player-choice'));
 const engine = () => mode === 'online' && role === 'guest' ? remote.engine : core;
 const renderEngine = () => mode === 'online' && role === 'guest' && started && !paused && room?.connected && engine().game_value(0) === 1 ? remoteView.engine : engine();
-const assists = () => balanceToAssists(+$('#balance').value);
-const applyAssists = () => assists().forEach((level, side) => core?.game_set_assistance(side, level));
+const balancing = createBalanceControls($('#balance-controls'), () => { applyBuffs(); update(); broadcast(); });
+const applyBuffs = () => balancing.value.buffs.forEach((stats, side) => core?.game_set_buffs(side, ...stats));
 const skins = () => [+$('#skin-left').value, +$('#skin-right').value];
 const ownSide = () => role === 'guest' ? 1 : 0;
 const targetScore = () => +$('#target-score').value;
 const validTarget = () => Number.isInteger(targetScore()) && targetScore() >= 1 && targetScore() <= 9;
 const peerUpdateNeeded = () => mode === 'online' && role === 'host' && room?.connected
-  && ((!!BALANCED_PITCHES[+$('#pitch').value] && !guestBalancedPitches) || (Math.abs(+$('#balance').value) > 3 && !guestExtendedAssists));
+  && ((!!BALANCED_PITCHES[+$('#pitch').value] && !guestBalancedPitches) || !guestStatBuffs);
 const canStart = () => !!core && !restoringSettings && validTarget() && !peerUpdateNeeded() && (mode !== 'online' || (role === 'host' && room?.connected));
 function input() {
   let mask = touch.mask();
@@ -69,7 +70,7 @@ function snapshot() {
   const e = engine();
   return { started, paused, mode, role, difficulty: mode === 'ai' ? difficulty().id : null, connected: !!room?.connected, code: room?.code || '', matchId, setupStep,
     phase: e?.game_value(0), targetScore: started ? e?.game_value(14) : targetScore(), pitch: started ? e?.game_value(15) : +$('#pitch').value,
-    assists: started ? [0, 1].map(side => e?.game_player_value(side, 6)) : assists(), remainingTicks: e?.game_value(1), score: [e?.game_value(2), e?.game_value(3)], countdown: e?.game_value(4), tick: e?.game_value(6) };
+    balance: balancing.value, buffs: balancing.value.buffs, remainingTicks: e?.game_value(1), score: [e?.game_value(2), e?.game_value(3)], countdown: e?.game_value(4), tick: e?.game_value(6) };
 }
 function playSounds(mask) {
   if (!soundEnabled) return;
@@ -89,15 +90,16 @@ function roomStatus(message, error = false) {
   if (room && (error || $('#network-diagnostic').open)) refreshDiagnostic();
 }
 function sendInput() {
-  if (mode === 'online' && role === 'guest' && room?.connected) room.send({ type: 'input', sequence: ++inputSequence, mask: paused ? 0 : input(), skin: +$('#skin-right').value, pitchGeometry, extendedAssists: true }, { volatile: started && !paused });
+  if (mode === 'online' && role === 'guest' && room?.connected) room.send({ type: 'input', sequence: ++inputSequence, mask: paused ? 0 : input(), skin: +$('#skin-right').value, pitchGeometry, statBuffs: 1 }, { volatile: started && !paused });
 }
 function broadcast() {
   if (mode !== 'online' || role !== 'host' || !room?.connected) return;
   const state = captureState(core, skins());
   if (!started) state.values[14] = validTarget() ? targetScore() : lastValidTarget;
-  if (!started) { state.values[15] = +$('#pitch').value; state.players.forEach((player, side) => { player[6] = assists()[side]; }); }
+  if (!started) { state.values[15] = +$('#pitch').value; state.buffs = balancing.value.buffs; }
   room.send({ type: 'frame', sequence: ++frameSequence, matchId, started, bonuses: $('#bonuses').checked,
-    setupStep: validSetupStep(setupStep) ? setupStep : 'players', pauseFlags: [...pauseFlags], pitchGeometry, state },
+    setupStep: validSetupStep(setupStep) ? setupStep : 'players', pauseFlags: [...pauseFlags], pitchGeometry,
+    balancePreset: balancing.value.preset, balanceAmount: balancing.value.amount, state: guestStatBuffs ? state : Object.fromEntries(Object.entries(state).filter(([key]) => key !== 'buffs')) },
   { volatile: started && !paused && state.values[0] === 1 });
   lastBroadcast = performance.now();
 }
@@ -118,7 +120,7 @@ function reset() {
   if (!canStart()) return;
   audio.unlock();
   core.game_start_balanced_pitch(crypto.getRandomValues(new Uint32Array(1))[0], targetScore(), +$('#bonuses').checked, +$('#pitch').value);
-  applyAssists();
+  applyBuffs();
   opponent = mode === 'ai' ? createOpponent({ difficulty: difficulty().id, seed: crypto.getRandomValues(new Uint32Array(1))[0] }) : null;
   settingsOpen = false; setupStep = 'rules';
   started = true; paused = false; pauseFlags = [false, false]; previousPhase = -1;
@@ -128,11 +130,11 @@ function reset() {
 function clearMatch() {
   opponent = null;
   guestBalancedPitches = false; remoteBalancedPitches = false;
-  guestExtendedAssists = false;
+  guestStatBuffs = false;
   settingsOpen = false;
   started = false; paused = false; pauseFlags = [false, false]; clearInput(); remoteInput = 0;
   last = 0; accumulator = 0; previousPhase = -1; receivedSequence = -1; receivedInput = -1;
-  remote = createRemoteEngine(); remoteView = createRemoteView(remote.engine); audio.stopAll(); core?.game_reset(1); applyAssists();
+  remote = createRemoteEngine(); remoteView = createRemoteView(remote.engine); audio.stopAll(); core?.game_reset(1); applyBuffs();
 }
 function leaveRoom() {
   restoringSettings = false; clearTimeout(recoveryTimer);
@@ -153,12 +155,12 @@ function onMessage(message) {
       && Array.isArray(message.skins) && message.skins.length === 2 && message.skins.every(skin => Number.isInteger(skin) && skin >= 1 && skin <= PLAYER_COUNT)
       && Number.isInteger(message.pitch) && PITCHES.some(pitch => pitch.id === message.pitch)
       && Number.isInteger(message.targetScore) && message.targetScore >= 1 && message.targetScore <= 99
-      && Number.isInteger(message.balance) && message.balance >= -5 && message.balance <= 5 && typeof message.bonuses === 'boolean') {
+      && validBalance(message.balance) && typeof message.bonuses === 'boolean') {
       restoringSettings = false; clearTimeout(recoveryTimer); busy = false;
       room.returningHost = false;
       $('#skin-left').value = message.skins[0]; $('#skin-right').value = message.skins[1];
       $('#pitch').value = message.pitch; $('#target-score').value = Math.min(9, message.targetScore); lastValidTarget = Math.min(9, message.targetScore);
-      $('#balance').value = message.balance; $('#bonuses').checked = message.bonuses;
+      balancing.value = message.balance; $('#bonuses').checked = message.bonuses;
       clearMatch(); setupStep = 'players';
       roomStatus('Salle retrouvée. Vous êtes Bleu. Vos réglages sont conservés : préparez le prochain match.');
       update(); broadcast(); return;
@@ -168,10 +170,10 @@ function onMessage(message) {
       && Number.isInteger(message.skin) && message.skin >= 1 && message.skin <= PLAYER_COUNT) {
       receivedInput = message.sequence; remoteInput = message.mask; lastInputAt = performance.now();
       const supportsBalanced = message.pitchGeometry === pitchGeometry;
-      const supportsExtended = message.extendedAssists === true;
-      const changed = +$('#skin-right').value !== message.skin || guestBalancedPitches !== supportsBalanced || guestExtendedAssists !== supportsExtended;
+      const supportsBuffs = message.statBuffs === 1;
+      const changed = +$('#skin-right').value !== message.skin || guestBalancedPitches !== supportsBalanced || guestStatBuffs !== supportsBuffs;
       guestBalancedPitches = supportsBalanced;
-      guestExtendedAssists = supportsExtended;
+      guestStatBuffs = supportsBuffs;
       $('#skin-right').value = message.skin;
       if (changed) update();
     } else if (message.type === 'pause' && typeof message.value === 'boolean' && started && core.game_value(0) !== 3) {
@@ -183,6 +185,7 @@ function onMessage(message) {
     || !Number.isSafeInteger(message.matchId) || message.matchId < matchId || typeof message.started !== 'boolean' || typeof message.bonuses !== 'boolean'
     || !validSetupStep(message.setupStep)
     || !Array.isArray(message.pauseFlags) || message.pauseFlags.length !== 2 || !message.pauseFlags.every(v => typeof v === 'boolean')
+    || (message.state?.buffs && !validBalance({ preset: message.balancePreset, amount: message.balanceAmount, buffs: message.state.buffs }))
     || !remote.update(message.state)) return;
   const newMatch = message.matchId !== matchId || started !== message.started;
   remoteBalancedPitches = message.pitchGeometry === pitchGeometry;
@@ -194,7 +197,7 @@ function onMessage(message) {
     key: `${matchId}:${started}:${message.state.values[0]}:${message.state.values[15]}` });
   // Preserve the guest's desired skin while an older snapshot is still in flight.
   $('#skin-left').value = message.state.skins[0];
-  $('#balance').value = assistsToBalance(message.state.players.map(player => player[6]));
+  balancing.value = message.state.buffs ? { preset: message.balancePreset, amount: message.balanceAmount, buffs: message.state.buffs } : createBalance();
   $('#bonuses').checked = message.bonuses;
   $('#target-score').value = message.state.values[14]; lastValidTarget = message.state.values[14];
   $('#pitch').value = message.state.values[15];
@@ -232,7 +235,7 @@ async function connectRoom(create) {
         // Keep the last settings here until it receives them, then start in the lobby.
         receivedSequence = -1; matchId = 0; setupStep = 'players';
         candidate.send({ type: 'room-settings', skins: skins(), pitch: +$('#pitch').value,
-          targetScore: targetScore(), balance: +$('#balance').value, bonuses: $('#bonuses').checked });
+          targetScore: targetScore(), balance: balancing.value, bonuses: $('#bonuses').checked });
         roomStatus('Vous êtes Rouge. Le créateur peut préparer et lancer le match.'); sendInput();
       }
       update();
@@ -313,7 +316,6 @@ for (const [buttonId, selectId] of randomChoices) $('#' + buttonId).addEventList
   select.value = choices[Math.floor(Math.random() * choices.length)].value;
   select.dispatchEvent(new Event('change', { bubbles: true }));
 });
-$('#balance').addEventListener('input', () => { applyAssists(); update(); broadcast(); });
 function closeSettings() {
   settingsOpen = false; update(); canvas.focus({ preventScroll: true });
 }
@@ -368,7 +370,12 @@ setInterval(sendInput, 50);
 
 function renderState() {
   const e = engine(), state = { started, paused, skins: skins(), modernPlayers: true, balancedPitches: mode === 'online' && role === 'guest' ? remoteBalancedPitches : true, blueprintFrame: started ? e?.game_value(15) : +$('#pitch').value }; if (!e) return state;
-  state.goalFrames = [8, 9].map(f => e.game_value(f) === 140 ? 2 : e.game_value(f) === 60 ? 3 : 1);
+  state.goalHeights = [8, 9].map(f => e.game_value(f));
+  state.goalFrames = [8, 9].map((f, side) => {
+    const base = e.game_value(f) / (1 - (e.game_buff_value?.(side, 2) || 0) / 100);
+    // Goal height is rounded to pixels; recover the nearest original 60/100/140 frame.
+    return base > 120 ? 2 : base < 80 ? 3 : 1;
+  });
   state.players = [0, 1].map(s => Object.fromEntries(['speed', 'jump', 'freeze', 'broken', 'bombed', 'scale'].map((name, f) => [name, e.game_player_value(s, f)])));
   state.powerups = Array.from({ length: e.game_pickup_count() }, (_, i) => ({ kind: e.game_pickup_value(i, 0), x: e.game_pickup_value(i, 1), y: e.game_pickup_value(i, 2), ttl: e.game_pickup_value(i, 3) }));
   state.bombs = Array.from({ length: e.game_bomb_count() }, (_, i) => ({ x: e.game_bomb_value(i, 0), y: e.game_bomb_value(i, 1) }));
@@ -383,8 +390,8 @@ function update() {
   const e = engine(), state = snapshot(), phase = state.phase;
   // Tick/position changes belong to the canvas, not to the preparation menus.
   const uiKey = JSON.stringify([!!core, mode, role, state.connected, started, paused, settingsOpen, setupStep, busy, restoringSettings,
-    pauseFlags, phase, state.score, state.targetScore, state.pitch, state.assists, state.difficulty, matchId, skins(), $('#target-score').value, $('#pitch').value, $('#balance').value, $('#bonuses').checked,
-    e?.game_value(10), (e?.game_value(11) || 0) > 0, hasTouch(), touch.layout, guestBalancedPitches, remoteBalancedPitches, guestExtendedAssists]);
+    pauseFlags, phase, state.score, state.targetScore, state.pitch, state.buffs, state.difficulty, matchId, skins(), $('#target-score').value, $('#pitch').value, balancing.value, $('#bonuses').checked,
+    e?.game_value(10), (e?.game_value(11) || 0) > 0, hasTouch(), touch.layout, guestBalancedPitches, remoteBalancedPitches, guestStatBuffs]);
   if (uiKey === lastUiKey) return;
   lastUiKey = uiKey;
   const names = mode === 'ai' ? ['Vous · Bleu', 'IA · Rouge'] : ['Bleu', 'Rouge'];
@@ -398,7 +405,7 @@ function update() {
   $('#close-settings').hidden = !started;
   $('#touch-controls').hidden = !started;
   touch.update({ mode, side: ownSide(), names, enabled: started && !paused && phase !== 3 && (mode !== 'online' || !!room?.connected) });
-  const teamNames = names.map((name, side) => `${name}${state.assists[side] ? ' +' + ASSIST_PERCENTS[state.assists[side]] + '%' : ''}`);
+  const teamNames = names;
   $('.team.blue span').textContent = teamNames[0]; $('.team.red span').textContent = teamNames[1];
   $('.team.blue span').title = names[0]; $('.team.red span').title = names[1];
   $('#score-left').textContent = state.score[0] ?? 0; $('#score-right').textContent = state.score[1] ?? 0;
@@ -426,13 +433,10 @@ function update() {
   $('#bonuses').disabled = mode === 'online' && (role === 'guest' || started);
   const settingsLocked = (started && phase !== 3) || (mode === 'online' && role === 'guest');
   for (const radio of document.querySelectorAll('[name="ai-level"]')) radio.disabled = started && phase !== 3;
-  for (const id of ['target-score', 'pitch', 'balance']) $('#' + id).disabled = !!settingsLocked;
+  for (const id of ['target-score', 'pitch']) $('#' + id).disabled = !!settingsLocked;
   $('#goal-minus').disabled = !!settingsLocked || targetScore() <= 1;
   $('#goal-plus').disabled = !!settingsLocked || targetScore() >= 9;
-  const balance = +$('#balance').value;
-  $('#balance-status').textContent = balanceLabel(balance);
-  $('#balance').setAttribute('aria-valuetext', balanceLabel(balance));
-  $('#balance').style.accentColor = balance < 0 ? '#286bbe' : balance > 0 ? '#c14d51' : '#526c81';
+  balancing.update({ disabled: !!settingsLocked, skins: skins() });
   updateSelectionPreviews(state.pitch, skins(), mode === 'online' && role === 'guest' ? remoteBalancedPitches : true);
   $('#settings-legend').textContent = 'Votre partie';
   renderSetup({ screen: setupStep, mode, role, started, ready: !!core, busy, connected: !!room?.connected });

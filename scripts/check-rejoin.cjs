@@ -1,7 +1,7 @@
 // Real PeerServer reservations and real page closes, without storage or a backend.
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const { goToSetup, setTarget } = require('./setup-browser.cjs');
+const { goToSetup, setTarget, setManualBuffs } = require('./setup-browser.cjs');
 const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cjs URL');
 (async () => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
@@ -19,7 +19,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
   const connected = page => page.waitForFunction(() => sportheads.snapshot().connected);
   async function settingsMatch(page) {
     await page.waitForFunction(() => document.querySelector('#pitch').value === '12'
-      && document.querySelector('#target-score').value === '5' && document.querySelector('#balance').value === '-2'
+      && document.querySelector('#target-score').value === '5' && JSON.stringify(sportheads.snapshot().buffs) === '[[13,27,41,22,39],[9,0,50,49,8]]'
       && !document.querySelector('#bonuses').checked);
   }
   try {
@@ -31,7 +31,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
     await host.selectOption('#skin-left', '11'); await guest.selectOption('#skin-right', '7');
     await goToSetup(host, 'pitch'); await host.selectOption('#pitch', '12');
     await goToSetup(host, 'rules'); await setTarget(host, 5);
-    await host.locator('#balance').evaluate(input => { input.value = '-2'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+    await setManualBuffs(host, [[13,27,41,22,39],[9,0,50,49,8]]);
     await host.locator('#bonuses').uncheck(); await settingsMatch(guest);
     await host.click('#start'); await guest.waitForFunction(() => sportheads.snapshot().phase === 1);
     await host.close();
@@ -59,7 +59,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
     assert.equal(await returning.locator('#skin-right').isEnabled(), false);
     await goToSetup(returning, 'rules'); await returning.click('#start');
     await guest.waitForFunction(() => sportheads.snapshot().started && sportheads.snapshot().targetScore === 5);
-    assert.equal((await state(guest)).pitch, 12); assert.deepEqual((await state(guest)).assists, [2, 0]);
+    assert.equal((await state(guest)).pitch, 12); assert.deepEqual((await state(guest)).buffs, [[13,27,41,22,39],[9,0,50,49,8]]);
     const third = await pageAt(share.href); await third.click('#join-room');
     await third.waitForFunction(() => document.querySelector('#room-status').textContent.includes('complète'));
     assert.equal((await state(returning)).connected, true); assert.equal((await state(guest)).connected, true); await third.close();

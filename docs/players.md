@@ -6,26 +6,33 @@ boutique, monnaie, amélioration à débloquer ou sauvegarde de progression.
 
 ## Aider son adversaire
 
-Un seul curseur propose onze positions, neutre au centre :
-Bleu +50 / +40 / +30 / +20 / +10 %, neutre, Rouge +10 / +20 / +30 / +40 / +50 %.
-Un seul camp peut être aidé à la fois, y compris dans le moteur et dans les
-états acceptés par l'invité. Les cinq intensités sont :
+Les réglages appartiennent aux camps du match, indépendamment du portrait choisi.
+Cinq boutons remplacent l’ancien curseur global :
 
-- Niveau 1 : accélération et vitesse de course, impulsion de saut et vitesse
-  du mouvement de frappe multipliées par 1,10.
-- Niveau 2 : multiplicateur 1,20.
-- Niveau 3 : multiplicateur 1,30.
-- Niveau 4 : multiplicateur 1,40.
-- Niveau 5 : multiplicateur 1,50.
+- **Normal** : aucun buff.
+- **Superman** : +30 % aux cinq stats pour les deux camps.
+- **Aides bleues / Aides rouges** : le camp choisi reçoit +10, +30 ou +50 %
+  (un peu / normal / beaucoup), l’autre conserve ses capacités normales.
+- **Manuel** : chaque camp possède cinq curseurs indépendants entre 0 et 50 %,
+  par pas de 1 %. Passer en manuel conserve les valeurs du préréglage courant.
 
-Ces pourcentages concernent les commandes ; ils ne garantissent pas un
-pourcentage de buts ou une trajectoire identique. La physique, les contacts
-et la gravité restent inchangés. Les aides se combinent aux bonus ramassés
-et ne contournent ni le gel ni le pied cassé. Elles restent actives après
-les remises en jeu. Elles sont choisies avant le match, puis verrouillées
-jusqu'à la fin. En ligne, le créateur choisit la position du curseur et
-transmet leur valeur avec l'état du moteur. La revanche conserve le choix
-des réglages de la page ; un rechargement revient aux valeurs par défaut.
+Les cinq stats sont l’impulsion de saut, le rayon de la tête, la protection
+du but, la vitesse de course et le mouvement de frappe. Le saut multiplie l’impulsion verticale, pas directement la hauteur atteinte.
+La protection réduit la hauteur du but d’autant : +50 % la divise par deux.
+Le dessin, la barre physique et la détection des buts utilisent la même hauteur.
+Le bonus de tête agrandit sa collision et son portrait, en conservant la taille du pied.
+La vitesse multiplie l’accélération et la course ; la frappe multiplie la vitesse
+du mouvement du pied, uniquement lorsqu’on frappe.
+Les nouvelles dimensions peuvent naturellement changer les contacts avec le ballon.
+
+Les buffs se composent avec les bonus ramassés et restent actifs après leur expiration
+et les remises en jeu. Ils sont choisis avant le match puis verrouillés jusqu’à sa fin.
+En ligne, seul le créateur les modifie ; l’invité peut toucher les deux portraits pour
+consulter les curseurs. Les messages vérifient les pourcentages et la cohérence entre
+le préréglage, les collisions et l’état transmis. Les réglages personnalisés reviennent
+avec le créateur de la salle, même après fermeture de son onglet tant que l’invité reste.
+La revanche conserve le choix ; une nouvelle page hors salle revient aux valeurs normales.
+L’ancienne API `game_set_assistance` reste réservée aux comparaisons historiques.
 
 ## Joueurs récents
 
@@ -90,8 +97,9 @@ Un invité plus ancien doit actualiser sa page avant que l’hôte puisse lancer
 variante corrigée ; un invité récent conserve le rendu historique face à un ancien
 hôte. Les salles et leurs codes restent sur le même protocole.
 
-`tests/assistance.rs` couvre les cinq niveaux, les deux camps, les bonus
-et la conservation après un but. Les captures historiques sans aide
+`tests/buffs.rs` couvre les stats indépendantes, les deux camps, les limites,
+les bonus et la conservation après un but. `tests/assistance.rs` conserve la preuve
+de l’ancienne API historique. Les captures historiques sans aide
 restent vérifiées. `tests/pitches.test.mjs` vérifie les 19 géométries historiques, la symétrie des 16
 terrains publics et leur correspondance avec la source partagée.
 `tests/balanced_pitches.rs` vérifie la conservation des corrections après un but.
@@ -103,7 +111,7 @@ et le partage des aides dans une vraie salle WebRTC.
 le clavier, les formats mobiles et les choix en direct entre Chrome et WebKit.
 
 La préparation du match est découpée en écrans : choix du mode, puis joueurs,
-terrain, et enfin paramètres (objectif, bonus et curseur). Le mode en ligne
+terrain, et enfin paramètres (objectif, bonus et équilibrage). Le mode en ligne
 intercale la création ou la jonction à une salle. Le créateur décide des étapes ;
 l’invité suit les écrans et voit leurs valeurs en lecture seule, tout en gardant
 son seul choix de personnage modifiable. Le score discret flotte en haut du terrain,
@@ -112,3 +120,7 @@ les coins du terrain en portrait. Le rendu du match est recadré à 800 × 480 :
 les 60 pixels inutilisés sous le sol sont supprimés de l’affichage. La physique
 conserve son repère historique. En portrait, seules les commandes tactiles
 réservent de la place sous le terrain. Le bouton Plein écran complète ces dispositions.
+
+`scripts/check-buffs.cjs URL` vérifie les préréglages et les curseurs précis sur Chrome
+et WebKit, les formats mobiles et le verrouillage. `scripts/check-rejoin.cjs URL`
+vérifie la récupération de deux profils manuels différents après le retour du créateur.

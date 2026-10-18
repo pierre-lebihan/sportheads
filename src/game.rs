@@ -68,6 +68,8 @@ pub struct Game {
     pub head_height: [f64; 2],
     /// Per-match human handicap: 0 neutral, 1..=5 = +10/20/30/40/50% controls.
     pub assistance: [u32; 2],
+    /// Match settings in percent: jump, head size, own-goal protection, speed, kick.
+    pub buffs: [[u32; 5]; 2],
     random_state: u32,
     pub powerups: Powerups,
     pub pickups: Vec<Pickup>,
@@ -116,6 +118,7 @@ impl Game {
             xspeed: [0.0; 2],
             head_height: [43.0; 2],
             assistance: [0; 2],
+            buffs: [[0; 5]; 2],
             random_state: seed,
             powerups: Powerups::new(),
             pickups: vec![],
@@ -182,6 +185,43 @@ impl Game {
                 self.assistance[1 - side] = 0;
             }
         }
+    }
+    pub fn set_buffs(
+        &mut self,
+        side: usize,
+        jump: u32,
+        head: u32,
+        goal: u32,
+        speed: u32,
+        kick: u32,
+    ) {
+        if side >= 2 {
+            return;
+        }
+        let next = [
+            jump.min(50),
+            head.min(50),
+            goal.min(50),
+            speed.min(50),
+            kick.min(50),
+        ];
+        let head_changed = next[1] != self.buffs[side][1];
+        self.buffs[side] = next;
+        self.assistance[side] = 0;
+        if head_changed {
+            self.apply_effects(vec![Effect::ResizePlayer(side, self.powerups.scale[side])]);
+        }
+        self.resize_goal(side, self.powerups.goal_height[side]);
+    }
+    pub fn player_scale(&self, side: usize) -> f64 {
+        self.powerups.scale[side] * (1.0 + self.buffs[side][1] as f64 / 100.0)
+    }
+    pub fn goal_height(&self, side: usize) -> u32 {
+        self.adjusted_goal_height(side, self.powerups.goal_height[side])
+    }
+    fn adjusted_goal_height(&self, side: usize, height: u32) -> u32 {
+        // Integer rounding is shared by scoring, the crossbar and rendering.
+        (height * (100 - self.buffs[side][2]) + 50) / 100
     }
     fn apply_goal_style(&mut self) {
         let height = match self.goal_style {
@@ -274,6 +314,11 @@ impl Game {
         self.powerups.reset_round();
         self.last_touch = 1;
         self.apply_goal_style();
+        for side in 0..2 {
+            if self.buffs[side][1] > 0 {
+                self.apply_effects(vec![Effect::ResizePlayer(side, 1.0)]);
+            }
+        }
         self.phase = Phase::Countdown;
         self.countdown = COUNTDOWN_TICKS;
     }
@@ -355,6 +400,7 @@ impl Game {
         // jump off its opponent, and the x<720 restriction only guards rightward motion.
         for side in [1, 0] {
             let assist = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5][self.assistance[side] as usize];
+            let speed_boost = assist * (1.0 + self.buffs[side][3] as f64 / 100.0);
             let shift = side * 4;
             let keys = (input >> shift) & 15;
             let index = self.player[side];
@@ -363,10 +409,10 @@ impl Game {
             let other_position = self.world.bodies[other].position;
             let moving = !self.powerups.freeze[side] && !self.powerups.bombed[side];
             if keys & 1 != 0 && moving {
-                self.xspeed[side] -= (50.0 + 30.0 * self.powerups.speed[side] as f64) * assist;
+                self.xspeed[side] -= (50.0 + 30.0 * self.powerups.speed[side] as f64) * speed_boost;
             }
             if keys & 2 != 0 && position.x < 720.0 && moving {
-                self.xspeed[side] += (50.0 + 30.0 * self.powerups.speed[side] as f64) * assist;
+                self.xspeed[side] += (50.0 + 30.0 * self.powerups.speed[side] as f64) * speed_boost;
             }
             if moving && position.y > 439.0 && self.active_ticks.is_multiple_of(2) {
                 for direction in [1, 2] {
@@ -392,11 +438,13 @@ impl Game {
                 && self.world.bodies[index].velocity.y >= 1.0;
             if keys & 4 != 0
                 && !self.powerups.bombed[side]
-                && (position.y + self.head_height[side] * self.powerups.scale[side] / 2.0 > 459.0
+                && (position.y + self.head_height[side] * self.player_scale(side) / 2.0 > 459.0
                     || on_head)
             {
-                self.world.bodies[index].velocity.y =
-                    (-150.0 - 50.0 * self.powerups.jump[side] as f64) * assist;
+                self.world.bodies[index].velocity.y = (-150.0
+                    - 50.0 * self.powerups.jump[side] as f64)
+                    * assist
+                    * (1.0 + self.buffs[side][0] as f64 / 100.0);
                 self.sounds |= 2;
                 let kind = if self.powerups.jump[side] == 0 { 2 } else { 1 };
                 self.emit_effect(kind, Vec2::new(position.x, position.y + 20.0), 60.0, 30.0);
@@ -420,7 +468,7 @@ impl Game {
                     _ => unreachable!(),
                 };
                 if keys & 8 != 0 {
-                    joint.motor_speed *= assist;
+                    joint.motor_speed *= assist * (1.0 + self.buffs[side][4] as f64 / 100.0);
                 }
                 self.world.bodies[self.foot[side]].wake();
             }
@@ -457,12 +505,9 @@ impl Game {
         if lo.1 > 9200 {
             return None;
         }
-        if hi.0 >= -110 && lo.0 <= 1290 && hi.1 >= (460 - self.powerups.goal_height[0] as i32) * 20
-        {
+        if hi.0 >= -110 && lo.0 <= 1290 && hi.1 >= (460 - self.goal_height(0) as i32) * 20 {
             Some(1)
-        } else if hi.0 >= 14700
-            && lo.0 <= 16100
-            && hi.1 >= (460 - self.powerups.goal_height[1] as i32) * 20
+        } else if hi.0 >= 14700 && lo.0 <= 16100 && hi.1 >= (460 - self.goal_height(1) as i32) * 20
         {
             Some(0)
         } else {
@@ -477,6 +522,7 @@ impl Game {
         self.apply_effects(effects);
     }
     fn resize_goal(&mut self, side: usize, height: u32) {
+        let height = self.adjusted_goal_height(side, height);
         let i = if side == 0 { 9 } else { 10 };
         let x = if side == 0 { 40.0 } else { 760.0 };
         self.world
@@ -515,11 +561,17 @@ impl Game {
                     self.emit_effect(0, old.position, 40.0, 40.0);
                 }
                 Effect::ResizePlayer(side, scale) => {
-                    let p = self.world.bodies[self.player[side]].position;
+                    let mut p = self.world.bodies[self.player[side]].position;
+                    let radius = 20.0 * scale * (1.0 + self.buffs[side][1] as f64 / 100.0);
+                    if self.buffs[side][1] > 0 {
+                        // Countdown does not simulate physics: place an enlarged
+                        // head above the floor immediately, including on respawn.
+                        p.y = p.y.min(460.0 - radius);
+                    }
                     self.world.remove_body(self.player[side]);
-                    self.player[side] =
-                        self.world
-                            .add_body(Body::circle(p, 20.0 * scale, 100.0, 0.0, 0.01, true));
+                    self.player[side] = self
+                        .world
+                        .add_body(Body::circle(p, radius, 100.0, 0.0, 0.01, true));
                     self.world.remove_body(self.foot[side]);
                     let sign = if side == 1 { 1.0 } else { -1.0 };
                     let fp = p + Vec2::new(sign * 4.0 * scale, 15.6 * scale);

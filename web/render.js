@@ -156,8 +156,13 @@ export function drawGame(ctx, engine, state = {}) {
     drawSprite(ctx, 'streaker', 1, streaker.x, streaker.y, undefined, undefined, streaker.angle || 0);
     drawSprite(ctx, 'streaker-head', 1, streaker.x, streaker.y, undefined, undefined, 0, { flipX: streaker.flipX });
   }
-  drawSprite(ctx, 'goal', state.goalFrames?.[0] || 1, 0, 340);
-  drawSprite(ctx, 'goal', state.goalFrames?.[1] || 1, 800, 340, undefined, undefined, 0, { flipX: true });
+  for (const side of [0, 1]) {
+    const frame = state.goalFrames?.[side] || 1, baseHeight = frame === 2 ? 140 : frame === 3 ? 60 : 100;
+    const factor = state.goalHeights ? (state.goalHeights[side] + 20) / (baseHeight + 20) : 1;
+    ctx.save(); ctx.translate(0, 460); ctx.scale(1, factor); ctx.translate(0, -460);
+    drawSprite(ctx, 'goal', frame, side ? 800 : 0, 340, undefined, undefined, 0, { flipX: !!side });
+    ctx.restore();
+  }
   const ball = bodies.find(body => body.role === 3);
   if (ball) drawSprite(ctx, 'shadow', 1, ball.x, 463, undefined, undefined, 0, { scaleY: .33332825 });
   if (state.started !== false && !state.paused) {

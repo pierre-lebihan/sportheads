@@ -39,6 +39,7 @@ jobs:
           node --check web/touch-controls.js
           node --check web/touch-layout.js
           node --check web/balance.js
+          node --check web/balance-ui.js
           node --check web/arena-ui.js
           node --check web/setup-ui.js
           node --check web/opponent.js

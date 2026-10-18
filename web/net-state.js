@@ -1,4 +1,5 @@
 import { PLAYER_COUNT } from './players.js';
+import { validBuffs, BUFF_STATS } from './balance.js';
 // Host-authoritative render snapshots. No simulation, assets or executable code
 // cross this boundary; the guest only reads the last validated numeric state.
 const KEYS = ['values', 'skins', 'bodies', 'players', 'pickups', 'bombs', 'effects'];
@@ -27,19 +28,21 @@ export function isValidState(packet) {
     const prototype = Object.getPrototypeOf(packet);
     if (prototype !== Object.prototype && prototype !== null) return false;
     const keys = Object.keys(packet);
-    if (keys.length !== KEYS.length || !KEYS.every(key => Object.hasOwn(packet, key))) return false;
+    const hasBuffs = Object.hasOwn(packet, 'buffs');
+    if (keys.length !== KEYS.length + Number(hasBuffs) || !KEYS.every(key => Object.hasOwn(packet, key))
+      || (hasBuffs && !validBuffs(packet.buffs))) return false;
     const { values: v, skins, bodies, players, pickups, bombs, effects } = packet;
     if (!row(v, 16) || !row(skins, 2) || !skins.every(skin => integer(skin, 1, PLAYER_COUNT))) return false;
     if (!integer(v[0], 0, 3) || !integer(v[1], 0) || !integer(v[2], 0) || !integer(v[3], 0)
       || !integer(v[4], 0) || !integer(v[5], -1, 1) || !integer(v[6], 0)
-      || !integer(v[7], 0, 127) || !oneOf(v[8], [60, 100, 140]) || !oneOf(v[9], [60, 100, 140])
+      || !integer(v[7], 0, 127) || ![v[8], v[9]].every(height => hasBuffs ? integer(height, 30, 140) : oneOf(height, [60, 100, 140]))
       || !integer(v[10], 0, 18) || !integer(v[11], 0, 70) || !oneOf(v[12], [0, 1]) || !integer(v[13], 0, 2)
       || !integer(v[14], 1, 99) || !integer(v[15], 2, 20)) return false;
     const roles = new Set();
     if (!rows(bodies, 6, 11, body => {
       const role = body[9], radius = body[8];
       if (!integer(role, 1, 6) || roles.has(role) || body[10] !== 1
-        || body[6] <= 0 || body[7] < 0 || radius < 0 || radius > 30) return false;
+        || body[6] <= 0 || body[7] < 0 || radius < 0 || radius > (hasBuffs && oneOf(role, [1, 2]) ? 45 : 30)) return false;
       if (oneOf(role, [4, 5]) ? radius !== 0 : radius <= 0) return false;
       roles.add(role);
       return true;
@@ -49,6 +52,13 @@ export function isValidState(packet) {
       && integer(player[2], 0, 1) && integer(player[3], 0, 1) && integer(player[4], 0, 1)
       && oneOf(player[5], [0.5, 1, 1.5]) && integer(player[6], 0, 5))) return false;
     if (players[0][6] > 0 && players[1][6] > 0) return false;
+    if (hasBuffs) {
+      for (const side of [0, 1]) {
+        const head = bodies.find(body => body[9] === side + 1);
+        if (Math.abs(head[8] - 20 * players[side][5] * (1 + packet.buffs[side][1] / 100)) > 1e-9
+          || ![60, 100, 140].some(base => Math.round(base * (100 - packet.buffs[side][2]) / 100) === v[8 + side])) return false;
+      }
+    }
     if (!rows(pickups, 16, 4, pickup => integer(pickup[0], 1, 18) && integer(pickup[3], 0, 600))) return false;
     if (!rows(bombs, 16, 2)) return false;
     if (!rows(effects, 256, 6, effect => integer(effect[0], 0, 5) && integer(effect[3], 0, 1000)
@@ -86,6 +96,7 @@ export function captureState(engine, skins) {
     skins: Array.isArray(skins) ? skins.slice() : skins,
     bodies,
     players: Array.from({ length: 2 }, (_, side) => Array.from({ length: 7 }, (_, field) => engine.game_player_value(side, field))),
+    buffs: Array.from({ length: 2 }, (_, side) => Array.from({ length: BUFF_STATS.length }, (_, stat) => engine.game_buff_value?.(side, stat) ?? 0)),
     pickups: captureRows(engine, 'game_pickup_count', 'game_pickup_value', 4, 16),
     bombs: captureRows(engine, 'game_bomb_count', 'game_bomb_value', 2, 16),
     effects: captureRows(engine, 'game_effect_count', 'game_effect_value', 6, 256),
@@ -109,6 +120,7 @@ export function createRemoteEngine() {
     game_vertex_count: () => 0,
     game_vertex_value: () => 0,
     game_player_value: (side, field) => value('players', side, field),
+    game_buff_value: (side, stat) => Number.isInteger(side) && Number.isInteger(stat) ? current.buffs?.[side]?.[stat] ?? (side >= 0 && side < 2 && stat >= 0 && stat < BUFF_STATS.length ? 0 : NaN) : NaN,
     game_pickup_count: () => current.pickups.length,
     game_pickup_value: (index, field) => value('pickups', index, field),
     game_bomb_count: () => current.bombs.length,
@@ -124,6 +136,7 @@ export function createRemoteEngine() {
         const next = Object.fromEntries(KEYS.map(key => [key,
           key === 'values' || key === 'skins' ? packet[key].slice() : packet[key].map(entry => entry.slice()),
         ]));
+        if (Object.hasOwn(packet, 'buffs')) next.buffs = packet.buffs.map(stats => stats.slice());
         // Also reject an accessor that changes its answer between validation and copy.
         if (!isValidState(next)) return false;
         current = next;

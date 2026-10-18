@@ -13,11 +13,16 @@ de 1 à 9 avec les boutons − et +, sans limite de temps. Choisissez parmi **16
 et **23 personnages : 12 joueurs récents, Pierre, Vilma, Thibaud, Marie, Corentin, Pierre Nomad, Maël, Baptiste, Jerem, Arthur et Vilma Dreadlocks** avec aperçu. Les portraits des joueurs sont des caricatures originales ; les autres sprites, animations et sons viennent du
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
-Un match simple contre l’IA ou entre deux humains. Un **curseur à onze
-positions** équilibre le duel : Bleu +50 / +40 / +30 / +20 / +10 %, neutre, Rouge +10 / +20 /
-+30 / +40 / +50 %. Un seul joueur est aidé à la fois, sur la vitesse, le saut et la frappe.
-Le centre est le réglage par défaut. L'aide est choisie avant le match puis
-verrouillée ; à distance, le créateur la règle pour la salle.
+Un match simple contre l’IA ou entre deux humains. L’**équilibrage** propose
+**Normal**, **Superman** (+30 % pour les deux joueurs), **Aides bleues** ou
+**Aides rouges**, avec trois intensités : un peu +10 %, normal +30 %, beaucoup +50 %.
+En **Manuel**, touchez le portrait d’un camp et réglez séparément, de 0 à +50 %
+par pas de 1 %, la puissance de saut, la taille de tête, la protection de son but,
+la vitesse et la frappe.
+La protection réduit la hauteur du but : +50 % donne un but deux fois plus petit.
+La vitesse renforce l’accélération et la course ; la frappe accélère le mouvement
+du pied. Le bonus de tête conserve la taille du pied. Les réglages sont verrouillés pendant le match.
+À distance, le créateur les règle pour les deux camps et l’invité les voit en lecture seule.
 Les personnages ont tous les mêmes caractéristiques de base.
 La sélection affiche les deux portraits face à face et une grille de personnages.
 Choisissez les deux camps en local ou contre l’IA ; en ligne, chacun choisit le sien

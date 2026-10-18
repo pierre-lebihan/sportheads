@@ -245,8 +245,8 @@ pub extern "C" fn game_value(field: u32) -> f64 {
             5 => g.last_scorer.map_or(-1.0, |s| s as f64),
             6 => g.tick_number as f64,
             7 => g.sounds as f64,
-            8 => g.powerups.goal_height[0] as f64,
-            9 => g.powerups.goal_height[1] as f64,
+            8 => g.goal_height(0) as f64,
+            9 => g.goal_height(1) as f64,
             10 => g.notice as f64,
             11 => g.notice_ticks as f64,
             12 => g.mode as f64,
@@ -438,6 +438,30 @@ pub extern "C" fn game_start_balanced_pitch(seed: u32, target: u32, bonus: u32, 
 #[no_mangle]
 pub extern "C" fn game_set_assistance(side: u32, level: u32) {
     GAME.with(|g| g.borrow_mut().set_assistance(side as usize, level));
+}
+#[no_mangle]
+pub extern "C" fn game_set_buffs(
+    side: u32,
+    jump: u32,
+    head: u32,
+    goal: u32,
+    speed: u32,
+    kick: u32,
+) {
+    GAME.with(|g| {
+        g.borrow_mut()
+            .set_buffs(side as usize, jump, head, goal, speed, kick)
+    });
+}
+#[no_mangle]
+pub extern "C" fn game_buff_value(side: u32, stat: u32) -> f64 {
+    GAME.with(|g| {
+        g.borrow()
+            .buffs
+            .get(side as usize)
+            .and_then(|stats| stats.get(stat as usize))
+            .map_or(f64::NAN, |value| *value as f64)
+    })
 }
 #[no_mangle]
 pub extern "C" fn game_set_skin(side: u32, skin: u32) {

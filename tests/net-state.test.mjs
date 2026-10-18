@@ -156,3 +156,31 @@ test('all eleven exclusive handicap positions survive the WASM snapshot boundary
     assert.equal(guest.engine.game_player_value(1, 6), levels[1]);
   }
 });
+
+test('independent buffs and their actual collisions survive snapshots, including pickup multipliers', async () => {
+  const host = await wasm(); host.game_start_match(7,3,0);
+  host.game_set_buffs(0,13,50,50,15,37); host.game_set_buffs(1,50,23,17,48,9);
+  host.game_collect(14,0); host.game_collect(8,1);
+  const packet = captureState(host,[13,23]), guest = createRemoteEngine();
+  assert.deepEqual(packet.buffs,[[13,50,50,15,37],[50,23,17,48,9]]);
+  assert.equal(packet.values[8],30);
+  assert.equal(packet.values[9],83);
+  assert.equal(packet.bodies.find(body => body[9]===1)[8],45);
+  assert.equal(guest.update(packet),true);
+  for (const side of [0,1]) for (const stat of [0,1,2,3,4]) assert.equal(guest.engine.game_buff_value(side,stat),packet.buffs[side][stat]);
+  const expected = structuredClone(packet);
+  packet.buffs[0][0]=50;
+  assert.equal(guest.engine.game_buff_value(0,0),13,'guest owns a copy');
+  for (const change of [p=>p.buffs[0][0]=51,p=>p.buffs[0][0]=-1,p=>p.buffs[1][0]=1.5,p=>p.buffs[1].push(1),p=>p.buffs.pop(),p=>p.buffs[0][1]=0,p=>p.values[8]=100]) {
+    const bad=structuredClone(expected); change(bad);
+    assert.equal(guest.update(bad),false,change.toString());
+    assert.equal(guest.engine.game_buff_value(0,0),13);
+  }
+});
+
+test('legacy neutral snapshots remain readable without fabricating buffs', async () => {
+  const host=await wasm();host.game_reset(1);
+  const packet=captureState(host,[1,2]);delete packet.buffs;
+  const guest=createRemoteEngine();assert.equal(guest.update(packet),true);
+  assert.equal(guest.engine.game_buff_value(0,0),0);
+});

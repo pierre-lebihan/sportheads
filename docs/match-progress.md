@@ -69,7 +69,8 @@ Les 18 bonus, le rendu des sprites, les animations et les sons sont intégrés.
 Les 19 terrains historiques restent dans le noyau pour les comparaisons Flash ;
 les 7 terrains déjà symétriques et les 9 variantes corrigées sont proposés et tirés au hasard
 dans les trois modes. Les dispositions 13, 19 et 20 restent exclues.
-Les aides individuelles à cinq niveaux sont intégrées.
+L’équilibrage propose Normal, Superman, les aides bleues/rouges à trois intensités
+et cinq stats indépendantes par camp en manuel (0 à +50 %).
 Voir [joueurs et aides](players.md). Seuls les matchs simples sont proposés.
 Les salles et le réseau sont décrits
 dans [multiplayer.md](multiplayer.md).

@@ -92,7 +92,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     for (let position = -5; position <= 5; position++) {
       if (position > -5) await local.keyboard.press('ArrowRight');
       assert.deepEqual((await state(local)).assists, [Math.max(0, -position), Math.max(0, position)]);
-      if (Math.abs(position) >= 4) assert.match(await local.locator('#balance-status').innerText(), new RegExp(position === -5 || position === 5 ? '52' : '40'));
+      if (Math.abs(position) >= 4) assert.match(await local.locator('#balance-status').innerText(), new RegExp(position === -5 || position === 5 ? '50' : '40'));
     }
     await local.locator('#balance').fill('-1'); await setTarget(local, 1);
     await local.screenshot({ path: 'evidence/setup-rules.png' });
@@ -149,7 +149,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     await goToSetup(host, 'rules'); await waitStep(guest, 'rules');
     await host.locator('#balance').fill('5'); await setTarget(host, 1); await host.locator('#bonuses').uncheck();
     await guest.waitForFunction(() => document.querySelector('#balance').value === '5' && document.querySelector('#target-score').value === '1' && !document.querySelector('#bonuses').checked);
-    assert.equal(await guest.locator('#balance-status').innerText(), 'Rouge +52 %');
+    assert.equal(await guest.locator('#balance-status').innerText(), 'Rouge +50 %');
     for (const id of ['goal-minus', 'goal-plus']) assert.equal(await guest.locator('#' + id).isEnabled(), false);
     await guest.evaluate(() => document.querySelector('#goal-plus').dispatchEvent(new MouseEvent('click')));
     assert.equal(await guest.locator('#target-score').inputValue(), '1');

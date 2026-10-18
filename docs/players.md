@@ -7,7 +7,7 @@ boutique, monnaie, amélioration à débloquer ou sauvegarde de progression.
 ## Aider son adversaire
 
 Un seul curseur propose onze positions, neutre au centre :
-Bleu +52 / +40 / +30 / +20 / +10 %, neutre, Rouge +10 / +20 / +30 / +40 / +52 %.
+Bleu +50 / +40 / +30 / +20 / +10 %, neutre, Rouge +10 / +20 / +30 / +40 / +50 %.
 Un seul camp peut être aidé à la fois, y compris dans le moteur et dans les
 états acceptés par l'invité. Les cinq intensités sont :
 
@@ -16,7 +16,7 @@ Un seul camp peut être aidé à la fois, y compris dans le moteur et dans les
 - Niveau 2 : multiplicateur 1,20.
 - Niveau 3 : multiplicateur 1,30.
 - Niveau 4 : multiplicateur 1,40.
-- Niveau 5 : multiplicateur 1,52.
+- Niveau 5 : multiplicateur 1,50.
 
 Ces pourcentages concernent les commandes ; ils ne garantissent pas un
 pourcentage de buts ou une trajectoire identique. La physique, les contacts

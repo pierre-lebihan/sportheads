@@ -6,7 +6,7 @@ le viewport dès l'ouverture ; aucune installation ni
 autorisation de plein écran n'est nécessaire.
 
 - L’objectif se règle avec les boutons − et +, de 1 à 9 buts (7 par défaut).
-  Le curseur d’aide a onze positions : neutre ou +10 / +20 / +30 / +40 / +52 % pour un seul camp.
+  Le curseur d’aide a onze positions : neutre ou +10 / +20 / +30 / +40 / +50 % pour un seul camp.
 - Le menu propose Contre l’IA, 2 joueurs ou En ligne, puis la préparation passe par
   Joueurs, Terrain et Paramètres. Dans une salle, l’invité suit le créateur
   et ne modifie que son propre personnage.

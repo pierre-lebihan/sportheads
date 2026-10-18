@@ -9,10 +9,10 @@ test('eleven symmetric positions help one camp at most and round trip exactly', 
     assert.deepEqual(levels, expected[position + 5]);
     assert.equal(assistsToBalance(levels), position);
   }
-  assert.equal(balanceLabel(-5), 'Bleu +52 %');
+  assert.equal(balanceLabel(-5), 'Bleu +50 %');
   assert.equal(balanceLabel(-4), 'Bleu +40 %');
   assert.equal(balanceLabel(4), 'Rouge +40 %');
-  assert.equal(balanceLabel(5), 'Rouge +52 %');
+  assert.equal(balanceLabel(5), 'Rouge +50 %');
   assert.equal(balanceLabel(-3), 'Bleu +30 %');
   assert.equal(balanceLabel(0), 'Équilibré');
   assert.equal(balanceLabel(3), 'Rouge +30 %');

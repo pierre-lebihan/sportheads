@@ -14,8 +14,8 @@ et **12 joueurs récents** avec aperçu. Les portraits des joueurs sont des cari
 SWF, exportés en SVG/PNG/MP3 ; le jeu s'exécute sans lecteur Flash.
 
 Un match simple contre l’IA ou entre deux humains. Un **curseur à onze
-positions** équilibre le duel : Bleu +52 / +40 / +30 / +20 / +10 %, neutre, Rouge +10 / +20 /
-+30 / +40 / +52 %. Un seul joueur est aidé à la fois, sur la vitesse, le saut et la frappe.
+positions** équilibre le duel : Bleu +50 / +40 / +30 / +20 / +10 %, neutre, Rouge +10 / +20 /
++30 / +40 / +50 %. Un seul joueur est aidé à la fois, sur la vitesse, le saut et la frappe.
 Le centre est le réglage par défaut. L'aide est choisie avant le match puis
 verrouillée ; à distance, le créateur la règle pour la salle.
 Les personnages ont tous les mêmes caractéristiques de base.

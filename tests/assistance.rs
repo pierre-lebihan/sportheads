@@ -17,7 +17,7 @@ fn every_assistance_level_strengthens_only_the_selected_players_controls() {
             let mut helped = ready();
             helped.set_assistance(side, level);
             helped.step(mask);
-            let factor = [1.1, 1.2, 1.3, 1.4, 1.52][(level - 1) as usize];
+            let factor = [1.1, 1.2, 1.3, 1.4, 1.5][(level - 1) as usize];
             assert!((helped.xspeed[side] - neutral.xspeed[side] * factor).abs() < 1e-10);
             assert_eq!(helped.xspeed[1 - side], 0.0);
             assert!(
@@ -42,7 +42,7 @@ fn assistance_composes_with_pickups_and_does_not_bypass_frozen_or_broken_control
     game.collect(Kind::SpeedGood, 0);
     game.collect(Kind::JumpGood, 0);
     game.step(LEFT_RIGHT | LEFT_JUMP);
-    assert!((game.xspeed[0] - 110.0 * 1.52 * 0.7).abs() < 1e-10);
+    assert!((game.xspeed[0] - 110.0 * 1.5 * 0.7).abs() < 1e-10);
     let mut frozen = ready();
     frozen.set_assistance(0, 5);
     frozen.collect(Kind::IceBad, 0);

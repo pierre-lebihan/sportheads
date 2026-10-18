@@ -1,5 +1,5 @@
-// Eleven positions: one camp receives 10/20/30/40/52%, or neither at the center.
-export const ASSIST_PERCENTS = Object.freeze([0, 10, 20, 30, 40, 52]);
+// Eleven positions: one camp receives 10/20/30/40/50%, or neither at the center.
+export const ASSIST_PERCENTS = Object.freeze([0, 10, 20, 30, 40, 50]);
 export function balanceToAssists(position) {
   if (!Number.isInteger(position) || position < -5 || position > 5) throw new TypeError('Équilibrage invalide.');
   return [Math.max(0, -position), Math.max(0, position)];

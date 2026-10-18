@@ -65,7 +65,7 @@ pub struct Game {
     pub xspeed: [f64; 2],
     /// Flash tests the current head bitmap's height when deciding to jump.
     pub head_height: [f64; 2],
-    /// Per-match human handicap: 0 neutral, 1..=5 = +10/20/30/40/52% controls.
+    /// Per-match human handicap: 0 neutral, 1..=5 = +10/20/30/40/50% controls.
     pub assistance: [u32; 2],
     random_state: u32,
     pub powerups: Powerups,
@@ -353,7 +353,7 @@ impl Game {
         // Preserve the asymmetries in the original game: only the right head can
         // jump off its opponent, and the x<720 restriction only guards rightward motion.
         for side in [1, 0] {
-            let assist = [1.0, 1.1, 1.2, 1.3, 1.4, 1.52][self.assistance[side] as usize];
+            let assist = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5][self.assistance[side] as usize];
             let shift = side * 4;
             let keys = (input >> shift) & 15;
             let index = self.player[side];

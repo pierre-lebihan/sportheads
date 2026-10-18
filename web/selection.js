@@ -1,10 +1,17 @@
 import { drawGame, drawSprite, drawPitch, getAssets } from './render.js';
+import { BONUS_PITCH_INFO } from './pitch-geometry.js';
 import { PLAYER_NAMES } from './players.js';
 import { PLAYABLE_PITCH_IDS } from './engine-contract.js';
 
 export { PLAYER_NAMES } from './players.js';
 // Preserve original IDs for the available symmetric and corrected pitches.
 export const PITCHES = PLAYABLE_PITCH_IDS.map(id => ({ id, name: id === 8 ? 'Terrain libre' : `Terrain ${id}` }));
+export const availablePitches = (bonus = false) => bonus ? [...PITCHES, ...BONUS_PITCH_INFO] : PITCHES;
+export function updatePitchChoices(select, bonus) {
+  const choices = availablePitches(bonus);
+  if (select.options.length === choices.length) return;
+  select.replaceChildren(...choices.map(pitch => new Option(pitch.name, pitch.id)));
+}
 let previous = '';
 export function createCharacterSelection(container) {
   const $ = selector => container.querySelector(selector);
@@ -91,6 +98,9 @@ export function updateSelectionPreviews(pitch, skins, balanced = true) {
   drawGame(ctx, null, { started: false });
   drawn = drawPitch(ctx, pitch, balanced) && drawn;
   ctx.restore();
-  document.querySelector('#pitch-caption').textContent = PITCHES.find(p => p.id === pitch)?.name || 'Terrain';
+  document.querySelector('#pitch-caption').textContent = availablePitches(true).find(p => p.id === pitch)?.name || 'Terrain';
+  const detail = document.querySelector('#pitch-detail');
+  detail.textContent = BONUS_PITCH_INFO.find(p => p.id === pitch)?.description || '';
+  detail.hidden = !detail.textContent;
   if (drawn) previous = key;
 }

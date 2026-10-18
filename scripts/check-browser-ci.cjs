@@ -8,7 +8,7 @@ const readline = require('node:readline');
 
 const root = path.resolve(__dirname, '..');
 const reports = path.join(root, 'browser-report');
-const checks = ['game', 'setup', 'character-selection', 'ai', 'buffs', 'touch-layouts', 'touch-release', 'display', 'balanced-pitches', 'runtime'];
+const checks = ['game', 'setup', 'character-selection', 'ai', 'buffs', 'touch-layouts', 'touch-release', 'display', 'balanced-pitches', 'bonus-pitches', 'runtime'];
 const results = [];
 let server, child;
 

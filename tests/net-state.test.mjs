@@ -79,7 +79,7 @@ test('malformed and oversized packets cannot mutate the last accepted state', as
     packet => { packet.values[14] = 100; },
     packet => { packet.values[14] = 1.5; },
     packet => { packet.values[15] = 1; },
-    packet => { packet.values[15] = 21; },
+    packet => { packet.values[15] = 27; },
     packet => { packet.values.push(1); },
     packet => { delete packet.values[0]; },
     packet => { packet.skins[0] = 0; },

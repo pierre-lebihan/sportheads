@@ -1,8 +1,8 @@
-import { PHASE, MATCH, decodeFrame, encodeFrame } from './engine-contract.js';
+import { PHASE, MATCH, isBonusPitch, decodeFrame, encodeFrame } from './engine-contract.js';
 import { Room, normalizeCode, validCode, CODE_HELP } from './rooms.js';
 import { captureState, createRemoteEngine } from './net-state.js';
 import { createRemoteView } from './net-render.js';
-import { PITCHES } from './selection.js';
+import { availablePitches } from './selection.js';
 import { PLAYER_COUNT } from './players.js';
 import { createBalance, validBalance } from './balance.js';
 import { validSetupStep } from './setup-ui.js';
@@ -34,7 +34,7 @@ function sendInput() {
   // The legacy mask keeps older hosts working. New hosts apply only held
   // controls plus a single tick per gesture counter, even if packets repeat.
   if (room.send({ type: 'input', sequence: ++inputSequence, mask: app.value.paused ? 0 : input('legacy'), heldMask: app.value.paused ? 0 : input('held'), jump,
-    skin: app.value.config.skins[1], pitchGeometry, statBuffs: 1, bonusV2: 1 }, { volatile: app.value.started && !app.value.paused && jump === sentJump })) {
+    skin: app.value.config.skins[1], pitchGeometry, statBuffs: 1, bonusV2: 1, bonusPitches: 1 }, { volatile: app.value.started && !app.value.paused && jump === sentJump })) {
     sentJump = jump;touch.consumeJumps();
   }
 }
@@ -48,12 +48,15 @@ function broadcast() {
     frame.match.pitch = app.value.config.pitch; frame.buffs = app.value.config.balance.buffs;
     frame.bonus.mode = bonusMode();
   }
+  // Older guests can keep reading the lobby while asking them to refresh.
+  // Starting a bonus pitch remains blocked until the capability is advertised.
+  if (!app.value.guestBonusPitches && isBonusPitch(frame.match.pitch)) frame.match.pitch = 8;
   const packet = encodeFrame(frame);
   if (!app.value.guestStatBuffs) delete packet.buffs;
   if (!app.value.guestBonusV2) delete packet.bonus;
   room.send({ type: 'frame', sequence: ++frameSequence, matchId: app.value.matchId, started: app.value.started,
     bonuses: bonusMode() !== 0, bonusMode: bonusMode(), setupStep: validSetupStep(app.value.setupStep) ? app.value.setupStep : 'players',
-    pauseFlags: [...app.value.pauseFlags], pitchGeometry, balancePreset: app.value.config.balance.preset,
+    pauseFlags: [...app.value.pauseFlags], pitchGeometry, bonusPitches: app.value.config.bonusPitches, balancePreset: app.value.config.balance.preset,
     balanceAmount: app.value.config.balance.amount, state: packet },
     { volatile: app.value.started && !app.value.paused && frame.match.phase === PHASE.playing });
   lastBroadcast = performance.now();
@@ -64,12 +67,13 @@ function onMessage(message) {
   if (app.value.role === 'host') {
     if (message.type === 'room-settings' && app.value.restoringSettings &&
     Array.isArray(message.skins) && message.skins.length === 2 && message.skins.every((skin) => Number.isInteger(skin) && skin >= 1 && skin <= PLAYER_COUNT) &&
-    Number.isInteger(message.pitch) && PITCHES.some((pitch) => pitch.id === message.pitch) &&
+    (message.bonusPitches === undefined || typeof message.bonusPitches === 'boolean') &&
+    availablePitches(message.bonusPitches === true).some((pitch) => pitch.id === message.pitch) &&
     Number.isInteger(message.targetScore) && message.targetScore >= 1 && message.targetScore <= 99 &&
     validBalance(message.balance) && bonusModeFromMessage(message) !== null) {
       app.dispatch({ type: 'connection.changed', restoringSettings: false, busy: false }); clearTimeout(recoveryTimer);
       room.returningHost = false;
-      app.dispatch({ type: 'configuration.changed', patch: { skins: message.skins, pitch: message.pitch, targetScore: Math.min(9, message.targetScore), balance: message.balance, bonusMode: bonusModeFromMessage(message) } });
+      app.dispatch({ type: 'configuration.changed', patch: { skins: message.skins, pitch: message.pitch, bonusPitches: message.bonusPitches ?? false, targetScore: Math.min(9, message.targetScore), balance: message.balance, bonusMode: bonusModeFromMessage(message) } });
       clearMatch();app.dispatch({ type: "preparation.changed", setupStep: 'players' });
       roomStatus('Salle retrouvée. Vous êtes Bleu. Vos réglages sont conservés : préparez le prochain match.');
       update();broadcast();return;
@@ -84,10 +88,10 @@ function onMessage(message) {
         receivedJump = Math.max(receivedJump ?? 0, message.jump);
       }
       const supportsBalanced = message.pitchGeometry === pitchGeometry;
-      const supportsBuffs = message.statBuffs === 1,supportsV2 = message.bonusV2 === 1;
-      const changed = app.value.config.skins[1] !== message.skin || app.value.guestBalancedPitches !== supportsBalanced || app.value.guestStatBuffs !== supportsBuffs || app.value.guestBonusV2 !== supportsV2;
+      const supportsBuffs = message.statBuffs === 1,supportsV2 = message.bonusV2 === 1, supportsBonusPitches = message.bonusPitches === 1;
+      const changed = app.value.config.skins[1] !== message.skin || app.value.guestBalancedPitches !== supportsBalanced || app.value.guestStatBuffs !== supportsBuffs || app.value.guestBonusV2 !== supportsV2 || app.value.guestBonusPitches !== supportsBonusPitches;
       if (changed) {
-        app.dispatch({ type: 'capabilities.changed', guestBalancedPitches: supportsBalanced, guestStatBuffs: supportsBuffs, guestBonusV2: supportsV2 });
+        app.dispatch({ type: 'capabilities.changed', guestBalancedPitches: supportsBalanced, guestStatBuffs: supportsBuffs, guestBonusV2: supportsV2, guestBonusPitches: supportsBonusPitches });
         const nextSkins = skins(); nextSkins[1] = message.skin; app.dispatch({ type: 'configuration.changed', patch: { skins: nextSkins } });
         update();
       }
@@ -98,6 +102,8 @@ function onMessage(message) {
   }
   if (app.value.role !== 'guest' || message.type !== 'frame' || !Number.isSafeInteger(message.sequence) || message.sequence <= receivedSequence ||
   !Number.isSafeInteger(message.matchId) || message.matchId < app.value.matchId || typeof message.started !== 'boolean' || bonusModeFromMessage(message) === null ||
+  (message.bonusPitches !== undefined && typeof message.bonusPitches !== 'boolean') ||
+  (isBonusPitch(message.state?.values?.[MATCH.pitch]) && message.bonusPitches !== true) ||
   !validSetupStep(message.setupStep) ||
   !Array.isArray(message.pauseFlags) || message.pauseFlags.length !== 2 || !message.pauseFlags.every((v) => typeof v === 'boolean') ||
   message.state?.buffs && !validBalance({ preset: message.balancePreset, amount: message.balanceAmount, buffs: message.state.buffs }) ||
@@ -108,7 +114,7 @@ function onMessage(message) {
   receivedSequence = message.sequence;
   app.dispatch({ type: 'remote.frame', matchId: message.matchId, started: message.started, pauseFlags: message.pauseFlags,
     setupStep: message.setupStep, balancedPitches: message.pitchGeometry === pitchGeometry, newMatch,
-    config: { skins: [received.skins[0], skins()[1]], pitch: received.match.pitch, targetScore: received.match.targetScore,
+    config: { skins: [received.skins[0], skins()[1]], pitch: received.match.pitch, bonusPitches: message.bonusPitches ?? false, targetScore: received.match.targetScore,
       bonusMode: bonusModeFromMessage(message), balance: received.buffs ? { preset: message.balancePreset, amount: message.balanceAmount, buffs: received.buffs } : createBalance() } });
   remoteView.update({ active: app.value.started && !app.value.paused && received.match.phase === PHASE.playing,
     key: `${app.value.matchId}:${app.value.started}:${received.match.phase}:${received.match.pitch}` });
@@ -146,7 +152,7 @@ async function connectRoom(create) {
         // A creator returning from a fresh page has no simulation to resume.
         // Keep the last settings here until it receives them, then start in the lobby.
         receivedSequence = -1;app.dispatch({ type: 'connection.match-reset' });app.dispatch({ type: "preparation.changed", setupStep: 'players' });
-        candidate.send({ type: 'room-settings', skins: skins(), pitch: app.value.config.pitch,
+        candidate.send({ type: 'room-settings', skins: skins(), pitch: app.value.config.pitch, bonusPitches: app.value.config.bonusPitches,
           targetScore: targetScore(), balance: app.value.config.balance, bonuses: bonusMode() !== 0, bonusMode: bonusMode() });
         roomStatus('Vous êtes Rouge. Le créateur peut préparer et lancer le match.');sendInput();
       }

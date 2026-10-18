@@ -2,11 +2,14 @@
 
 ## Contrainte de physique
 
-Cette refonte ne modifie aucun fichier Rust ni le WASM publié avant la refonte.
-La référence locale du binaire est
+La refonte d’application a conservé le binaire physique initial.
+Sa référence locale est
 `9497cd53fc23678abbd4b9a3966d8bf83c4a75b34e804a9c94916311321d1183` (SHA-256).
-Les mêmes commandes produisent les mêmes trajectoires, collisions, scores,
-bonus et nombres de ticks.
+L’ajout ultérieur des six terrains bonus (21 à 26) étend la géométrie du
+moteur et change le binaire WASM. Le solveur, les règles et les géométries
+existantes restent identiques : les mêmes commandes sur les anciens terrains
+produisent les mêmes trajectoires, collisions, scores, bonus et nombres de ticks.
+Seul « Plafond bas » déplace la zone d’apparition des bonus sous son plafond.
 
 `tests/fixtures/physics-preservation.json` a été enregistré avec ce binaire avant
 les modifications d'application. Le test compare les empreintes des sources
@@ -17,6 +20,11 @@ et les tests Rust existants sont également conservés.
 
 Le compilateur Rust est lui aussi fixé à la version 1.99.1 dans
 `rust-toolchain.toml` pour que les publications restent reproductibles.
+
+Pour cet ajout, les 48 scénarios ont été comparés au WASM antérieur et à la
+référence enregistrée, sans aucune différence numérique. Seules les empreintes
+approuvées de `game.rs` et `pitches.rs` ont été actualisées ; les scénarios et
+leurs résultats n’ont pas été régénérés. Les autres sources Rust sont intactes.
 
 Le test ne réécrit jamais cette référence. Une future modification volontaire
 du moteur exige une revue explicite et une nouvelle référence, avec
@@ -118,3 +126,23 @@ ressources de démarrage, l'absence d'anticipation native sur le fil principal,
 la parité du vrai Worker, les limites de rattrapage, les transitions de sortie
 et le repli sans Worker. Les timings de performance restent des mesures
 diagnostiques, pas un seuil de FPS dépendant de la machine du runner.
+
+## Terrains bonus
+
+`data/bonus-pitches.json` possède les noms, descriptions et géométries des
+six nouveaux terrains symétriques. `scripts/generate-pitches.py` génère leurs
+collisions Rust et leur dessin canvas à partir de la même source. Les tests
+comparent les pixels visibles aux vrais colliders natifs.
+
+La configuration centrale `bonusPitches` vaut `false` au démarrage. Elle étend
+la liste de 14 à 20 terrains et, par la même liste, le tirage aléatoire.
+Désactiver l’option conserve un terrain historique ; un terrain bonus revient
+atomiquement au terrain libre (8). Les terrains 10 et 12 restent exclus.
+
+En ligne, le créateur contrôle l’option. Les invités reçoivent le réglage en
+lecture seule ; il survit au retour du créateur via `room-settings`. Le protocole
+reste `sportheads-rooms-7`, avec une capacité additive `bonusPitches: 1` dans les
+commandes invité et le booléen correspondant dans les messages de préparation.
+Un ancien invité peut continuer à lire la préparation sur le terrain libre,
+mais doit actualiser avant de jouer sur un nouveau terrain. Un ancien créateur
+reste compatible : l’absence d’option vaut `false`.

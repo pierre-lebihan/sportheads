@@ -1,0 +1,128 @@
+[
+  {
+    "id": 21,
+    "name": "Flipper",
+    "description": "Deux obstacles ronds suspendus. Le passage au sol reste libre.",
+    "obstacles": [
+      [
+        "circle",
+        280,
+        230,
+        50
+      ],
+      [
+        "circle",
+        520,
+        230,
+        50
+      ]
+    ]
+  },
+  {
+    "id": 22,
+    "name": "Double tremplin",
+    "description": "Deux rampes en miroir pour les lobs et les reprises de tête.",
+    "obstacles": [
+      [
+        "box",
+        320,
+        410,
+        62,
+        10,
+        -0.5235987755982988
+      ],
+      [
+        "box",
+        480,
+        410,
+        62,
+        10,
+        0.5235987755982988
+      ]
+    ]
+  },
+  {
+    "id": 23,
+    "name": "Le pont",
+    "description": "Une plateforme centrale : jouez dessous ou faites retomber le ballon derrière.",
+    "obstacles": [
+      [
+        "box",
+        400,
+        270,
+        130,
+        12,
+        0
+      ]
+    ]
+  },
+  {
+    "id": 24,
+    "name": "Ricochets",
+    "description": "Des déflecteurs inclinés en hauteur pour tenter des tirs indirects.",
+    "obstacles": [
+      [
+        "box",
+        230,
+        150,
+        65,
+        9,
+        0.5235987755982988
+      ],
+      [
+        "box",
+        570,
+        150,
+        65,
+        9,
+        -0.5235987755982988
+      ],
+      [
+        "box",
+        330,
+        85,
+        45,
+        8,
+        -0.5235987755982988
+      ],
+      [
+        "box",
+        470,
+        85,
+        45,
+        8,
+        0.5235987755982988
+      ]
+    ]
+  },
+  {
+    "id": 25,
+    "name": "Plafond bas",
+    "description": "Un plafond abaissé, sans obstacle central : les dégagements reviennent vite.",
+    "obstacles": [
+      [
+        "box",
+        400,
+        180,
+        400,
+        12,
+        0
+      ]
+    ]
+  },
+  {
+    "id": 26,
+    "name": "Le diamant",
+    "description": "Un losange suspendu : quatre faces pour varier les rebonds.",
+    "obstacles": [
+      [
+        "box",
+        400,
+        130,
+        55,
+        55,
+        0.7853981633974483
+      ]
+    ]
+  }
+]

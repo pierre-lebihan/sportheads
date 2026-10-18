@@ -1,5 +1,5 @@
 import { PHASE, MATCH, BODY_ROLE, BODY, BONUS_FIELDS, decodeFields, readBonus } from './engine-contract.js';
-import { BALANCED_PITCHES, ORIGINAL_PITCHES } from './pitch-geometry.js';
+import { BALANCED_PITCHES, BONUS_PITCHES, ORIGINAL_PITCHES } from './pitch-geometry.js';
 import { NEW_BONUSES } from './bonuses.js';
 // Original vector sprites exported from the SWF; all registration points and
 // timeline frames come from assets/manifest.json, without a Flash runtime.
@@ -80,7 +80,7 @@ function paintObstacle(ctx, halfWidth, halfHeight, circle = false) {
 }
 
 export function drawPitch(ctx, pitch, balanced = false) {
-  const props = (balanced && BALANCED_PITCHES[pitch]) || ORIGINAL_PITCHES[pitch];
+  const props = (balanced && (BONUS_PITCHES[pitch] || BALANCED_PITCHES[pitch])) || ORIGINAL_PITCHES[pitch];
   if (!props) return drawSprite(ctx, 'blueprints', pitch, 0, 0);
   for (const [kind, x, y, size, height, angle] of props) {
     ctx.save(); ctx.translate(x, y); ctx.rotate(angle || 0);

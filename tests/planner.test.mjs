@@ -27,6 +27,16 @@ test('the private replica replays the exact commands; planning cannot mutate aut
   }
   assert.throws(() => replica.command('invented', []));
 });
+test('bonus layouts replay in the private AI replica without changing authoritative physics', async () => {
+  const module = await load(), e = (await WebAssembly.instantiate(module)).exports, replica = await createPlannerRuntime(module);
+  for (const pitch of [21,22,23,24,25,26]) {
+    e.game_start_balanced_pitch(3125, 7, 1, pitch); replica.command('game_start_balanced_pitch', [3125,7,1,pitch]);
+    for (let tick=0; tick<100; tick++) { e.game_tick(2|16); replica.command('game_tick',[2|16]); }
+    assert.deepEqual(replica.inspect(), captureState(e,[1,2]));
+    assert.equal(replica.plan({side:1,preferred:1,opponentInput:2,expert:1}).mask, e.game_ai_plan(1,1,2,1));
+    assert.deepEqual(replica.inspect(), captureState(e,[1,2]));
+  }
+});
 test('expired plans and replies from a terminated worker cannot change a later match', async () => {
   const module = await load(), raw = (await WebAssembly.instantiate(module)).exports, workers = [];
   const makeWorker = () => { const worker = { postMessage() {}, terminate() { this.terminated = true; } }; workers.push(worker); return worker; };

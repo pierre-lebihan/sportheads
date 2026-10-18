@@ -1,7 +1,7 @@
 import { createBalance, copyBalance } from './balance.js';
 import { PLAYER_COUNT } from './players.js';
 import { PREPARATION_STEPS } from './setup-ui.js';
-import { PLAYABLE_PITCH_IDS } from './engine-contract.js';
+import { PLAYABLE_PITCH_IDS, isBonusPitch, isKnownPitch } from './engine-contract.js';
 import { AI_LEVELS } from './opponent.js';
 import { TOUCH_LAYOUTS } from './touch-layout.js';
 
@@ -12,24 +12,29 @@ const freeze = value => {
   return value;
 };
 const cleared = { started: false, paused: false, pauseFlags: [false, false], settingsOpen: false,
-  guestBalancedPitches: false, remoteBalancedPitches: false, guestStatBuffs: false, guestBonusV2: false };
+  guestBalancedPitches: false, remoteBalancedPitches: false, guestStatBuffs: false, guestBonusV2: false, guestBonusPitches: false };
 function initialAppState() {
   return freeze({ ...cleared, mode: 'local', role: null, connected: false, code: '', joinCode: '', busy: false, restoringSettings: false,
     soundEnabled: true, touchLayout: 'thumbs', setupStep: 'home', lastValidTarget: 7, matchId: 0, roomNotice: { message: '', error: false },
-    config: { skins: [1, 2], pitch: 8, targetScore: 7, bonusMode: 1, difficulty: 'normal', balance: createBalance() } });
+    config: { skins: [1, 2], pitch: 8, bonusPitches: false, targetScore: 7, bonusMode: 1, difficulty: 'normal', balance: createBalance() } });
 }
 const fields = {
   'connection.changed': ['role', 'connected', 'code', 'busy', 'restoringSettings'],
   'preparation.changed': ['setupStep'],
   'preferences.changed': ['soundEnabled', 'touchLayout'],
-  'capabilities.changed': ['guestBalancedPitches', 'remoteBalancedPitches', 'guestStatBuffs', 'guestBonusV2'],
+  'capabilities.changed': ['guestBalancedPitches', 'remoteBalancedPitches', 'guestStatBuffs', 'guestBonusV2', 'guestBonusPitches'],
 };
 function configuration(state, patch, remote = false) {
-  if (Object.keys(patch).some(name => !['skins', 'pitch', 'targetScore', 'bonusMode', 'difficulty', 'balance'].includes(name))) throw TypeError('Unknown match setting');
-  if (Object.hasOwn(patch, 'pitch') && !(remote ? Number.isInteger(patch.pitch) && patch.pitch >= 2 && patch.pitch <= 20 : PLAYABLE_PITCH_IDS.includes(patch.pitch))) throw TypeError('Invalid pitch');
+  if (Object.keys(patch).some(name => !['skins', 'pitch', 'bonusPitches', 'targetScore', 'bonusMode', 'difficulty', 'balance'].includes(name))) throw TypeError('Unknown match setting');
+  if (Object.hasOwn(patch, 'bonusPitches') && typeof patch.bonusPitches !== 'boolean') throw TypeError('Invalid bonus pitches option');
   if (Object.hasOwn(patch, 'bonusMode') && ![0, 1, 2].includes(patch.bonusMode)) throw TypeError('Invalid bonus mode');
   if (Object.hasOwn(patch, 'difficulty') && !AI_LEVELS.some(level => level.id === patch.difficulty)) throw TypeError('Invalid difficulty');
   const next = { ...state.config, ...patch };
+  if (Object.hasOwn(patch, 'pitch') && !(remote ? isKnownPitch(patch.pitch) : PLAYABLE_PITCH_IDS.includes(patch.pitch) || isBonusPitch(patch.pitch))) throw TypeError('Invalid pitch');
+  if (isBonusPitch(next.pitch) && !next.bonusPitches) {
+    if (Object.hasOwn(patch, 'pitch')) throw TypeError('Bonus pitches are disabled');
+    next.pitch = 8;
+  }
   if (patch.skins) {
     if (!Array.isArray(patch.skins) || patch.skins.length !== 2 || !patch.skins.every(id => Number.isInteger(id) && id >= 1 && id <= PLAYER_COUNT)) throw TypeError('Invalid players');
     next.skins = patch.skins.slice();

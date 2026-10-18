@@ -1,4 +1,4 @@
-import { MATCH, BODY_ROLE, BODY, PLAYER, BONUS, BUFF, MATCH_FIELDS, BODY_FIELDS, PLAYER_FIELDS, PICKUP_FIELDS, BOMB_FIELDS, EFFECT_FIELDS, encodeFields, decodeFrame } from './engine-contract.js';
+import { isKnownPitch, MATCH, BODY_ROLE, BODY, PLAYER, BONUS, BUFF, MATCH_FIELDS, BODY_FIELDS, PLAYER_FIELDS, PICKUP_FIELDS, BOMB_FIELDS, EFFECT_FIELDS, encodeFields, decodeFrame } from './engine-contract.js';
 import { PLAYER_COUNT } from './players.js';
 import { validBuffs, BUFF_STATS } from './balance.js';
 import { validBonusState, BONUS_FIELD_COUNT } from './bonuses.js';
@@ -41,7 +41,7 @@ export function isValidState(packet) {
       || !integer(v[MATCH.countdown], 0) || !integer(v[MATCH.lastScorer], -1, 1) || !integer(v[MATCH.tick], 0)
       || !integer(v[MATCH.sounds], 0, 127) || ![v[MATCH.blueGoalHeight], v[MATCH.redGoalHeight]].every(height => hasBuffs ? integer(height, 30, 140) : oneOf(height, [60, 100, 140]))
       || !integer(v[MATCH.notice], 0, bonusCount) || !integer(v[MATCH.noticeTicks], 0, 70) || !oneOf(v[MATCH.mode], [0, 1]) || !integer(v[MATCH.bounce], 0, 2)
-      || !integer(v[MATCH.targetScore], 1, 99) || !integer(v[MATCH.pitch], 2, 20)) return false;
+      || !integer(v[MATCH.targetScore], 1, 99) || !isKnownPitch(v[MATCH.pitch])) return false;
     const roles = new Set();
     if (!rows(bodies, 6, BODY_FIELDS.length, body => {
       const role = body[BODY.role], radius = body[BODY.radius];

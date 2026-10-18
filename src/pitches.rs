@@ -1,7 +1,9 @@
 //! Historical Flash geometry and symmetric public variants.
 //! Regenerate: python3 scripts/generate-pitches.py
-//! Sources: tests/fixtures/pitches/original.json and data/balanced-pitches.json.
+//! Sources: tests/fixtures/pitches/original.json and data/{balanced,bonus}-pitches.json.
 use crate::{body::Body, math::Vec2, world::World};
+
+pub const LAST_BONUS_PITCH: u32 = 26;
 
 enum Obstacle {
     Circle(f64, f64, f64),
@@ -177,6 +179,29 @@ pub fn spawn_balanced(world: &mut World, pitch: u32) {
             Obstacle::Box(278.5, 138.5, 66.5, 12.0, 2.6179938779914944),
             Obstacle::Circle(400.0, 120.0, 15.0),
         ],
+        21 => &[
+            Obstacle::Circle(280.0, 230.0, 50.0),
+            Obstacle::Circle(520.0, 230.0, 50.0),
+        ],
+        22 => &[
+            Obstacle::Box(320.0, 410.0, 62.0, 10.0, -0.5235987755982988),
+            Obstacle::Box(480.0, 410.0, 62.0, 10.0, 0.5235987755982988),
+        ],
+        23 => &[Obstacle::Box(400.0, 270.0, 130.0, 12.0, 0.0)],
+        24 => &[
+            Obstacle::Box(230.0, 150.0, 65.0, 9.0, 0.5235987755982988),
+            Obstacle::Box(570.0, 150.0, 65.0, 9.0, -0.5235987755982988),
+            Obstacle::Box(330.0, 85.0, 45.0, 8.0, -0.5235987755982988),
+            Obstacle::Box(470.0, 85.0, 45.0, 8.0, 0.5235987755982988),
+        ],
+        25 => &[Obstacle::Box(400.0, 180.0, 400.0, 12.0, 0.0)],
+        26 => &[Obstacle::Box(
+            400.0,
+            130.0,
+            55.0,
+            55.0,
+            std::f64::consts::FRAC_PI_4,
+        )],
         _ => {
             spawn(world, pitch);
             return;

@@ -12,8 +12,9 @@ import { loadAssets, prepareMatchAssets, matchAssetsReady, drawGame, drawBonusPi
 import './vendor/peerjs-1.5.5.min.js';
 import { normalizeCode, validCode } from "./rooms.js";
 
-import { PLAYER_NAMES, PITCHES, createCharacterSelection } from "./selection.js";
+import { PLAYER_NAMES, createCharacterSelection } from "./selection.js";
 import { PLAYER_COUNT } from './players.js';
+import { isBonusPitch } from './engine-contract.js';
 import { BALANCED_PITCHES } from './pitch-geometry.js';
 
 import { createBalanceControls } from './balance-ui.js';
@@ -58,7 +59,6 @@ const difficulty = () => AI_LEVELS.find(level => level.id === app.value.config.d
 for (const [id, selected] of [['skin-left', 1], ['skin-right', 2]]) {
   for (let i = 1; i <= PLAYER_COUNT; i++) {const option = new Option(PLAYER_NAMES[i - 1], i);option.selected = i === selected;$('#' + id).add(option);}
 }
-for (const pitch of PITCHES) {const option = new Option(pitch.name, pitch.id);option.selected = pitch.id === 8;$('#pitch').add(option);}
 const characterSelection = createCharacterSelection($('#player-choice'));
 const engine = () => app.value.mode === 'online' && app.value.role === 'guest' ? network.engine : core;
 const renderEngine = () => app.value.mode === 'online' && app.value.role === 'guest' && app.value.started && !app.value.paused && app.value.connected && engine().game_value(MATCH.phase) === PHASE.playing ? network.viewEngine : engine();
@@ -70,7 +70,7 @@ const bonusMode = () => app.value.config.bonusMode;
 const targetScore = () => app.value.config.targetScore;
 const validTarget = () => Number.isInteger(targetScore()) && targetScore() >= 1 && targetScore() <= 9;
 const peerUpdateNeeded = () => app.value.mode === 'online' && app.value.role === 'host' && app.value.connected && (
-!!BALANCED_PITCHES[app.value.config.pitch] && !app.value.guestBalancedPitches || !app.value.guestStatBuffs || bonusMode() === 2 && !app.value.guestBonusV2);
+isBonusPitch(app.value.config.pitch) && !app.value.guestBonusPitches || !!BALANCED_PITCHES[app.value.config.pitch] && !app.value.guestBalancedPitches || !app.value.guestStatBuffs || bonusMode() === 2 && !app.value.guestBonusV2);
 const canStart = () => !!core && matchAssetsReady(bonusMode()) && !app.value.restoringSettings && validTarget() && !peerUpdateNeeded() && (app.value.mode !== 'online' || app.value.role === 'host' && app.value.connected);
 function input(kind = 'pulse') {
   let mask = touch.mask(kind);
@@ -83,7 +83,7 @@ function snapshot() {
     difficulty: appState.mode === 'ai' ? appState.config.difficulty : null, connected: appState.connected, code: appState.code,
     matchId: appState.matchId, setupStep: appState.setupStep, phase: match.phase,
     targetScore: appState.started ? match.targetScore : appState.config.targetScore,
-    pitch: appState.started ? match.pitch : appState.config.pitch, bonusMode: appState.config.bonusMode,
+    pitch: appState.started ? match.pitch : appState.config.pitch, bonusPitches: appState.config.bonusPitches, bonusMode: appState.config.bonusMode,
     balance: appState.config.balance, buffs: appState.config.balance.buffs,
     remainingTicks: match.remainingTicks, score: [match.blueScore, match.redScore], countdown: match.countdown, tick: match.tick };
 }
@@ -172,6 +172,7 @@ for (const [id, delta] of [['goal-minus', -1], ['goal-plus', 1]]) $('#' + id).ad
   $('#target-score').value = next;$('#target-score').dispatchEvent(new Event('input', { bubbles: true }));
 });
 $('#bonuses').addEventListener('change', () => { if ($('#bonuses').disabled) return; app.dispatch({ type: 'configuration.changed', patch: { bonusMode: +$('#bonuses').value } }); update(); broadcast(); });
+$('#bonus-pitches').addEventListener('change', () => { if ($('#bonus-pitches').disabled) return; app.dispatch({ type: 'configuration.changed', patch: { bonusPitches: $('#bonus-pitches').checked } }); update(); broadcast(); });
 $('#pitch').addEventListener('change', () => { if ($('#pitch').disabled) return; app.dispatch({ type: 'configuration.changed', patch: { pitch: +$('#pitch').value } }); update(); broadcast(); });
 for (const [buttonId, selectId] of randomChoices) $('#' + buttonId).addEventListener('click', () => {
   const select = $('#' + selectId);

@@ -18,7 +18,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
   }
   const connected = page => page.waitForFunction(() => sportheads.snapshot().connected);
   async function settingsMatch(page) {
-    await page.waitForFunction(() => document.querySelector('#pitch').value === '11'
+    await page.waitForFunction(() => document.querySelector('#pitch').value === '26' && document.querySelector('#bonus-pitches').checked
       && document.querySelector('#target-score').value === '5' && JSON.stringify(sportheads.snapshot().buffs) === '[[13,27,41,22,39],[9,0,50,49,8]]'
       && document.querySelector('#bonuses').value === '2');
   }
@@ -29,7 +29,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
     const guest = await pageAt(share.href); await guest.click('#join-room');
     await Promise.all([connected(host), connected(guest)]);
     await host.selectOption('#skin-left', '11'); await guest.selectOption('#skin-right', '7');
-    await goToSetup(host, 'pitch'); await host.selectOption('#pitch', '11');
+    await goToSetup(host, 'pitch'); await host.check('#bonus-pitches'); await host.selectOption('#pitch', '26');
     await goToSetup(host, 'rules'); await setTarget(host, 5);
     await setManualBuffs(host, [[13,27,41,22,39],[9,0,50,49,8]]);
     await host.locator('#bonuses').selectOption('2'); await settingsMatch(guest);
@@ -59,7 +59,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
     assert.equal(await returning.locator('#skin-right').isEnabled(), false);
     await goToSetup(returning, 'rules'); await returning.click('#start');
     await guest.waitForFunction(() => sportheads.snapshot().started && sportheads.snapshot().targetScore === 5);
-    assert.equal((await state(guest)).pitch, 11); assert.deepEqual((await state(guest)).buffs, [[13,27,41,22,39],[9,0,50,49,8]]);
+    assert.equal((await state(guest)).pitch, 26); assert.deepEqual((await state(guest)).buffs, [[13,27,41,22,39],[9,0,50,49,8]]);
     const third = await pageAt(share.href); await third.click('#join-room');
     await third.waitForFunction(() => document.querySelector('#room-status').textContent.includes('complète'));
     assert.equal((await state(returning)).connected, true); assert.equal((await state(guest)).connected, true); await third.close();

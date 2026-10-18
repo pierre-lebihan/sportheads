@@ -133,7 +133,14 @@ impl Game {
             v2: crate::bonus_v2::BonusesV2::default(),
             mode: 0,
             target_score: 7,
-            pitch: pitch.clamp(2, 20),
+            pitch: pitch.clamp(
+                2,
+                if balanced_pitch {
+                    crate::pitches::LAST_BONUS_PITCH
+                } else {
+                    20
+                },
+            ),
             balanced_pitch,
             goal_style: 0,
             active_ticks: 0,
@@ -675,7 +682,14 @@ impl Game {
                 self.spawn_timer = 0;
                 let count = if self.bonus_mode == 2 { 23.0 } else { 18.0 };
                 let kind = (self.random() * count).ceil().max(1.0) as u32;
-                let p = Vec2::new(220.0 + self.random() * 360.0, 150.0 + self.random() * 270.0);
+                // Keep pickups below the bonus pitch ceiling; preserve the same RNG calls.
+                let x = 220.0 + self.random() * 360.0;
+                let y = if self.balanced_pitch && self.pitch == 25 {
+                    220.0 + self.random() * 200.0
+                } else {
+                    150.0 + self.random() * 270.0
+                };
+                let p = Vec2::new(x, y);
                 self.pickups.push(Pickup {
                     kind,
                     position: p,

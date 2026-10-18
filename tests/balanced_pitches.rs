@@ -5,7 +5,7 @@ use sportheads_core::{
 
 #[test]
 fn corrected_obstacles_survive_goals_and_the_original_layout_remains_available() {
-    for pitch in [2, 4, 6, 9, 14, 15, 16, 17, 18] {
+    for pitch in [2, 4, 6, 9, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26] {
         let mut game = Game::score_match_on_balanced(7, 7, false, pitch);
         let obstacles = |game: &Game| {
             game.world.bodies[17..]

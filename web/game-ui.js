@@ -3,7 +3,7 @@ import { BONUS_MODES, BONUS_NAMES } from './bonuses.js';
 import { AI_LEVELS } from './opponent.js';
 import { matchAssetsReady } from './assets.js';
 import { renderSetup } from './setup-ui.js';
-import { updateSelectionPreviews } from './selection.js';
+import { updateSelectionPreviews, updatePitchChoices } from './selection.js';
 
 // Only this view projects application state into controls and menus.
 export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerUpdateNeeded, hasTouch, touch, balancing, characterSelection, clearInput, audio, randomChoices }) {
@@ -21,6 +21,8 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   lastUiKey = uiKey;
   $('#join-code').value = app.value.joinCode;
   $('#skin-left').value = config.skins[0]; $('#skin-right').value = config.skins[1];
+  updatePitchChoices($('#pitch'), config.bonusPitches);
+  $('#bonus-pitches').checked = config.bonusPitches;
   $('#pitch').value = config.pitch; $('#target-score').value = config.targetScore; $('#bonuses').value = config.bonusMode;
   for (const radio of document.querySelectorAll('[name="ai-level"]')) radio.checked = radio.value === config.difficulty;
   balancing.value = config.balance;
@@ -67,7 +69,7 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   $('#bonuses-help').textContent = BONUS_MODES[bonusMode()].description;
   $('#v2-guide').hidden = bonusMode() !== 2;
   for (const radio of document.querySelectorAll('[name="ai-level"]')) radio.disabled = app.value.started && phase !== PHASE.finished;
-  for (const id of ['target-score', 'pitch']) $('#' + id).disabled = !!settingsLocked;
+  for (const id of ['target-score', 'pitch', 'bonus-pitches']) $('#' + id).disabled = !!settingsLocked;
   $('#goal-minus').disabled = !!settingsLocked || targetScore() <= 1;
   $('#goal-plus').disabled = !!settingsLocked || targetScore() >= 9;
   balancing.update({ disabled: !!settingsLocked, skins: config.skins });

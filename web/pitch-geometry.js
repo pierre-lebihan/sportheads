@@ -658,3 +658,133 @@ export const BALANCED_PITCHES = {
     ]
   ]
 };
+export const BONUS_PITCHES = {
+  "21": [
+    [
+      "circle",
+      280,
+      230,
+      50
+    ],
+    [
+      "circle",
+      520,
+      230,
+      50
+    ]
+  ],
+  "22": [
+    [
+      "box",
+      320,
+      410,
+      62,
+      10,
+      -0.5235987755982988
+    ],
+    [
+      "box",
+      480,
+      410,
+      62,
+      10,
+      0.5235987755982988
+    ]
+  ],
+  "23": [
+    [
+      "box",
+      400,
+      270,
+      130,
+      12,
+      0
+    ]
+  ],
+  "24": [
+    [
+      "box",
+      230,
+      150,
+      65,
+      9,
+      0.5235987755982988
+    ],
+    [
+      "box",
+      570,
+      150,
+      65,
+      9,
+      -0.5235987755982988
+    ],
+    [
+      "box",
+      330,
+      85,
+      45,
+      8,
+      -0.5235987755982988
+    ],
+    [
+      "box",
+      470,
+      85,
+      45,
+      8,
+      0.5235987755982988
+    ]
+  ],
+  "25": [
+    [
+      "box",
+      400,
+      180,
+      400,
+      12,
+      0
+    ]
+  ],
+  "26": [
+    [
+      "box",
+      400,
+      130,
+      55,
+      55,
+      0.7853981633974483
+    ]
+  ]
+};
+export const BONUS_PITCH_INFO = [
+  {
+    "id": 21,
+    "name": "Flipper",
+    "description": "Deux obstacles ronds suspendus. Le passage au sol reste libre."
+  },
+  {
+    "id": 22,
+    "name": "Double tremplin",
+    "description": "Deux rampes en miroir pour les lobs et les reprises de tête."
+  },
+  {
+    "id": 23,
+    "name": "Le pont",
+    "description": "Une plateforme centrale : jouez dessous ou faites retomber le ballon derrière."
+  },
+  {
+    "id": 24,
+    "name": "Ricochets",
+    "description": "Des déflecteurs inclinés en hauteur pour tenter des tirs indirects."
+  },
+  {
+    "id": 25,
+    "name": "Plafond bas",
+    "description": "Un plafond abaissé, sans obstacle central : les dégagements reviennent vite."
+  },
+  {
+    "id": 26,
+    "name": "Le diamant",
+    "description": "Un losange suspendu : quatre faces pour varier les rebonds."
+  }
+];

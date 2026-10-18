@@ -11,6 +11,9 @@ export const BONUS_FIELDS = Object.freeze(['mode', 'blueCharge', 'redCharge', 'b
 export const MATCH = fields(MATCH_FIELDS), BODY = fields(BODY_FIELDS), PLAYER = fields(PLAYER_FIELDS);
 export const BONUS = fields(BONUS_FIELDS);
 export const PHASE = Object.freeze({ countdown: 0, playing: 1, goal: 2, finished: 3 });
+export const BONUS_PITCH_IDS = Object.freeze([21, 22, 23, 24, 25, 26]);
+export const isBonusPitch = id => BONUS_PITCH_IDS.includes(id);
+export const isKnownPitch = id => Number.isInteger(id) && (id >= 2 && id <= 20 || isBonusPitch(id));
 export const PLAYABLE_PITCH_IDS = Object.freeze([2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 15, 16, 17, 18]);
 export const BODY_ROLE = Object.freeze({ obstacle: 0, blue: 1, red: 2, ball: 3, blueFoot: 4, redFoot: 5, streaker: 6 });
 export const BUFF = Object.freeze({ jump: 0, head: 1, goal: 2, speed: 3, kick: 4 });

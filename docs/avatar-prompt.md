@@ -28,3 +28,14 @@ de style. La photo personnelle n'est pas publiée.
 ```text
 Use case: stylized-concept. Asset type: ONE production game sprite atlas for an arcade big-head football game, TWO equal square cells side by side, 2 columns and 1 row, canvas aspect ratio exactly 2:1, true transparent background. Input image 1 is identity reference only: Thibaud is the man on the LEFT, Marie is the woman on the RIGHT. Input image 2 is the exact illustration style reference only, not identities. Generate ONLY the two new heads matching the polished hand-drawn cartoon caricature style of image 2, dark outlines, clean cel shading, expressive recognizable faces. LEFT CELL: Thibaud, fair skin, shaved/bald head with very short dark stubble along sides, oval face, dark eyebrows, short neatly trimmed dark beard and moustache, warm smile showing teeth, matching the man in photo. RIGHT CELL: Marie, fair skin, long oval feminine face, dark brown hair pulled back into TWO braided pigtails visible beside the cheeks, warm broad smile showing teeth, matching the woman in photo. Correct the strong backlighting in the photo so faces are clear, naturally colored, softly evenly lit. Both face very slightly toward the RIGHT, nearly frontal, same scale and orientation as the style reference. Each head must be exactly centered in its square cell, including hair/ears/braids/tiny neck stub entirely within the central 86 percent of cell width and height, transparent padding all around. Head only, tiny neck stub; no shoulders, no shirts, no stadium, no scarf, no background scenery, no text, no numbers, no logos, no grid lines, no cast shadows outside heads. Exactly two distinct isolated heads. Recognizable flattering caricatures from the identity reference, not photographs. Preserve the bald head and short beard for Thibaud, and two dark braids for Marie.
 ```
+
+## Corentin
+
+Outil intégré `image_gen.imagegen`, fond transparent. Fichier final :
+`web/assets/corentin.png`, une cellule carrée. L’homme au premier plan à droite
+sur la photo fournie sert de référence d’identité ; l’atlas Thibaud/Marie sert
+de référence de style. La photo personnelle n’est pas publiée.
+
+```text
+undefined
+```

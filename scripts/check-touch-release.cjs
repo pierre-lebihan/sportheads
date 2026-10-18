@@ -49,7 +49,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-touch-rel
       assert.equal(await page.locator('.touch-pad .pressed').count(), 0);
       const box = await left.boundingBox(); await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.down(); assert.equal(await left.getAttribute('aria-pressed'), 'true');
-      await page.mouse.move(1, 1); assert.equal(await left.getAttribute('aria-pressed'), 'true');
+      await page.mouse.move(1, 1); assert.equal(await left.getAttribute('aria-pressed'), 'false', 'leaving the movement pad returns it to neutral');
       await page.mouse.up(); assert.equal(await left.getAttribute('aria-pressed'), 'false');
       assert.deepEqual(errors, []);
       console.log(JSON.stringify({ passed: true, browser: name, checks: ['lost pointer release', 'repeated taps', 'next gesture repairs missing touchend', 'keyboard remains independent', 'pause and resume', 'mouse capture and release'] }));

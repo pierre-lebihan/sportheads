@@ -31,13 +31,19 @@
       <div id="touch-controls" class="touch-controls" aria-label="Commandes tactiles">
         <div class="touch-pad blue" data-side="0" role="group" aria-label="Commandes Bleu">
           <span class="touch-name">Bleu</span>
-          <div class="touch-move"><button type="button" data-action="1" aria-label="Bleu : aller à gauche" disabled>◀</button><button type="button" data-action="2" aria-label="Bleu : aller à droite" disabled>▶</button></div>
-          <div class="touch-actions"><button type="button" data-action="4" aria-label="Bleu : sauter" disabled><span aria-hidden="true">↑</span><small>Saut</small></button><button type="button" data-action="8" aria-label="Bleu : frapper" disabled><span aria-hidden="true">⚽</span><small>Tir</small></button></div>
+          <div class="touch-move" data-movement role="group" aria-label="Bleu : déplacement et saut">
+            <button type="button" data-action="5" aria-label="Bleu : gauche et saut" disabled>↖</button><button type="button" data-action="4" class="index-jump" aria-label="Bleu : sauter" disabled><span aria-hidden="true">↑</span><small>Saut</small></button><button type="button" data-action="6" aria-label="Bleu : droite et saut" disabled>↗</button>
+            <button type="button" data-action="1" aria-label="Bleu : aller à gauche" disabled>◀</button><button type="button" data-action="0" aria-label="Bleu : arrêter" disabled>•</button><button type="button" data-action="2" aria-label="Bleu : aller à droite" disabled>▶</button>
+          </div>
+          <div class="touch-actions"><button type="button" data-action="8" aria-label="Bleu : frapper" disabled><span aria-hidden="true">⚽</span><small>Tir</small></button></div>
         </div>
         <div class="touch-pad red" data-side="1" role="group" aria-label="Commandes Rouge">
           <span class="touch-name">Rouge</span>
-          <div class="touch-move"><button type="button" data-action="1" aria-label="Rouge : aller à gauche" disabled>◀</button><button type="button" data-action="2" aria-label="Rouge : aller à droite" disabled>▶</button></div>
-          <div class="touch-actions"><button type="button" data-action="4" aria-label="Rouge : sauter" disabled><span aria-hidden="true">↑</span><small>Saut</small></button><button type="button" data-action="8" aria-label="Rouge : frapper" disabled><span aria-hidden="true">⚽</span><small>Tir</small></button></div>
+          <div class="touch-move" data-movement role="group" aria-label="Rouge : déplacement et saut">
+            <button type="button" data-action="5" aria-label="Rouge : gauche et saut" disabled>↖</button><button type="button" data-action="4" class="index-jump" aria-label="Rouge : sauter" disabled><span aria-hidden="true">↑</span><small>Saut</small></button><button type="button" data-action="6" aria-label="Rouge : droite et saut" disabled>↗</button>
+            <button type="button" data-action="1" aria-label="Rouge : aller à gauche" disabled>◀</button><button type="button" data-action="0" aria-label="Rouge : arrêter" disabled>•</button><button type="button" data-action="2" aria-label="Rouge : aller à droite" disabled>▶</button>
+          </div>
+          <div class="touch-actions"><button type="button" data-action="8" aria-label="Rouge : frapper" disabled><span aria-hidden="true">⚽</span><small>Tir</small></button></div>
         </div>
       </div>
           </div>
@@ -100,7 +106,12 @@
             <div class="launch"><h2 id="welcome-title">À vous de jouer.</h2><p id="welcome-detail">Le premier à atteindre l’objectif gagne.</p><p id="guest-wait" hidden>Le créateur lancera le match lorsque vous serez prêts.</p></div>
           </section>
           <div id="setup-navigation" hidden class="setup-navigation"><button id="setup-back">Précédent</button><button id="setup-next" class="primary">Continuer</button><button id="start" class="primary" disabled hidden>Chargement…</button></div>
-          <details class="help"><summary>Commandes et projet</summary><p>Bleu : Q/A, D, Z/W et Espace. Rouge : flèches et P. Échap : pause.</p><p id="online-controls" hidden>En ligne ou contre l’IA : flèches et P, ou Q/A, D, Z/W et Espace. Vous contrôlez uniquement votre joueur.</p><p>Sur mobile : maintenez les flèches, combinez Saut et Tir. Essayez le mode paysage.</p><nav aria-label="Projet"><a href="./physics.html">Comparaisons physiques</a><a href="https://github.com/pierre-lebihan/sportheads">GitHub</a></nav></details>
+          <details id="touch-settings" class="touch-settings" hidden><summary>Commandes tactiles</summary>
+            <label for="touch-layout">Disposition sur cet appareil</label>
+            <select id="touch-layout"><option value="thumbs">2 pouces · saut sur le pavé</option><option value="three-fingers">3 doigts · saut séparé en haut</option></select>
+            <p id="touch-layout-help"></p>
+          </details>
+          <details class="help"><summary>Commandes et projet</summary><p>Bleu : Q/A, D, Z/W et Espace. Rouge : flèches et P. Échap : pause.</p><p id="online-controls" hidden>En ligne ou contre l’IA : flèches et P, ou Q/A, D, Z/W et Espace. Vous contrôlez uniquement votre joueur.</p><p>Sur mobile : choisissez votre disposition dans Commandes tactiles. Le bouton Tir reste toujours manuel. Essayez le mode paysage.</p><nav aria-label="Projet"><a href="./physics.html">Comparaisons physiques</a><a href="https://github.com/pierre-lebihan/sportheads">GitHub</a></nav></details>
         </section>
       </div>
       <div id="paused" class="cover" hidden><div class="cover-panel"><h2>Pause</h2><p id="pause-detail">Le temps vous attend.</p><button id="resume" class="primary">Reprendre</button></div></div>

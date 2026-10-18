@@ -28,6 +28,8 @@ let restoringSettings = false, recoveryTimer;
 let opponent = null;
 const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
 const touch = createTouchControls($('#touch-controls'), sendInput);
+$('#touch-layout').value = touch.layout;
+$('#touch-layout').addEventListener('change', () => { clearInput(); touch.setLayout($('#touch-layout').value); update(); });
 function clearInput() { keys.clear(); touch.clear(); }
 for (const level of AI_LEVELS) {
   const label = document.createElement('label'), radio = document.createElement('input');
@@ -362,11 +364,15 @@ function update() {
   // Tick/position changes belong to the canvas, not to the preparation menus.
   const uiKey = JSON.stringify([!!core, mode, role, state.connected, started, paused, settingsOpen, setupStep, busy, restoringSettings,
     pauseFlags, phase, state.score, state.targetScore, state.pitch, state.assists, state.difficulty, matchId, skins(), $('#target-score').value, $('#pitch').value, $('#balance').value, $('#bonuses').checked,
-    e?.game_value(10), (e?.game_value(11) || 0) > 0, hasTouch()]);
+    e?.game_value(10), (e?.game_value(11) || 0) > 0, hasTouch(), touch.layout]);
   if (uiKey === lastUiKey) return;
   lastUiKey = uiKey;
   const names = mode === 'ai' ? ['Vous · Bleu', 'IA · Rouge'] : ['Bleu', 'Rouge'];
   document.body.classList.toggle('touch-device', hasTouch());
+  $('#touch-settings').hidden = !hasTouch();
+  $('#touch-layout-help').textContent = touch.layout === 'thumbs'
+    ? 'Pouce gauche : glissez sur le pavé pour marcher, vers le haut pour ajouter le saut. Pouce droit : Tir. Au centre, le joueur s’arrête.'
+    : 'Pouce gauche : déplacement. Index gauche : Saut, en haut à gauche. Pouce droit : Tir. En local, Rouge a son bouton Saut en haut à droite.';
   $('#play-view').disabled = !started;
   $('#play-view').setAttribute('aria-expanded', String(!started || settingsOpen));
   $('#close-settings').hidden = !started;

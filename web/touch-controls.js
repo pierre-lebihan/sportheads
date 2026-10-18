@@ -1,92 +1,119 @@
-// Native touch snapshots remove stale fingers even when a pointer release is lost.
-// Mouse/pen keep pointer capture; keyboard ownership stays in the game controller.
+import { TOUCH_LAYOUTS, movementMask, readTouchLayout, saveTouchLayout } from './touch-layout.js';
+
+// Native contact snapshots repair missed releases. Every finger owns its own
+// action; sliding changes only the movement contact, never the kick/index.
 export function createTouchControls(root, onChange) {
   const pointers = new Map(), touches = new Map(), buttons = [...root.querySelectorAll('[data-action]')];
-  let mode = 'local', side = 0, enabled = false, touchEvents = 'ontouchstart' in window;
-  const heldButtons = () => [...touches.values(), ...[...pointers.values()].map(pointer => pointer.button)];
+  let mode = 'local', side = 0, enabled = false, touchEvents = 'ontouchstart' in window, layout = readTouchLayout();
+  root.dataset.layout = layout;
+  const contacts = () => [...touches.values(), ...pointers.values()];
+  function masks() {
+    const result = [0, 0];
+    for (const contact of contacts()) result[contact.side] |= contact.action;
+    return result;
+  }
   function paint() {
-    const held = new Set(heldButtons());
+    const held = contacts();
     for (const button of buttons) {
-      const pressed = held.has(button);
-      button.classList.toggle('pressed', pressed);
-      button.setAttribute('aria-pressed', String(pressed));
+      const index = +button.closest('[data-side]').dataset.side, action = +button.dataset.action;
+      const pressed = held.some(contact => contact.side === index && contact.action === action);
+      button.classList.toggle('pressed', pressed); button.setAttribute('aria-pressed', String(pressed));
     }
     onChange();
   }
+  function createContact(target, x, y) {
+    if (!enabled) return;
+    const pad = target.closest?.('[data-side]'), button = target.closest?.('[data-action]');
+    if (!pad || !root.contains(pad) || pad.hidden || button?.disabled) return;
+    const movement = target.closest('[data-movement]');
+    // In the three-finger layout the same Jump button is placed above the pad.
+    if (button && (!movement || (layout === 'three-fingers' && +button.dataset.action === 4))) {
+      return { button, side: +pad.dataset.side, action: +button.dataset.action };
+    }
+    if (movement) return { button: movement, movement, side: +pad.dataset.side,
+      action: movementMask(layout, movement.getBoundingClientRect(), x, y) };
+  }
+  function move(contact, x, y) {
+    if (!contact.movement) return false;
+    const action = movementMask(layout, contact.movement.getBoundingClientRect(), x, y, contact.action);
+    if (action === contact.action) return false;
+    contact.action = action; return true;
+  }
   function removePointer(id) {
-    const pointer = pointers.get(id);
-    if (!pointer) return false;
+    const contact = pointers.get(id);
+    if (!contact) return false;
     pointers.delete(id);
-    try { if (pointer.button.hasPointerCapture(id)) pointer.button.releasePointerCapture(id); } catch { /* The browser may already have discarded this pointer. */ }
+    try { if (contact.button.hasPointerCapture(id)) contact.button.releasePointerCapture(id); } catch { /* Browser already released it. */ }
     return true;
   }
   function release(event) { if (removePointer(event.pointerId)) paint(); }
   function reconcileTouches(event) {
-    // Touch.identifier and PointerEvent.pointerId are separate identifiers.
-    // touches is the complete set still on screen, not just changedTouches.
-    const active = new Set(Array.from(event.touches, touch => touch.identifier));
+    const active = new Map(Array.from(event.touches, touch => [touch.identifier, touch]));
     let changed = false;
-    for (const id of touches.keys()) if (!active.has(id)) { touches.delete(id); changed = true; }
+    for (const [id, contact] of touches) {
+      const touch = active.get(id);
+      if (!touch) { touches.delete(id); changed = true; }
+      else changed = move(contact, touch.clientX, touch.clientY) || changed;
+    }
     if (changed) paint();
+    if (event.type === 'touchmove' && touches.size && event.cancelable) event.preventDefault();
   }
   function clear() {
     if (!pointers.size && !touches.size) return;
-    touches.clear();
-    for (const id of pointers.keys()) removePointer(id);
-    paint();
+    touches.clear(); for (const id of pointers.keys()) removePointer(id); paint();
   }
   root.addEventListener('touchstart', event => {
-    // Prefer the touch lifecycle wherever it is emitted, including hybrid devices.
     touchEvents = true;
     let changed = false;
-    for (const [id, pointer] of pointers) if (pointer.type === 'touch') changed = removePointer(id) || changed;
+    for (const [id, contact] of pointers) if (contact.type === 'touch') changed = removePointer(id) || changed;
     for (const touch of event.changedTouches) {
-      const button = touch.target.closest?.('[data-action]');
-      if (!enabled || !button || !root.contains(button) || button.disabled) continue;
-      touches.set(touch.identifier, button); changed = true;
+      const contact = createContact(touch.target, touch.clientX, touch.clientY);
+      if (!contact) continue;
+      touches.set(touch.identifier, contact); changed = true;
     }
     if (changed) { event.preventDefault(); paint(); }
   }, { passive: false });
   for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) {
-    window.addEventListener(type, reconcileTouches, { capture: true, passive: true });
+    window.addEventListener(type, reconcileTouches, { capture: true, passive: type !== 'touchmove' });
   }
   root.addEventListener('pointerdown', event => {
     if (event.pointerType === 'touch' && touchEvents) return;
-    const button = event.target.closest('[data-action]');
-    if (!enabled || !button || !root.contains(button) || button.disabled || event.button !== 0) return;
+    if (event.button !== 0) return;
+    const contact = createContact(event.target, event.clientX, event.clientY);
+    if (!contact) return;
     event.preventDefault();
-    try { button.setPointerCapture(event.pointerId); } catch { /* Global release listeners remain available. */ }
-    pointers.set(event.pointerId, { button, type: event.pointerType }); paint();
+    try { contact.button.setPointerCapture(event.pointerId); } catch { /* Global release also clears the contact. */ }
+    pointers.set(event.pointerId, { ...contact, type: event.pointerType }); paint();
   });
   window.addEventListener('pointerdown', event => {
     if (!event.isPrimary) return;
     let changed = false;
-    for (const [id, pointer] of pointers) if (pointer.type === event.pointerType) changed = removePointer(id) || changed;
+    for (const [id, contact] of pointers) if (contact.type === event.pointerType) changed = removePointer(id) || changed;
     if (changed) paint();
   }, true);
-  window.addEventListener('pointermove', event => { if (event.buttons === 0) release(event); }, true);
+  window.addEventListener('pointermove', event => {
+    if (event.buttons === 0) { release(event); return; }
+    const contact = pointers.get(event.pointerId);
+    if (contact && move(contact, event.clientX, event.clientY)) paint();
+  }, true);
   root.addEventListener('contextmenu', event => event.preventDefault());
   root.addEventListener('lostpointercapture', release);
-  window.addEventListener('pointerup', release, true);
-  window.addEventListener('pointercancel', release, true);
-  window.addEventListener('blur', clear);
-  window.addEventListener('pagehide', clear);
-  window.addEventListener('orientationchange', clear);
+  window.addEventListener('pointerup', release, true); window.addEventListener('pointercancel', release, true);
+  window.addEventListener('blur', clear); window.addEventListener('pagehide', clear); window.addEventListener('orientationchange', clear);
   document.addEventListener('visibilitychange', () => { if (document.hidden) clear(); });
   return {
-    mask() {
-      let mask = 0;
-      for (const button of heldButtons()) mask |= +button.dataset.action << (+button.closest('[data-side]').dataset.side * 4);
-      return mode === 'local' ? mask : (mask >> (side * 4)) & 15;
+    get layout() { return layout; },
+    setLayout(value) {
+      if (!TOUCH_LAYOUTS.includes(value) || value === layout) return;
+      clear(); layout = value; root.dataset.layout = layout; saveTouchLayout(layout);
     },
+    mask() { const [blue, red] = masks(); return mode === 'local' ? blue | (red << 4) : side === 0 ? blue : red; },
     clear,
     update(state) {
       if (mode !== state.mode || side !== state.side || !state.enabled) clear();
-      mode = state.mode; side = state.side; enabled = state.enabled;
-      root.dataset.mode = mode;
+      mode = state.mode; side = state.side; enabled = state.enabled; root.dataset.mode = mode;
       for (const pad of root.querySelectorAll('[data-side]')) {
-        const index = +pad.dataset.side;
-        pad.hidden = mode !== 'local' && index !== side;
+        const index = +pad.dataset.side; pad.hidden = mode !== 'local' && index !== side;
         pad.querySelector('.touch-name').textContent = state.names[index];
         for (const button of pad.querySelectorAll('button')) button.disabled = !enabled || pad.hidden;
       }

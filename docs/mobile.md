@@ -5,11 +5,21 @@ les terrains, les aides individuelles et les salles restent accessibles. Le jeu 
 le viewport dès l'ouverture ; aucune installation ni
 autorisation de plein écran n'est nécessaire.
 
-- Le menu propose 2 joueurs ou En ligne, puis la préparation passe par
+- Le menu propose Contre l’IA, 2 joueurs ou En ligne, puis la préparation passe par
   Joueurs, Terrain et Paramètres. Dans une salle, l’invité suit le créateur
   et ne modifie que son propre personnage.
-- Maintenir les flèches pour se déplacer. Saut et Tir peuvent être combinés
-  avec le déplacement, avec plusieurs doigts.
+- Dans les réglages, **Commandes tactiles → Disposition sur cet appareil**
+  propose deux choix, mémorisés sur le téléphone :
+  - **2 pouces** (par défaut) : glisser sur le pavé gauche pour marcher ;
+    monter vers une diagonale ajoute le saut, monter au centre saute sur place.
+    Revenir en bas retire le saut, revenir au centre arrête le déplacement.
+    Le pouce droit garde le bouton Tir, entièrement manuel.
+  - **3 doigts** : pouce gauche pour marcher, index gauche sur Saut en haut
+    à gauche et pouce droit sur Tir. En local, Rouge a son Saut en haut à droite.
+  Un seuil distinct d’activation et de relâchement évite les oscillations à la
+  limite de la zone de saut. Le choix reste modifiable pendant un match via la
+  roue dentée, sans redémarrer la partie. Il est personnel, même pour l’invité
+  quand les paramètres de la salle sont en lecture seule.
 - En local, les deux joueurs disposent de leur manette : Bleu et Rouge.
 - À distance, seules les commandes de son propre joueur sont visibles.
 - En paysage, les commandes entourent le terrain. En portrait, elles sont
@@ -26,7 +36,10 @@ avec le lien ou le code reprend la place Bleu et retrouve les réglages ;
 le match suivant se lance depuis le salon. Les deux joueurs doivent recharger
 la page après la mise à jour vers le protocole de salles 7.
 
-Chaque doigt garde son action jusqu'au relâchement, même s'il sort du bouton.
+Les doigts sur Tir et sur le Saut séparé gardent leur action jusqu'au
+relâchement, même hors bouton. Le doigt sur le pavé suit les zones traversées ;
+sortir du pavé annule son déplacement et son saut. Changer de disposition
+relâche tous les contacts ; les anciens doigts ne sont pas réactivés par un mouvement.
 Les contrôles tactiles suivent les identifiants natifs des doigts et réconcilient
 leur état avec la liste complète `TouchEvent.touches`. Un `pointerup` perdu ne
 laisse donc plus une pression mémorisée ; si les événements de fin sont tous
@@ -43,6 +56,7 @@ du navigateur restent disponibles dans les menus, hors des manettes.
 ```sh
 node scripts/check-mobile.cjs http://127.0.0.1:8766/
 node scripts/check-touch-release.cjs http://127.0.0.1:8766/
+node scripts/check-touch-layouts.cjs http://127.0.0.1:8766/
 ```
 
 Le test utilise les vrais événements multi-touch de Chrome via CDP, le WASM
@@ -55,6 +69,10 @@ Il vérifie aussi qu'une fin de pointeur perdue chez l'invité transmet bien une
 commande nulle à l'hôte. Le test de relâchement supprime volontairement les
 événements de fin dans Chrome et WebKit : pression fantôme, réappuis, correction
 au geste suivant, indépendance du clavier et maintien de la capture à la souris.
+Le test des dispositions vérifie les glissements, les combinaisons et les
+relâchements indépendants, la modification en cours de partie et la mémorisation.
+Il emploie des gestes CDP natifs sur Chrome et des snapshots de contacts DOM
+sur WebKit ; les tests de relâchement utilisent aussi les taps natifs de WebKit.
 
 Il s'agit d'émulation de navigateur : aucun test sur téléphone physique ou
 Safari iOS n'a encore été effectué. Les limites réseau des salles sont

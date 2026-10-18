@@ -20,7 +20,9 @@ Le centre est le réglage par défaut. L'aide est choisie avant le match puis
 verrouillée ; à distance, le créateur la règle pour la salle.
 Les personnages ont tous les mêmes caractéristiques de base.
 
-- Sur mobile : flèches tactiles, Saut et Tir ; plusieurs boutons peuvent être maintenus ensemble.
+- Sur mobile : disposition **2 pouces** (déplacement et saut sur le même pavé)
+  ou **3 doigts** (Saut séparé en haut). Choix personnel mémorisé dans
+  **Commandes tactiles**, modifiable via les réglages pendant le match. Tir reste manuel.
 - Gauche au clavier : A/Q, D, W/Z et espace.
 - Droite au clavier : flèches et P.
 - Échap : pause. Le match se met aussi en pause à la perte de focus.

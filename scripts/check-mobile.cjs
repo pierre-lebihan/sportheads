@@ -52,7 +52,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
         points = points.map(point => ({ ...point, x: 1, y: 1 }));
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points });
       },
-      async releaseOne() { points.shift(); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: points }); },
+      async releaseOne() { const released = points.shift(); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: points.length ? [released] : [] }); },
       async release(cancel = false) { points = []; await cdp.send('Input.dispatchTouchEvent', { type: cancel ? 'touchCancel' : 'touchEnd', touchPoints: [] }); },
     };
   }
@@ -69,7 +69,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     assert.ok(await page.evaluate(() => {
       const arena = document.querySelector('.arena').getBoundingClientRect();
-      const visible = [...document.querySelectorAll('.touch-pad:not([hidden]) button, .match-bar button:not([hidden])')];
+      const visible = [...document.querySelectorAll('.touch-pad:not([hidden]) button, .match-bar button:not([hidden])')].filter(button => button.getClientRects().length);
       const field = document.querySelector('#field').getBoundingClientRect();
       const toolbar = document.querySelector('.match-bar').getBoundingClientRect();
       const score = document.querySelector('.scoreboard').getBoundingClientRect();
@@ -118,10 +118,11 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
       assert.ok(b.y < a.y - 10, 'both touch players jump while moving');
     }
     for (const role of [4, 5]) assert.ok(Math.abs(after.find(b => b.role === role).angle - before.find(b => b.role === role).angle) > .1, 'both touch players kick simultaneously');
-    assert.equal(await p.locator('.touch-pad .pressed').count(), 6);
+    for (const side of [0, 1]) for (const action of [side ? 1 : 2, 4, 8]) assert.equal(await p.locator(`[data-side="${side}"] [data-action="${action}"]`).getAttribute('aria-pressed'), 'true');
     await p.screenshot({ path: 'evidence/mobile-local-portrait.png' });
     await local.moveOutside();
-    assert.equal(await p.locator('.touch-pad .pressed').count(), 6, 'capture keeps actions held outside buttons');
+    assert.equal(await p.locator('.touch-pad [data-action="8"].pressed').count(), 2, 'kicks stay held independently while movement leaves the pad');
+    assert.equal(await p.locator('.touch-move .pressed:not([data-action="0"])').count(), 0, 'leaving the pad returns movement to neutral');
     assert.equal(await p.evaluate(() => scrollY), 0, 'multi-touch does not scroll');
     await local.release(); assert.equal(await p.locator('.touch-pad .pressed').count(), 0);
     await local.hold([[0, 2], [0, 8]]); await local.release(true);
@@ -175,6 +176,10 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     await g.locator('#join-room').tap(); await h.waitForFunction(() => sportheads.snapshot().connected);
     await goToSetup(h, 'rules'); await h.locator('#bonuses').uncheck();
     await g.waitForFunction(() => sportheads.snapshot().setupStep === 'rules');
+    await g.locator('#touch-settings summary').click();
+    await g.selectOption('#touch-layout', 'three-fingers');
+    assert.equal(await h.locator('#touch-layout').inputValue(), 'thumbs', 'guest layout is a private device setting');
+    assert.equal(await g.locator('#touch-layout').isEnabled(), true, 'personal layout stays editable when room settings are read-only');
     assert.equal(await g.locator('#balance').isEnabled(), false);
     assert.equal(await g.locator('#skin-right').isEnabled(), true);
     await g.screenshot({ path: 'evidence/setup-mobile-guest-rules.png' });

@@ -3,7 +3,7 @@ import { PLAYER_NAMES } from './players.js';
 import { PLAYABLE_PITCH_IDS } from './engine-contract.js';
 
 export { PLAYER_NAMES } from './players.js';
-// Original IDs: seven unchanged symmetric pitches, plus nine corrected layouts.
+// Preserve original IDs for the available symmetric and corrected pitches.
 export const PITCHES = PLAYABLE_PITCH_IDS.map(id => ({ id, name: id === 8 ? 'Terrain libre' : `Terrain ${id}` }));
 let previous = '';
 export function createCharacterSelection(container) {

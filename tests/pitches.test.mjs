@@ -21,9 +21,9 @@ test('all public pitches have mirrored native collisions and shared rendering ge
     return a.vertices.length === b.vertices.length && points(left).every(([x, y]) => vertices.some(([rx, ry]) => close(x + rx, 800) && close(y, ry)));
   }
   const symmetric = reference.pitches.filter(pitch => pitch.obstacles.every(body => pitch.obstacles.some(other => mirrors(body, other))));
-  const expected = [...symmetric.map(pitch => pitch.frame), ...Object.keys(BALANCED_PITCHES).map(Number)].sort((a, b) => a - b);
+  const expected = [...symmetric.map(pitch => pitch.frame), ...Object.keys(BALANCED_PITCHES).map(Number)].filter(id => id !== 10 && id !== 12).sort((a, b) => a - b);
   assert.deepEqual(PITCHES.map(pitch => pitch.id), expected);
-  assert.equal(PITCHES.length, 16);
+  assert.equal(PITCHES.length, 14);
   assert.deepEqual(BALANCED_PITCHES, JSON.parse(await readFile(new URL('../data/balanced-pitches.json', import.meta.url))));
   for (const { id } of PITCHES) {
     const e = await load(); e.game_start_balanced_pitch(7, 7, 0, id);

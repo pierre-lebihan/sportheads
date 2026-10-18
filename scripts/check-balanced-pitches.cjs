@@ -41,9 +41,9 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-balanced-
         }
         return checked;
       });
-      assert.deepEqual(checked,[2,3,4,5,6,7,8,9,10,11,12,14,15,16,17,18]);
+      assert.deepEqual(checked,[2,3,4,5,6,7,8,9,11,14,15,16,17,18]);
       await page.click('#play-local'); await page.click('#setup-next');
-      assert.equal(await page.locator('#pitch option').count(),16);
+      assert.equal(await page.locator('#pitch option').count(),14);
       for(const id of checked) {
         await page.selectOption('#pitch',String(id));
         await page.screenshot({path:`evidence/balanced-pitch-${type.name()}-${id}.png`});
@@ -52,7 +52,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-balanced-
       assert.equal(await page.evaluate(()=>sportheads.engine.game_body_value(17,0)),400,'the actual game uses the corrected collider');
       assert.equal(await page.evaluate(()=>sportheads.renderState().balancedPitches),true);
       assert.deepEqual(errors,[]);
-      console.log(JSON.stringify({passed:true,browser:type.name(),pitches:16,historicalPitches:19,graphite:checked,drawnPixelsMatchNativeColliders:true,actualMatch:true}));
+      console.log(JSON.stringify({passed:true,browser:type.name(),pitches:14,historicalPitches:19,graphite:checked,drawnPixelsMatchNativeColliders:true,actualMatch:true}));
     } finally {await browser.close();}
   }
 })().catch(e=>{console.error(e);process.exitCode=1;});

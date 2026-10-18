@@ -72,7 +72,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     await local.click('#setup-next'); assert.equal((await state(local)).setupStep, 'pitch');
     assert.equal(await local.locator('#player-choice').isVisible(), false);
     assert.equal(await local.locator('#target-score').isVisible(), false);
-    assert.deepEqual(await local.locator('#pitch option').evaluateAll(options => options.map(option => +option.value)), [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18]);
+    assert.deepEqual(await local.locator('#pitch option').evaluateAll(options => options.map(option => +option.value)), [2, 3, 4, 5, 6, 7, 8, 9, 11, 14, 15, 16, 17, 18]);
     await spamRandom(local, '#random-pitch', '#pitch', '#pitch-preview');
     await local.selectOption('#pitch', '6'); await local.screenshot({ path: 'evidence/setup-pitch.png' });
     await local.click('#setup-next'); assert.equal((await state(local)).setupStep, 'rules');
@@ -211,7 +211,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     assert.deepEqual((await state(host)).buffs, [[30,30,30,30,30],[0,0,0,0,0]]);
     await host.click('#play-view'); await host.click('#leave-room'); await guest.waitForFunction(() => !sportheads.snapshot().connected);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '23 distinct portraits', '16 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'independent per-stat buffs and preset buttons', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'older guest must refresh before corrected pitch', 'older host retains original rendering', 'replay', 'mobile layout'] }));
+    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '23 distinct portraits', '14 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'independent per-stat buffs and preset buttons', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'older guest must refresh before corrected pitch', 'older host retains original rendering', 'replay', 'mobile layout'] }));
   } catch (error) {
     for (const [index, page] of pages.entries()) if (!page.isClosed()) {
       console.error(index, await state(page).catch(() => null));

@@ -43,7 +43,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-backgroun
     await h.click('#copy-link');
     const share = await h.evaluate(() => navigator.clipboard.readText());
     assert.equal(new URL(share).searchParams.get('room'), code);
-    await goToSetup(h, 'pitch'); await h.selectOption('#pitch', '6');
+    await goToSetup(h, 'pitch'); await h.selectOption('#pitch', '7');
     // Close the real signalling WebSocket while the room has no guest yet.
     await h.evaluate(() => {
       const peer = testPeers[0];
@@ -57,13 +57,13 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-backgroun
     await h.waitForFunction(() => testPeers[0].open && !testPeers[0].disconnected);
     assert.equal(await h.locator('#room-code').innerText(), code);
     assert.equal((await state(h)).setupStep, 'pitch');
-    assert.equal(await h.locator('#pitch').inputValue(), '6');
+    assert.equal(await h.locator('#pitch').inputValue(), '7');
     const joinInBackground = process.argv.includes('--join-during-background');
     if (joinInBackground) await freeze(host);
     const guest = await mobile(share), g = guest.page; await g.click('#join-room');
     if (joinInBackground) { await sleep(25000); await resume(host); }
     await Promise.all([h, g].map(page => page.waitForFunction(() => sportheads.snapshot().connected)));
-    await g.waitForFunction(() => document.querySelector('#pitch').value === '6');
+    await g.waitForFunction(() => document.querySelector('#pitch').value === '7');
     // An established channel must also tolerate a phone sleeping for >8 seconds.
     await freeze(host); await sleep(15000);
     assert.equal((await state(g)).connected, true, 'foreground guest keeps the suspended host');

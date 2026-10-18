@@ -71,9 +71,9 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     await local.click('#setup-next'); assert.equal((await state(local)).setupStep, 'pitch');
     assert.equal(await local.locator('#player-choice').isVisible(), false);
     assert.equal(await local.locator('#target-score').isVisible(), false);
-    assert.equal(await local.locator('#pitch option').count(), 19);
+    assert.deepEqual(await local.locator('#pitch option').evaluateAll(options => options.map(option => +option.value)), [3, 5, 7, 8, 10, 11, 12]);
     await spamRandom(local, '#random-pitch', '#pitch', '#pitch-preview');
-    await local.selectOption('#pitch', '6'); await local.screenshot({ path: 'evidence/setup-pitch.png' });
+    await local.selectOption('#pitch', '7'); await local.screenshot({ path: 'evidence/setup-pitch.png' });
     await local.click('#setup-next'); assert.equal((await state(local)).setupStep, 'rules');
     assert.equal(await local.locator('#pitch').isVisible(), false);
     assert.equal(await local.locator('#start').isVisible(), true);
@@ -90,7 +90,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     assert.equal(await local.locator('#target-score').inputValue(), '1');
     assert.equal(await local.locator('#balance').inputValue(), '-1');
     await local.click('#start'); assert.deepEqual((await state(local)).assists, [1, 0]);
-    assert.equal(await local.evaluate(() => sportheads.engine.game_body_count()), 23);
+    assert.equal(await local.evaluate(() => sportheads.engine.game_body_count()), 20);
     assert.equal(await local.locator('#balance').isEnabled(), false);
     assert.ok(await local.evaluate(() => {
       const surface = document.querySelector('#game-surface').getBoundingClientRect();
@@ -130,7 +130,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     await guest.waitForFunction(value => document.querySelector('#pitch').value === value && document.querySelector('#pitch-caption').textContent === document.querySelector('#pitch').selectedOptions[0].textContent, randomPitch);
     await guest.selectOption('#skin-right', '12');
     await host.waitForFunction(() => document.querySelector('#skin-right').value === '12');
-    await host.selectOption('#pitch', '6'); await guest.waitForFunction(() => document.querySelector('#pitch').value === '6');
+    await host.selectOption('#pitch', '7'); await guest.waitForFunction(() => document.querySelector('#pitch').value === '7');
     await guest.screenshot({ path: 'evidence/setup-online-guest-pitch.png' });
     await goToSetup(host, 'players'); await waitStep(guest, 'players');
     assert.equal(await guest.locator('#skin-left').isEnabled(), false);
@@ -154,7 +154,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     assert.deepEqual((await state(host)).assists, [2, 0]);
     await host.click('#play-view'); await host.click('#leave-room'); await guest.waitForFunction(() => !sportheads.snapshot().connected);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '12 distinct portraits', '19 terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'seven-position slider', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'replay', 'mobile layout'] }));
+    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '12 distinct portraits', '7 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'seven-position slider', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'replay', 'mobile layout'] }));
   } catch (error) {
     for (const [index, page] of pages.entries()) if (!page.isClosed()) {
       console.error(index, await state(page).catch(() => null));

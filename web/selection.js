@@ -1,7 +1,8 @@
 import { drawGame, drawSprite, getAssets } from './render.js';
 
 export { PLAYER_NAMES } from './players.js';
-export const PITCHES = Array.from({ length: 19 }, (_, index) => ({ id: index + 2, name: index + 2 === 8 ? 'Terrain libre' : `Terrain ${index + 2}` }));
+// Keep the original blueprint IDs, offering only geometry mirrored between camps.
+export const PITCHES = [3, 5, 7, 8, 10, 11, 12].map(id => ({ id, name: id === 8 ? 'Terrain libre' : `Terrain ${id}` }));
 let previous = '';
 export function updateSelectionPreviews(pitch, skins) {
   const key = `${pitch}:${skins.join(':')}`;

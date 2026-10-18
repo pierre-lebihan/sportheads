@@ -1,8 +1,9 @@
 # Match à deux joueurs
 
 La version publique exécute le cœur Rust/WASM en direct, sans Flash ni Ruffle.
-Elle propose les 19 terrains du sélecteur original, dont le terrain libre
-(numéro 8), avec les 18 bonus originaux, avec aides individuelles facultatives, sans IA.
+Elle propose les 7 terrains symétriques du sélecteur original (3, 5, 7, 8, 10, 11 et 12),
+dont le terrain libre (numéro 8), avec les 18 bonus originaux, des aides individuelles
+facultatives et une IA locale à trois niveaux.
 
 ## Comportement
 
@@ -56,7 +57,7 @@ rejouer, perte de focus et absence de débordement sur écran étroit.
 L'interface expose trois modes : contre une IA locale à trois niveaux,
 sur le même écran et à distance avec code de salle. L’IA utilise les commandes
 humaines, sans changer la physique du noyau ; elle ne reprend pas celle du Flash.
-`tests/opponent.test.mjs` couvre les réactions, les matchs complets, les 19 terrains
+`tests/opponent.test.mjs` couvre les réactions, les matchs complets, les 19 terrains historiques du noyau
 et les 18 bonus ; `scripts/check-ai.cjs URL` vérifie le parcours, le clavier,
 les commandes mobiles, les pauses et les revanches dans Chrome et WebKit.
 Les matchs se gagnent au nombre de buts, sans chronomètre,
@@ -65,7 +66,9 @@ dans le noyau pour les comparaisons Flash mais ne sont plus proposées. Les bonu
 Les 12 joueurs récents sont sélectionnables avec leur nom et leur portrait.
 
 Les 18 bonus, le rendu des sprites, les animations et les sons sont intégrés.
-Les 19 terrains et les aides individuelles à trois niveaux sont intégrés.
+Les 19 terrains historiques restent dans le noyau pour les comparaisons Flash ;
+seuls les 7 terrains symétriques sont proposés et tirés au hasard dans les trois modes.
+Les aides individuelles à trois niveaux sont intégrées.
 Voir [joueurs et aides](players.md). Seuls les matchs simples sont proposés.
 Les salles et le réseau sont décrits
 dans [multiplayer.md](multiplayer.md).

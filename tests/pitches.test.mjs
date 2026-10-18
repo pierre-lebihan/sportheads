@@ -2,9 +2,27 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { captureState, createRemoteEngine } from '../web/net-state.js';
+import { PITCHES } from '../web/selection.js';
 const reference = JSON.parse(await readFile(new URL('./fixtures/pitches/original.json', import.meta.url)));
 const load = async () => (await WebAssembly.instantiate(await readFile(new URL('../probe/physics-core.wasm', import.meta.url)))).instance.exports;
 const near = (actual, expected) => assert.ok(Math.abs(actual - expected) <= 1e-7, `${actual} differs from Flash ${expected}`);
+test('the public catalog contains exactly the original pitches with mirrored obstacles', () => {
+  const close = (a, b) => Math.abs(a - b) <= 1e-7;
+  const points = body => body.shapes[0].vertices.map(([x, y]) => [
+    body.x + x * Math.cos(body.angle) - y * Math.sin(body.angle),
+    body.y + x * Math.sin(body.angle) + y * Math.cos(body.angle)
+  ]);
+  function mirrors(left, right) {
+    const a = left.shapes[0], b = right.shapes[0];
+    if (a.type !== b.type) return false;
+    if (a.type === 0) return close(left.x + right.x, 800) && close(left.y, right.y) && close(a.radius, b.radius);
+    const vertices = points(right);
+    return a.vertices.length === b.vertices.length && points(left).every(([x, y]) => vertices.some(([rx, ry]) => close(x + rx, 800) && close(y, ry)));
+  }
+  const symmetric = reference.pitches.filter(pitch => pitch.obstacles.every(body => pitch.obstacles.some(other => mirrors(body, other))));
+  assert.deepEqual(PITCHES.map(pitch => pitch.id), symmetric.map(pitch => pitch.frame));
+  assert.ok(PITCHES.some(pitch => pitch.id === 8), 'the default open pitch remains available');
+});
 for (const pitch of reference.pitches) test(`pitch ${pitch.frame}: real WASM geometry matches captured original Flash`, async () => {
   const e = await load(); e.game_start_on_pitch(7, 99, 0, pitch.frame);
   assert.equal(e.game_value(15), pitch.frame);

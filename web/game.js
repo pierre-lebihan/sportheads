@@ -3,7 +3,7 @@ import './vendor/peerjs-1.5.5.min.js';
 import { Room, normalizeCode, validCode } from './rooms.js';
 import { captureState, createRemoteEngine } from './net-state.js';
 import { createRemoteView } from './net-render.js';
-import { PLAYER_NAMES, PITCHES, updateSelectionPreviews } from './selection.js';
+import { PLAYER_NAMES, PITCHES, createCharacterSelection, updateSelectionPreviews } from './selection.js';
 import { PLAYER_COUNT } from './players.js';
 import { balanceToAssists, assistsToBalance, balanceLabel } from './balance.js';
 import { PREPARATION_STEPS, validSetupStep, renderSetup } from './setup-ui.js';
@@ -44,6 +44,7 @@ for (const [id, selected] of [['skin-left', 1], ['skin-right', 2]]) {
   for (let i = 1; i <= PLAYER_COUNT; i++) { const option = new Option(PLAYER_NAMES[i - 1], i); option.selected = i === selected; $('#' + id).add(option); }
 }
 for (const pitch of PITCHES) { const option = new Option(pitch.name, pitch.id); option.selected = pitch.id === 8; $('#pitch').add(option); }
+const characterSelection = createCharacterSelection($('#player-choice'));
 const engine = () => mode === 'online' && role === 'guest' ? remote.engine : core;
 const renderEngine = () => mode === 'online' && role === 'guest' && started && !paused && room?.connected && engine().game_value(0) === 1 ? remoteView.engine : engine();
 const assists = () => balanceToAssists(+$('#balance').value);
@@ -418,6 +419,7 @@ function update() {
     $('#' + ['skin-left', 'skin-right'][side]).disabled = (mode === 'online' && (role === null || side !== ownSide()));
     $('.control-side.' + (side === 0 ? 'blue' : 'red')).dataset.own = String(mode === 'online' && role !== null && side === ownSide());
   }
+  characterSelection.update({ mode, role, connected: !!room?.connected });
   for (const [buttonId, selectId] of randomChoices) $('#' + buttonId).disabled = $('#' + selectId).disabled;
   $('#status').textContent = mode === 'online' && !room?.connected ? 'Salle privée · En attente d’un adversaire'
     : !started ? 'Choisissez vos joueurs et votre terrain' : phase === 0 ? 'Préparez-vous…' : phase === 2 ? `But pour ${names[e.game_value(5)]} !`

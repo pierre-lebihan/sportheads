@@ -18,7 +18,7 @@ export function renderSetup({ screen, mode, role, started, ready, busy, connecte
     if (stepIndex === index) item.setAttribute('aria-current', 'step'); else item.removeAttribute('aria-current');
   }
   $('#players-title').textContent = mode === 'online' ? 'Choisissez votre joueur' : 'Choisissez vos joueurs';
-  $('#players-detail').textContent = mode === 'ai' ? 'Votre personnage bleu et celui de l’IA rouge : à vous de choisir.' : mode === 'local' ? 'Chacun sa tête, chacun son camp.' : role === 'guest' ? 'Vous jouez Rouge. Le créateur joue Bleu.' : 'Vous jouez Bleu. Votre adversaire choisit Rouge.';
+  $('#players-detail').textContent = mode === 'online' ? 'Vos deux choix s’affichent en direct.' : 'Touchez un camp, puis le portrait de votre choix.';
   $('#pitch-title').textContent = guest ? 'Le terrain du créateur' : 'Choisissez le terrain';
   $('#rules-title').textContent = guest ? 'Les paramètres du match' : 'Réglez le match';
   $('#player-choice').hidden = screen !== 'players' && !(guest && index >= 0);
@@ -32,7 +32,7 @@ export function renderSetup({ screen, mode, role, started, ready, busy, connecte
   $('#setup-back').textContent = screen === 'room' || screen === 'difficulty' ? 'Choix du mode' : screen === 'players' ? mode === 'online' ? 'Quitter la salle' : mode === 'ai' ? 'Difficulté' : 'Choix du mode' : 'Précédent';
   $('#setup-next').hidden = guest || !['difficulty', 'players', 'pitch'].includes(screen);
   $('#setup-next').disabled = !ready || busy;
-  $('#setup-next').textContent = screen === 'difficulty' ? 'Choisir les joueurs' : screen === 'players' ? 'Choisir le terrain' : 'Régler le match';
+  $('#setup-next').textContent = screen === 'difficulty' ? 'Choisir les joueurs' : screen === 'players' ? 'Valider le duel' : 'Régler le match';
   $('#setup-navigation').hidden = screen === 'home';
   $('#start').hidden = screen !== 'rules' || started || guest;
   $('#guest-wait').hidden = !guest || screen !== 'rules';

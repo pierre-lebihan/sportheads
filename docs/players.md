@@ -1,6 +1,6 @@
 # Joueurs, terrains et aides
 
-Le site propose uniquement des matchs simples en local ou à distance, au
+Le site propose uniquement des matchs simples contre l’IA, en local ou à distance, au
 nombre de buts choisi (7 par défaut). Il ne contient ni tournoi, coupe,
 boutique, monnaie, amélioration à débloquer ou sauvegarde de progression.
 
@@ -32,6 +32,14 @@ Hakimi, Nuno Mendes, Van Dijk et Donnarumma. Le choix est cosmétique : mêmes
 corps physiques et même hauteur de référence pour la condition de saut.
 Les différences de niveau proviennent uniquement des aides et des bonus.
 
+La sélection présente les deux portraits face à face et une grille de 12 personnages.
+En local et contre l’IA, touchez le camp Bleu ou Rouge puis une case pour choisir
+son personnage. Le bouton Aléatoire reste disponible pour chaque camp. Les repères
+Bleu/Rouge indiquent les deux choix, y compris quand ils portent sur la même case.
+Au clavier, les flèches déplacent le focus dans la grille et Entrée choisit le portrait.
+En ligne, chacun choisit uniquement son camp ; le portrait et les repères changent
+en direct sur les deux appareils, avant que le créateur valide le duel et passe au terrain.
+
 La sélection reprend les onze joueurs du [World 11 FIFPRO 2025](https://www.fifpro.org/en/articles/2025/11/who-is-in-the-2025-fifpro-men-s-world-11),
 avec [Haaland également présent dans les classements FIFA 2026](https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/power-rankings).
 Aucune appartenance à un club n'est affichée.
@@ -44,23 +52,26 @@ Le [prompt de création](avatar-prompt.md) documente leur provenance.
 
 ## Terrains et vérifications
 
-Les 19 blueprints originaux sont proposés, avec aperçu ; le numéro 8 est
-le terrain libre. Leurs 52 obstacles sont des rectangles ou cercles statiques
-capturés dans Flash, avec ses troncatures int/uint. Le rendu utilise les SVG
-originaux. Le créateur choisit le terrain à distance.
+Les 7 terrains symétriques sont proposés, avec aperçu ; le numéro 8 est
+le terrain libre. Les 19 blueprints historiques restent dans le noyau de comparaison.
+Leurs obstacles sont des rectangles ou cercles statiques capturés dans Flash,
+avec ses troncatures int/uint. Le rendu utilise les SVG originaux.
+Le créateur choisit le terrain à distance.
 
 `tests/assistance.rs` couvre les trois niveaux, les deux camps, les bonus
 et la conservation après un but. Les captures historiques sans aide
 restent vérifiées. `tests/pitches.test.mjs` vérifie les 19 géométries du WASM.
 `scripts/check-setup.cjs URL` vérifie les portraits distincts, les réglages
 et le partage des aides dans une vraie salle WebRTC.
+`scripts/check-character-selection.cjs URL` vérifie la grille, les deux camps,
+le clavier, les formats mobiles et les choix en direct entre Chrome et WebKit.
 
 La préparation du match est découpée en écrans : choix du mode, puis joueurs,
 terrain, et enfin paramètres (objectif, bonus et curseur). Le mode en ligne
 intercale la création ou la jonction à une salle. Le créateur décide des étapes ;
 l’invité suit les écrans et voit leurs valeurs en lecture seule, tout en gardant
-son seul choix de personnage modifiable. Le score est
-superposé au ciel du stade. La bande des 60 pixels sous le sol accueille
-réglages, son, pause et redémarrage ; elle s'agrandit sur petit écran pour
-conserver des cibles tactiles lisibles. La physique conserve le même repère
+son seul choix de personnage modifiable. Le score discret et les boutons
+réglages, son, pause et redémarrage occupent la barre au-dessus du terrain.
+La bande sous le sol accueille les commandes tactiles ; elle s'agrandit sur petit
+écran pour conserver des cibles tactiles lisibles. La physique conserve le même repère
 800 × 540.

@@ -56,10 +56,11 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     for (let skin = 1; skin <= 12; skin++) {
       await local.selectOption('#skin-left', String(skin));
       hashes.push(await local.evaluate(() => {
-        const pixels = document.querySelector('#player-preview-0').getContext('2d').getImageData(0, 0, 72, 72).data;
+        const canvas = document.querySelector('#player-preview-0');
+        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
         let hash = 2166136261, occupied = 0;
         for (let i = 0; i < pixels.length; i++) { hash = Math.imul(hash ^ pixels[i], 16777619); if (i % 4 === 3 && pixels[i]) occupied++; }
-        if (occupied < 500 || occupied > 4500) throw Error('Avatar empty or opaque rectangle');
+        if (occupied < canvas.width * canvas.height * .1 || occupied > canvas.width * canvas.height * .9) throw Error('Avatar empty or opaque rectangle');
         return hash;
       }));
     }

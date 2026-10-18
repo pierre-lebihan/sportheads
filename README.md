@@ -19,6 +19,9 @@ positions** équilibre le duel : Bleu +30 / +20 / +10 %, neutre, Rouge +10 / +20
 Le centre est le réglage par défaut. L'aide est choisie avant le match puis
 verrouillée ; à distance, le créateur la règle pour la salle.
 Les personnages ont tous les mêmes caractéristiques de base.
+La sélection affiche les deux portraits face à face et une grille de personnages.
+Choisissez les deux camps en local ou contre l’IA ; en ligne, chacun choisit le sien
+et voit les changements de l’adversaire en direct avant la validation du créateur.
 
 - Sur mobile : disposition **2 pouces** (déplacement et saut sur le même pavé)
   ou **3 doigts** (Saut séparé en haut). Choix personnel mémorisé dans

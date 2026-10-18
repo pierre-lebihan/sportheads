@@ -55,3 +55,16 @@ test('configuration is immutable, copied at the boundary and keeps the last vali
   assert.throws(() => app.dispatch({ type: 'configuration.changed', patch: { misspelledSetting: 1 } }), TypeError);
   assert.throws(() => transition(app.value, { type: 'invented' }), TypeError);
 });
+
+test('running match settings cannot return to preparation, and quitting restores navigation', () => {
+  for (const mode of ['local','ai','online']) {
+    const app=createAppStore(); app.dispatch({type:'mode.selected',mode}); app.dispatch({type:'match.started'});
+    app.dispatch({type:'settings.opened'});
+    const before=app.value;
+    for (const direction of [-1,1]) {
+      app.dispatch({type:'preparation.navigated',direction}); assert.equal(app.value,before);
+    }
+    app.dispatch({type:'match.quit'}); app.dispatch({type:'mode.selected',mode:'local'});
+    app.dispatch({type:'preparation.navigated',direction:1}); assert.equal(app.value.setupStep,'pitch');
+  }
+});

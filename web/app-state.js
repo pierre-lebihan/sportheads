@@ -76,7 +76,7 @@ export function transition(state, event) {
         setupStep: event.setupStep, remoteBalancedPitches: event.balancedPitches,
         settingsOpen: event.newMatch && event.started ? false : state.settingsOpen }, event.config, true); break;
     case 'preparation.navigated': {
-      if (state.mode === 'online' && state.role === 'guest' && state.connected) return state;
+      if (state.started || state.mode === 'online' && state.role === 'guest' && state.connected) return state;
       const steps = state.mode === 'ai' ? ['difficulty', ...PREPARATION_STEPS] : PREPARATION_STEPS;
       const index = steps.indexOf(state.setupStep);
       const step = event.direction > 0 && index >= 0 && index < steps.length - 1 ? steps[index + 1]

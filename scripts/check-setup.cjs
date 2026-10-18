@@ -230,7 +230,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     await host.click('#play-view'); await setBalance(host,'blue',30); await host.click('#close-settings'); await host.click('#again');
     await guest.waitForFunction(() => sportheads.snapshot().matchId === 2 && sportheads.snapshot().buffs[0][0] === 30);
     assert.deepEqual((await state(host)).buffs, [[30,30,30,30,30],[0,0,0,0,0]]);
-    await host.click('#play-view'); await host.click('#leave-room'); await guest.waitForFunction(() => !sportheads.snapshot().connected);
+    await host.click('#play-view'); await host.click('#quit-match-settings'); await guest.waitForFunction(() => !sportheads.snapshot().connected);
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '23 distinct portraits', '14 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'independent per-stat buffs and preset buttons', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'older guest must refresh before corrected pitch', 'six opt-in pitches sync read-only, old guests refresh, disabling falls back to open pitch', 'older host retains original rendering', 'replay', 'mobile layout'] }));
   } catch (error) {

@@ -76,7 +76,9 @@ if (!url) throw new Error('Usage: node scripts/check-ai.cjs URL');
         assert.equal(await page.evaluate(() => sportheads.snapshot().tick), tick);
         await page.click('#resume'); await page.waitForFunction(tick => sportheads.snapshot().tick > tick, tick);
         await page.click('#play-view');
-        await page.click('#setup-back'); await page.click('#setup-back'); await page.click('#setup-back');
+        assert.equal(await page.locator('#setup-navigation').isVisible(),false);
+        await page.evaluate(()=>document.querySelector('#setup-back').click());
+        assert.equal(await page.evaluate(()=>sportheads.snapshot().setupStep),'rules','hidden wizard controls cannot navigate a running match');
         assert.equal(await page.locator('[name="ai-level"]').first().isEnabled(), false, 'difficulty is locked during the match');
         await page.click('#close-settings'); await page.click('#resume');
         // Finish a genuine AI match to exercise final score, stopped controls,

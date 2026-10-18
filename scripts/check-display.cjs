@@ -52,6 +52,13 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
         await goToSetup(page, 'rules'); await page.selectOption('#bonuses', '0'); await page.click('#start');
         for (const layout of ['thumbs', 'three-fingers']) {
           await page.click('#play-view');
+          for (const selector of ['#setup-steps','#setup-navigation','#online-panel','#player-choice','#performance-diagnostic','.rules-screen .launch','[data-setup-screen=home]','[data-setup-screen=difficulty]','[data-setup-screen=pitch]']) {
+            assert.equal(await page.locator(selector).isVisible(),false,`match settings hide ${selector}`);
+          }
+          for (const selector of ['[data-setup-screen=rules]','#target-score','#balance-controls','#quit-match-settings','#fullscreen-settings','#close-settings','#touch-settings']) {
+            assert.equal(await page.locator(selector).isVisible(),true,`match settings keep ${selector}`);
+          }
+          await page.screenshot({path:`evidence/match-settings-${browser===chrome?'chrome':'webkit'}-${mode}.png`});
           if (!await page.locator('#touch-layout').isVisible()) await page.click('#touch-settings summary');
           await page.selectOption('#touch-layout', layout); await page.click('#close-settings');
           if (await page.locator('#resume').isVisible()) await page.click('#resume');
@@ -61,9 +68,9 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
             await page.screenshot({ path: `evidence/display-${browser === chrome ? 'chrome' : 'webkit'}-${mode}-${layout}-${width}.png` });
           }
         }
-        await page.click('#play-view'); await goToSetup(page, 'players');
-        await page.click('#setup-back');
-        if (mode === 'ai') await page.click('#setup-back');
+        await page.click('#play-view'); await page.click('#quit-match-settings');
+        assert.equal(await page.locator('#play-local').isVisible(),true);
+        assert.equal(await page.locator('#performance-diagnostic').isVisible(),true,'preparation retains its help sections');
       }
       await page.context().close();
     }

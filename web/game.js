@@ -190,7 +190,7 @@ $('#play-view').addEventListener('click', () => {
 });
 $('#close-settings').addEventListener('click', closeSettings);
 function navigateSetup(direction) {
-  if (app.value.mode === 'online' && app.value.role === 'guest' && app.value.connected) return;
+  if (app.value.started || app.value.mode === 'online' && app.value.role === 'guest' && app.value.connected) return;
   if (direction < 0 && app.value.setupStep === 'players' && app.value.mode === 'online') leaveRoom();
   else app.dispatch({ type: 'preparation.navigated', direction });
   update(); broadcast(); $('#setup-panel').scrollTop = 0;

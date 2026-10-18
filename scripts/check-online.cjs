@@ -75,6 +75,15 @@ assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
     await guest.waitForFunction(() => sportheads.snapshot().started && sportheads.snapshot().targetScore === 3);
     assert.equal(await guest.locator('#clock').count(), 0, 'the goal target stays in settings');
     await Promise.all([host, guest].map(page => page.waitForFunction(() => sportheads.snapshot().phase === 1 && !sportheads.snapshot().paused)));
+    for (const page of [host,guest]) {
+      await page.click('#play-view');
+      for (const selector of ['#setup-steps','#setup-navigation','#online-panel','#player-choice','#performance-diagnostic','.rules-screen .launch'])
+        assert.equal(await page.locator(selector).isVisible(),false,`online match settings hide ${selector}`);
+      for (const selector of ['[data-setup-screen=rules]','#quit-match-settings','#close-settings','#fullscreen-settings'])
+        assert.equal(await page.locator(selector).isVisible(),true,`online match settings keep ${selector}`);
+      await page.click('#close-settings'); await page.click('#resume');
+      await Promise.all([host,guest].map(p=>p.waitForFunction(()=>!sportheads.snapshot().paused)));
+    }
     const before = await bodyStates(host);
     await guest.locator('#field').focus(); await guest.keyboard.down('ArrowLeft');
     await guest.waitForTimeout(300); await guest.keyboard.up('ArrowLeft');
@@ -140,10 +149,10 @@ assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
     await host.waitForFunction(() => !sportheads.snapshot().started);
     assert.equal(await host.locator('#start').isEnabled(), true);
     await goToSetup(host, 'rules'); await host.click('#start'); await replacement.waitForFunction(() => sportheads.snapshot().started);
-    await host.click('#play-view'); await host.click('#leave-room');
+    await host.click('#play-view'); await host.click('#quit-match-settings');
     await replacement.waitForFunction(() => !sportheads.snapshot().connected);
     assert.match(await replacement.locator('#room-status').innerText(), /déconnecté.*reste ouverte/);
-    await host.click('#setup-back'); assert.equal(await host.locator('#online-panel').isVisible(), false); await host.click('#play-local'); await goToSetup(host, 'rules'); await host.click('#start'); assert.equal((await state(host)).mode, 'local');
+    assert.equal(await host.locator('#play-local').isVisible(),true); assert.equal(await host.locator('#online-panel').isVisible(), false); await host.click('#play-local'); await goToSetup(host, 'rules'); await host.click('#start'); assert.equal((await state(host)).mode, 'local');
     await replacement.setViewportSize({ width: 390, height: 844 });
     assert.ok(await replacement.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await replacement.screenshot({ path: 'evidence/online-mobile.png', fullPage: true });

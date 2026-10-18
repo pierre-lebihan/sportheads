@@ -37,7 +37,8 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-rejoin.cj
     await host.close();
     await guest.waitForFunction(() => !sportheads.snapshot().connected);
     assert.equal(await guest.locator('#room-code').innerText(), code);
-    assert.equal(await guest.locator('#room-details').isVisible(), true);
+    assert.equal(await guest.locator('#room-details').isVisible(), false,'room details stay out of match settings after disconnect');
+    assert.equal(await guest.locator('[data-setup-screen=rules]').isVisible(),true);
     assert.match(await guest.locator('#room-status').innerText(), /reste ouverte/);
 
     // Two people racing for the one vacant creator seat cannot both enter.

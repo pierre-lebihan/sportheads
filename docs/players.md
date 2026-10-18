@@ -52,7 +52,8 @@ intégré imagegen. L'atlas transparent `web/assets/modern-players.png` contient
 les cellules directement à l'affichage ; le fichier original est conservé.
 Les deux portraits personnels sont dans `web/assets/pierre-vilma.png`, deux cellules
 carrées côte à côte (Pierre puis Vilma). L’atlas `web/assets/thibaud-marie.png` utilise le même format (Thibaud puis Marie).
-Corentin possède son portrait carré dans `web/assets/corentin.png`.
+Le portrait de Corentin est refait à partir de sa photo au bord du lac :
+`web/assets/corentin-v2.png`. Il conserve son nom et sa place dans la sélection.
 La variante Pierre Nomad, cheveux longs et moue de la photo, utilise
 `web/assets/pierre-nomad.png`. Elle se choisit séparément et conserve le Pierre original.
 Maël possède un portrait carré dans `web/assets/mael.png`, avec ses lunettes de soleil.

@@ -84,3 +84,16 @@ La photo personnelle n’est pas publiée.
 ```text
 undefined
 ```
+
+## Corentin — portrait remplacé
+
+Outil intégré `image_gen.imagegen`, fond transparent. Nouveau fichier utilisé :
+`web/assets/corentin-v2.png`, une cellule carrée. La photo au bord du lac sert de
+référence d’identité (Corentin est à droite), le portrait Arthur de référence de style.
+Le premier atlas Corentin reste une référence historique ; il n’est plus utilisé par
+le personnage. Le nouveau nom de fichier évite de réafficher l’ancienne image en cache.
+La photo personnelle n’est pas publiée.
+
+```text
+undefined
+```

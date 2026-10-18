@@ -12,7 +12,7 @@ export const AVATAR_FRAMES = [
   ...Array.from({ length: 2 }, (_, index) => ({
     file: 'thibaud-marie.png', sourceRect: [index / 2, 0, 1 / 2, 1],
   })),
-  { file: 'corentin.png', sourceRect: [0, 0, 1, 1], flipX: true },
+  { file: 'corentin-v2.png', sourceRect: [0, 0, 1, 1], flipX: true },
   { file: 'pierre-nomad.png', sourceRect: [0, 0, 1, 1] },
   { file: 'mael.png', sourceRect: [0, 0, 1, 1], flipX: true },
   ...Array.from({ length: 2 }, (_, index) => ({

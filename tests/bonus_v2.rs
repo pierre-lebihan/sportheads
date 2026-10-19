@@ -12,7 +12,7 @@ fn ball(g: &mut Game, x: f64, y: f64, vx: f64, vy: f64) {
     g.world.bodies[g.ball].velocity = Vec2::new(vx, vy);
 }
 #[test]
-fn modes_keep_the_original_pool_and_v2_adds_exactly_five_pickups() {
+fn modes_keep_the_original_pool_and_v2_includes_the_red_variants() {
     for mode in 0..=2 {
         let mut seen = std::collections::BTreeSet::new();
         for seed in 1..=64 {
@@ -31,11 +31,11 @@ fn modes_keep_the_original_pool_and_v2_adds_exactly_five_pickups() {
                 seen.insert(g.notice);
             }
         }
-        assert!(seen.iter().all(|id| *id <= if mode == 2 { 23 } else { 18 }));
+        assert!(seen.iter().all(|id| *id <= if mode == 2 { 26 } else { 18 }));
         if mode == 0 {
             assert!(seen.is_empty());
         } else if mode == 2 {
-            for kind in 19..=23 {
+            for kind in 19..=26 {
                 assert!(seen.contains(&kind), "missing {kind}: {seen:?}");
             }
         }
@@ -43,7 +43,7 @@ fn modes_keep_the_original_pool_and_v2_adds_exactly_five_pickups() {
     for mode in [0, 1] {
         let mut g = playing();
         g.set_bonus_mode(mode);
-        for kind in 19..=23 {
+        for kind in 19..=26 {
             g.collect_id(kind, 0);
         }
         assert_eq!(g.v2, BonusesV2::default());
@@ -210,4 +210,50 @@ fn timers_expire_and_all_v2_effects_reset_after_a_goal_and_on_mode_change() {
     g.set_bonus_mode(1);
     assert_eq!(g.v2, BonusesV2::default());
     assert_eq!(g.bonus_mode, 1);
+}
+
+#[test]
+fn blue_helps_the_collector_and_red_helps_only_the_opponent() {
+    for side in 0..2 {
+        for (blue, red, field) in [(19, 24, 1), (20, 25, 3), (22, 26, 5)] {
+            let mut own = playing();
+            own.collect_id(blue, side);
+            let mut opponent = playing();
+            opponent.collect_id(red, side);
+            let duration = if blue == 19 {
+                240
+            } else if blue == 20 {
+                150
+            } else {
+                180
+            };
+            assert_eq!(own.v2.value(field + side as u32), duration);
+            assert_eq!(own.v2.value(field + (1 - side) as u32), 0);
+            assert_eq!(opponent.v2.value(field + side as u32), 0);
+            assert_eq!(opponent.v2.value(field + (1 - side) as u32), duration);
+            assert_eq!(opponent.notice, red);
+            opponent.set_bonus_mode(1);
+            assert_eq!(opponent.v2, BonusesV2::default());
+        }
+    }
+}
+
+#[test]
+fn red_pickup_touched_by_the_ball_uses_last_touch_for_both_sides() {
+    for side in 0..2 {
+        for (kind, field) in [(24, 1), (25, 3), (26, 5)] {
+            let mut g = playing();
+            g.last_touch = side;
+            ball(&mut g, 400.0, 200.0, 0.0, 0.0);
+            g.pickups.push(Pickup {
+                kind,
+                position: Vec2::new(400.0, 200.0),
+                ttl: 600,
+            });
+            g.step(0);
+            assert!(g.pickups.is_empty());
+            assert_eq!(g.v2.value(field + side as u32), 0);
+            assert!(g.v2.value(field + (1 - side) as u32) > 0);
+        }
+    }
 }

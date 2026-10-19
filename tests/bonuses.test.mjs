@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BONUS_MODES, BONUS_NAMES, NEW_BONUSES, validBonusMode, bonusModeFromMessage, validBonusState } from '../web/bonuses.js';
-test('three modes expose the eighteen originals plus exactly five new bonuses',()=>{
-  assert.deepEqual(BONUS_MODES.map(mode=>mode.id),[0,1,2]);assert.equal(BONUS_NAMES.length,24);
+import { BONUS_MODES, BONUS_NAMES, NEW_BONUSES, BONUS_PICKUP_COUNT, BONUS_V2_VERSION, validBonusMode, bonusModeFromMessage, validBonusState } from '../web/bonuses.js';
+test('three modes expose the eighteen originals plus five effects and three opponent variants',()=>{
+  assert.deepEqual(BONUS_MODES.map(mode=>mode.id),[0,1,2]);assert.equal(BONUS_NAMES.length,27);
   assert.deepEqual(NEW_BONUSES.map(bonus=>bonus.id),[19,20,21,22,23]);
+  assert.deepEqual(NEW_BONUSES.filter(b=>b.redId).map(b=>b.redId),[24,25,26]);
+  assert.equal(BONUS_PICKUP_COUNT,26);assert.equal(BONUS_V2_VERSION,2);
   assert.ok(!BONUS_NAMES.some(name=>/double saut/i.test(name)));
 });
 test('room settings distinguish no bonuses, historical and V2 while reading legacy flags',()=>{

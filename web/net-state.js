@@ -1,7 +1,7 @@
 import { isKnownPitch, MATCH, BODY_ROLE, BODY, PLAYER, BONUS, BUFF, MATCH_FIELDS, BODY_FIELDS, PLAYER_FIELDS, PICKUP_FIELDS, BOMB_FIELDS, EFFECT_FIELDS, encodeFields, decodeFrame } from './engine-contract.js';
 import { PLAYER_COUNT } from './players.js';
 import { validBuffs, BUFF_STATS } from './balance.js';
-import { validBonusState, BONUS_FIELD_COUNT } from './bonuses.js';
+import { validBonusState, BONUS_FIELD_COUNT, BONUS_PICKUP_COUNT } from './bonuses.js';
 // Host-authoritative render snapshots. No simulation, assets or executable code
 // cross this boundary; the guest only reads the last validated numeric state.
 const KEYS = ['values', 'skins', 'bodies', 'players', 'pickups', 'bombs', 'effects'];
@@ -34,7 +34,7 @@ export function isValidState(packet) {
     const hasBonus = Object.hasOwn(packet, 'bonus');
     if (keys.length !== KEYS.length + Number(hasBuffs) + Number(hasBonus) || !KEYS.every(key => Object.hasOwn(packet, key))
       || (hasBuffs && !validBuffs(packet.buffs)) || (hasBonus && !validBonusState(packet.bonus))) return false;
-    const bonusCount = hasBonus && packet.bonus[BONUS.mode] === 2 ? 23 : 18;
+    const bonusCount = hasBonus && packet.bonus[BONUS.mode] === 2 ? BONUS_PICKUP_COUNT : 18;
     const { values: v, skins, bodies, players, pickups, bombs, effects } = packet;
     if (!row(v, MATCH_FIELDS.length) || !row(skins, 2) || !skins.every(skin => integer(skin, 1, PLAYER_COUNT))) return false;
     if (!integer(v[MATCH.phase], 0, 3) || !integer(v[MATCH.remainingTicks], 0) || !integer(v[MATCH.blueScore], 0) || !integer(v[MATCH.redScore], 0)

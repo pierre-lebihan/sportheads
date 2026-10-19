@@ -8,7 +8,7 @@ const readline = require('node:readline');
 
 const root = path.resolve(__dirname, '..');
 const reports = path.join(root, 'browser-report');
-const checks = ['game', 'setup', 'character-selection', 'ai', 'buffs', 'touch-layouts', 'touch-release', 'display', 'balanced-pitches', 'bonus-pitches', 'runtime'];
+const checks = ['game', 'setup', 'character-selection', 'ai', 'buffs', 'touch-layouts', 'touch-release', 'display', 'balanced-pitches', 'bonus-pitches', 'bonuses', 'runtime'];
 const results = [];
 let server, child;
 
@@ -17,7 +17,7 @@ async function run(name, url) {
   await fs.mkdir(directory, { recursive: true });
   const started = Date.now();
   console.log(`\nRunning browser check: ${name}`);
-  const args = ['setup', 'character-selection'].includes(name) ? ['--local-only'] : [];
+  const args = ['setup', 'character-selection', 'bonuses'].includes(name) ? ['--local-only'] : [];
   child = spawn(process.execPath, ['--require', path.join(__dirname, 'browser-ci-hooks.cjs'),
     path.join(__dirname, `check-${name}.cjs`), url, ...args], {
     cwd: root,

@@ -32,8 +32,9 @@ const bindings = { KeyA: 1, KeyQ: 1, KeyD: 2, KeyW: 4, KeyZ: 4, Space: 8, ArrowL
 for (const bonus of NEW_BONUSES) {
   const row = document.createElement('li'),title = document.createElement('strong'),detail = document.createElement('span');
   title.textContent = BONUS_NAMES[bonus.id];detail.textContent = bonus.detail;
-  const icon = document.createElement('canvas');icon.width = icon.height = 40;icon.setAttribute('aria-hidden', 'true');
-  drawBonusPickup(icon.getContext('2d'), bonus.id, 20, 20);
+  const icon = document.createElement('canvas');icon.width = 76;icon.height = 40;icon.setAttribute('aria-hidden', 'true');
+  drawBonusPickup(icon.getContext('2d'), bonus.id, bonus.redId ? 19 : 38, 20, .5);
+  if (bonus.redId) drawBonusPickup(icon.getContext('2d'), bonus.redId, 57, 20, .5);
   row.append(icon, title, detail);$('#v2-bonus-list').append(row);
 }
 let planner;

@@ -188,17 +188,17 @@ test('legacy neutral snapshots remain readable without fabricating buffs', async
 test('V2 effects, timer expiration and pickup IDs cross the actual WASM boundary',async()=>{
   const host=await wasm();host.game_start_match(7,7,1);host.game_set_bonus_mode(2);
   const guest=createRemoteEngine();
-  for(let id=19;id<=23;id++){
+  for(let id=19;id<=26;id++){
     host.game_collect(id,0);const packet=captureState(host,[13,23]);
     assert.equal(packet.values[10],id);assert.equal(packet.bonus[0],2);assert.equal(guest.update(packet),true);
     for(let field=0;field<15;field++)assert.equal(guest.engine.game_bonus_value(field),host.game_bonus_value(field));
   }
   const packet=captureState(host,[13,23]), expected=structuredClone(packet);
   packet.bonus[1]=0;assert.equal(guest.engine.game_bonus_value(1),240,'accepted arrays are copied');
-  for(const edit of [p=>p.bonus[1]=241,p=>p.bonus[0]=1,p=>p.bonus[8]=.5,p=>p.pickups=[[24,400,200,600]]]){
+  for(const edit of [p=>p.bonus[1]=241,p=>p.bonus[0]=1,p=>p.bonus[8]=.5,p=>p.pickups=[[27,400,200,600]]]){
     const bad=structuredClone(expected);edit(bad);assert.equal(guest.update(bad),false);assert.equal(guest.engine.game_bonus_value(1),240);
   }
-  const withPickup=structuredClone(expected);withPickup.pickups=[[23,400,200,600]];assert.equal(guest.update(withPickup),true);
+  const withPickup=structuredClone(expected);withPickup.pickups=[[24,400,200,600],[25,450,200,600],[26,500,200,600]];assert.equal(guest.update(withPickup),true);
   const historical=structuredClone(withPickup);historical.bonus=[1,...Array(14).fill(0)];historical.values[10]=0;assert.equal(guest.update(historical),false,'historical pool excludes new pickups');
   host.game_set_bonus_mode(1);const old=captureState(host,[1,2]);delete old.bonus;assert.equal(guest.update(old),true);assert.equal(guest.engine.game_bonus_value(1),0,'legacy host clears earlier V2 presentation');
 });

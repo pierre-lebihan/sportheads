@@ -680,7 +680,11 @@ impl Game {
             self.spawn_timer += 1;
             if self.spawn_timer > 200 {
                 self.spawn_timer = 0;
-                let count = if self.bonus_mode == 2 { 23.0 } else { 18.0 };
+                let count = if self.bonus_mode == 2 {
+                    crate::bonus_v2::LAST as f64
+                } else {
+                    18.0
+                };
                 let kind = (self.random() * count).ceil().max(1.0) as u32;
                 // Keep pickups below the bonus pitch ceiling; preserve the same RNG calls.
                 let x = 220.0 + self.random() * 360.0;

@@ -1,12 +1,12 @@
 {
   "sourceHashes": {
     "body.rs": "5143c08f9d1e91ce238588cd8436b511cd416fe4c3fd16967dcfebe6cd6e4206",
-    "bonus_v2.rs": "a1ce683ba43409c71e63359623acee9eb432b670d28e009794a25673c19c16ce",
+    "bonus_v2.rs": "5547876962931578814b476d9030d831a111ba26f8910da279e8a6a4d3ceed8a",
     "broadphase.rs": "5e72a09c50624345cea644f3d8e1e7d5e6d88f28d25e6e391e41c305484dfd22",
     "collision.rs": "ed7847fd5cf7a0e2e53d3958f0c4551e88039711462e8e834ad579bb0b02185c",
     "contact.rs": "fb1944500b6bccaeb7669f57137e7cc6c8d500e3a7ac0f6aa5ca0268fc1e9c99",
     "continuous.rs": "0fe3c014b3602b431fd3f43f1d0dc75141645e1df6ca0bb42e23ebbe31fc5070",
-    "game.rs": "ca9155a46bcea3cea5c2090ee3138bdee165c113de369cb197e1b0834f4143f9",
+    "game.rs": "4c11e8ca0d33426d32bdece3b2d89c9ccb6466f7a4908269cb3b51b3a06e420a",
     "joint.rs": "c3bc6dea42b5725f46012c29c102cf7c72d45d9f65cddef19f13db1a307081d9",
     "lib.rs": "e64b8b6ce1f4709053a5671c47c1ceb0f9c443e51a1be49e84ca28b22e9d0263",
     "math.rs": "9f4421a599f80488b15b38c605262c7d95b1d87f50026944982275a7edde7c90",
@@ -95,7 +95,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "b3d3fba09c3700179e1f64a087f1ec0fbff81dbc726c77c89664c78464c437d2"
+      "sha256": "521b2fb964a8abaf5f6ac69b3eaa41ef86f2855f94c07f0593a68ee3a23a9a00"
     },
     {
       "pitch": 3,
@@ -116,7 +116,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "48df9ea6b074e8c21098e5488619be4dfa8fa796f673460332f792982b5d8ab7"
+      "sha256": "c753cf76ec1ad7cca93b58fc1c2d485af26994d6165641009632bbef6cf01b93"
     },
     {
       "pitch": 4,
@@ -137,7 +137,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "fbe49b3f1171b0935b8ad31143028c0181b91daec3d0aa394df8c09320384885"
+      "sha256": "ff6bfc55252327445e72f8075bd9fe8a48f4b295b21b39f6628f8c81c5db900d"
     },
     {
       "pitch": 5,
@@ -158,7 +158,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "6034a569167d1d2dd516a13d339e4b3f47d26bcdeedcbe49cf63e3a6fb17583b"
+      "sha256": "6326e72c9434f4ba391cab85dbb3c5fd004997d4ae366e39d2e399dc3783b875"
     },
     {
       "pitch": 6,
@@ -179,7 +179,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "df678535420bf64b8cd0cc78ce6d66aa3aac9a26237b8286579aef4368dbea73"
+      "sha256": "7e268566739541433e6a086ba9cca39618a5e82ebe761ad0ccdc091c060e7daf"
     },
     {
       "pitch": 7,
@@ -200,7 +200,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "12d92b102f3ff869623b9c146dbe5e5529b8a781c3efb5c677b368162cca7d40"
+      "sha256": "e22ccecd5c424b68488372f6a842875cd41adc7eef1adc0eaae1e0b1d84459df"
     },
     {
       "pitch": 8,
@@ -221,7 +221,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "3dc4f5912d22a061d1fe8e0e506ef50f18418dd3c2d6eeb26535cd9a091286da"
+      "sha256": "2711da782435b4ace759fa3ff96941382b760dd58b490b675a0808ca1db358ce"
     },
     {
       "pitch": 9,
@@ -242,7 +242,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "dea742a0a3703b7ee5c3e31cecfaf827ab46c8fc69b70b04e18b6504eb896ab4"
+      "sha256": "3a37ab655a5a30a0d4348f52f0fb423c96211a88aa4a481a50860a4c09e636d2"
     },
     {
       "pitch": 10,
@@ -263,7 +263,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "5b5b48e9016e70b77d9d03bdd55d3cd6cc32023d159895f726a7f4af5e5728a3"
+      "sha256": "aa79c6037ed256e7b1ebe4193c1f972297924486489a7ddef726e0f1e131c7ec"
     },
     {
       "pitch": 11,
@@ -284,7 +284,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "ebbd1a6b9dc4c42e80d267f1fb5540f2bb6b6fe3e8e696555d514db8789542a2"
+      "sha256": "36fbef4504ca40e3eac6449c15f97bea0274eb78ce5b83a5def6bd4f66948451"
     },
     {
       "pitch": 12,
@@ -305,7 +305,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "dad95b2789ae931caaa7b900a7cb18ea6ce534a2941897ccf5f33557e9efd875"
+      "sha256": "b55ebb07a2b1b7a313c58ed7e80c807ca0abad86affcfeb2f7a528f50d7eaa6a"
     },
     {
       "pitch": 14,
@@ -368,7 +368,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "2eee935a4d79ef246f074dd11bde3fc7c628e3d573ee42f3753e62d3bbc217ee"
+      "sha256": "54981e5ef3a3f5c92f7b95f7aedc5229a7cb02fceb650039ada3f80aecd8b4f0"
     },
     {
       "pitch": 17,
@@ -389,7 +389,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "383cea5d19198053c65727eaedd5ef9da970dc479a7008b11970698d768b344e"
+      "sha256": "62a9c70889e6f23afa9197e41d3405d6222c904afa576ce4b09b0eddf0113fa1"
     },
     {
       "pitch": 18,
@@ -410,7 +410,7 @@
       "bonusMode": 2,
       "ticks": 600,
       "snapshots": 21,
-      "sha256": "508fedca4ffec329917c58b2b06c4813beb36b9d5d0d3827c76c0b7f5ed7173a"
+      "sha256": "8dcb5b5032b3d14ce232bf820d837330f298f52d034358b00fd3c5a064647c5a"
     }
   ]
 }

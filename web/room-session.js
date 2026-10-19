@@ -6,7 +6,7 @@ import { availablePitches } from './selection.js';
 import { PLAYER_COUNT } from './players.js';
 import { createBalance, validBalance } from './balance.js';
 import { validSetupStep } from './setup-ui.js';
-import { bonusModeFromMessage } from './bonuses.js';
+import { bonusModeFromMessage, BONUS_V2_VERSION } from './bonuses.js';
 
 // Connection ownership, ordering, recovery and legacy compatibility live here.
 export function createRoomSession({ app, getCore, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio }) {
@@ -34,7 +34,7 @@ function sendInput() {
   // The legacy mask keeps older hosts working. New hosts apply only held
   // controls plus a single tick per gesture counter, even if packets repeat.
   if (room.send({ type: 'input', sequence: ++inputSequence, mask: app.value.paused ? 0 : input('legacy'), heldMask: app.value.paused ? 0 : input('held'), jump,
-    skin: app.value.config.skins[1], pitchGeometry, statBuffs: 1, bonusV2: 1, bonusPitches: 1 }, { volatile: app.value.started && !app.value.paused && jump === sentJump })) {
+    skin: app.value.config.skins[1], pitchGeometry, statBuffs: 1, bonusV2: BONUS_V2_VERSION, bonusPitches: 1 }, { volatile: app.value.started && !app.value.paused && jump === sentJump })) {
     sentJump = jump;touch.consumeJumps();
   }
 }
@@ -88,7 +88,7 @@ function onMessage(message) {
         receivedJump = Math.max(receivedJump ?? 0, message.jump);
       }
       const supportsBalanced = message.pitchGeometry === pitchGeometry;
-      const supportsBuffs = message.statBuffs === 1,supportsV2 = message.bonusV2 === 1, supportsBonusPitches = message.bonusPitches === 1;
+      const supportsBuffs = message.statBuffs === 1,supportsV2 = message.bonusV2 === BONUS_V2_VERSION, supportsBonusPitches = message.bonusPitches === 1;
       const changed = app.value.config.skins[1] !== message.skin || app.value.guestBalancedPitches !== supportsBalanced || app.value.guestStatBuffs !== supportsBuffs || app.value.guestBonusV2 !== supportsV2 || app.value.guestBonusPitches !== supportsBonusPitches;
       if (changed) {
         app.dispatch({ type: 'capabilities.changed', guestBalancedPitches: supportsBalanced, guestStatBuffs: supportsBuffs, guestBonusV2: supportsV2, guestBonusPitches: supportsBonusPitches });

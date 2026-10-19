@@ -1,7 +1,8 @@
 # Les bonus du match
 
 Le sélecteur propose Aucun bonus (0), Bonus historiques (1, par défaut) et Bonus V2 (2).
-V2 ajoute cinq bonus aux dix-huit historiques. Le pool compte donc 23 possibilités,
+V2 ajoute cinq effets aux dix-huit historiques, dont trois avec variantes bleues
+et rouges. Le pool compte donc 26 pastilles,
 avec la même fréquence d’apparition qu’avant : un bonus après 201 ticks actifs.
 La sélection s’applique au prochain match et reste verrouillée pendant celui-ci.
 Les aides manuelles des joueurs restent un paramètre distinct des bonus à ramasser.
@@ -19,6 +20,13 @@ Les aides manuelles des joueurs restent un paramètre distinct des bonus à rama
 - **Zone trampoline (23)** : pendant 6 secondes, entre x=320 et x=480, un contact
   avec le sol fait bondir les deux joueurs et le ballon.
 
+Les pastilles V2 reprennent le style historique : contour dentelé, dégradé,
+halo sombre et pictogramme jaune. Frappe puissante, Bouclier de but et Tête ressort
+existent en **bleu** (IDs 19, 20, 22) pour le dernier joueur ayant touché le ballon,
+et en **rouge** (IDs 24, 25, 26) pour son adversaire. La couleur ne désigne pas
+le camp bleu ou rouge. Ballon lourd et Zone trampoline sont jaunes, car partagés.
+Les variantes ont exactement les mêmes effets et durées, seul le bénéficiaire change.
+
 Les durées suivent les 30 ticks du jeu par seconde. La pause et le compte à rebours
 ne les font pas avancer. Tous les effets V2 sont retirés à la remise en jeu après
 un but ; le mode choisi reste actif pour la suite du match. Le trampoline ne crée
@@ -34,7 +42,8 @@ Les icônes sont dessinées au canvas, ainsi que les indicateurs de charge,
 le bouclier, le ballon lourd et la zone trampoline. `game_bonus_value` expose
 le mode, les durées et les flashes ; l’invité reçoit uniquement cet état validé,
 sans simuler les collisions. Un invité ancien peut jouer avec les modes 0/1,
-mais doit actualiser sa page avant un match V2. Le code de salle reste inchangé.
+mais doit annoncer la capacité `bonusV2: 2` avant un match V2. Un invité qui
+annonce encore `bonusV2: 1` doit actualiser sa page pour lire les trois nouvelles pastilles. Le code de salle reste inchangé.
 Les réglages V2 sont récupérés au retour du créateur depuis l’invité resté dans la salle.
 
 ## Vérifications
@@ -46,3 +55,9 @@ Les réglages V2 sont récupérés au retour du créateur depuis l’invité res
 - `node scripts/check-rejoin.cjs URL` : conservation du choix V2 après retour de l’hôte.
 - `node scripts/check-ai-performance.cjs URL --v2` : fluidité avec l’IA Expert et
   les cinq effets actifs, sous ralentissement CPU x4 (pas un essai sur téléphone physique).
+
+Pour l’ajout des variantes rouges, la référence de conservation a été comparée
+à l’ancien WASM : les 32 scénarios sans bonus ou historiques sont identiques
+(19 200 ticks). Seuls les scénarios V2 et les empreintes des règles de bonus
+(`game.rs`, `bonus_v2.rs`) ont été actualisés, car le tirage inclut trois nouveaux
+identifiants. Les sources du solveur physique et les règles historiques ne changent pas.

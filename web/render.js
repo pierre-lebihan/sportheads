@@ -8,18 +8,60 @@ export { loadAssets, getAssets, prepareMatchAssets, matchAssetsReady, assetStats
 const base = new URL('./assets/', import.meta.url);
 const backgrounds = new WeakMap();
 
-// Small canvas icons share the game's pickup scale and need no external assets.
+// Match the original Flash pickups: 56px serrated medal, radial colour,
+// soft dark halo and a yellow symbol. Red benefits the collector's opponent.
 export function drawBonusPickup(ctx, kind, x, y, scale = 1) {
-  const bonus = NEW_BONUSES.find(item => item.id === kind); if (!bonus) return;
+  const bonus = NEW_BONUSES.find(item => item.id === kind || item.redId === kind);
+  if (!bonus) return;
+  const red = bonus.redId === kind;
+  const colors = bonus.redId ? (red ? ['#ff3c3c', '#ff0000', '#720000']
+    : ['#64c8ff', '#098df0', '#06396f']) : ['#f2ff00', '#e8ee00', '#797700'];
   ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
-  ctx.fillStyle = '#ffffffed'; ctx.strokeStyle = bonus.color; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  const burst = radius => {
+    ctx.beginPath();
+    for (let i = 0; i < 40; i++) {
+      const angle = i * Math.PI / 20, r = radius * (i % 2 ? .79 : 1);
+      if (i) ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+      else ctx.moveTo(r, 0);
+    }
+    ctx.closePath();
+  };
+  ctx.shadowColor = '#000a'; ctx.shadowBlur = 7;
+  ctx.fillStyle = colors[0]; burst(28); ctx.fill();
+  ctx.shadowBlur = 0;
+  const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 25);
+  gradient.addColorStop(0, colors[1]); gradient.addColorStop(1, colors[2]);
+  ctx.fillStyle = gradient; burst(25); ctx.fill();
+  ctx.scale(1.35, 1.35);
+  ctx.fillStyle = '#ffff00'; ctx.strokeStyle = '#4f4900'; ctx.lineWidth = 1;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.shadowColor = '#000b'; ctx.shadowBlur = 2;
   ctx.beginPath();
-  if (kind === 19) { ctx.moveTo(1,-10); ctx.lineTo(-7,2); ctx.lineTo(0,2); ctx.lineTo(-2,11); ctx.lineTo(8,-3); ctx.lineTo(2,-3); ctx.closePath(); ctx.fillStyle=bonus.color; ctx.fill(); }
-  if (kind === 20) { ctx.moveTo(-8,-7); ctx.quadraticCurveTo(0,-4,8,-7); ctx.lineTo(7,3); ctx.quadraticCurveTo(5,8,0,11); ctx.quadraticCurveTo(-5,8,-7,3); ctx.closePath(); ctx.stroke(); }
-  if (kind === 21) { ctx.moveTo(-5,-6); ctx.lineTo(-9,9); ctx.lineTo(9,9); ctx.lineTo(5,-6); ctx.closePath(); ctx.fillStyle=bonus.color;ctx.fill();ctx.beginPath();ctx.arc(0,-7,3,Math.PI,0);ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.fillText('2×',0,5); }
-  if (kind === 22) { ctx.arc(0,-7,3,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(-6,-1);for(let i=0;i<5;i++)ctx.lineTo(i%2?6:-6,i*2);ctx.lineTo(6,10);ctx.stroke(); }
-  if (kind === 23) { ctx.ellipse(0,-2,10,4,0,0,Math.PI*2);ctx.moveTo(-8,0);ctx.lineTo(-10,9);ctx.moveTo(8,0);ctx.lineTo(10,9);ctx.moveTo(-3,-7);ctx.lineTo(0,-10);ctx.lineTo(3,-7);ctx.stroke(); }
+  if (bonus.id === 19) {
+    ctx.moveTo(1,-12);ctx.lineTo(-8,2);ctx.lineTo(0,2);ctx.lineTo(-2,12);
+    ctx.lineTo(9,-3);ctx.lineTo(2,-3);ctx.closePath();ctx.fill();ctx.stroke();
+  }
+  if (bonus.id === 20) {
+    ctx.moveTo(-9,-9);ctx.quadraticCurveTo(0,-5,9,-9);ctx.lineTo(8,3);
+    ctx.quadraticCurveTo(5,10,0,13);ctx.quadraticCurveTo(-5,10,-8,3);
+    ctx.closePath();ctx.fill();ctx.stroke();
+  }
+  if (bonus.id === 21) {
+    ctx.moveTo(-5,-6);ctx.lineTo(-9,9);ctx.lineTo(9,9);ctx.lineTo(5,-6);
+    ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(0,-7,3,Math.PI,0);
+    ctx.strokeStyle='#ffff00';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#262600';ctx.font='bold 9px Arial';ctx.textAlign='center';ctx.fillText('2×',0,5);
+  }
+  if (bonus.id === 22) {
+    ctx.arc(0,-8,4,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();
+    ctx.moveTo(-6,-1);for(let i=0;i<5;i++)ctx.lineTo(i%2?6:-6,i*2);
+    ctx.lineTo(6,11);ctx.strokeStyle='#ffff00';ctx.lineWidth=3;ctx.stroke();
+  }
+  if (bonus.id === 23) {
+    ctx.ellipse(0,-2,11,4,0,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();
+    ctx.moveTo(-8,0);ctx.lineTo(-10,10);ctx.moveTo(8,0);ctx.lineTo(10,10);
+    ctx.moveTo(-3,-8);ctx.lineTo(0,-12);ctx.lineTo(3,-8);
+    ctx.strokeStyle='#ffff00';ctx.lineWidth=3;ctx.stroke();
+  }
   ctx.restore();
 }
 

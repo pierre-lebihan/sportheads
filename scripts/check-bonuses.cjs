@@ -21,18 +21,40 @@ const url=process.argv[2];assert.ok(url,'Usage: node scripts/check-bonuses.cjs U
     await page.click('#start');await page.waitForFunction(()=>sportheads.snapshot().phase===1);await page.click('#pause');
     assert.equal(await page.locator('#bonuses').isEnabled(),false);
     const result=await page.evaluate(mode=>{
-     const e=sportheads.engine;if(mode===2){for(let id=19;id<=23;id++)for(const side of [0,1])e.game_collect(id,side);}
+     const e=sportheads.engine;if(mode===2){for(let id=19;id<=26;id++)for(const side of [0,1])e.game_collect(id,side);}
      else {for(let tick=0;tick<400;tick++)e.game_tick(0);e.game_collect(19,0);}
      sportheads.render();return {mode:e.game_bonus_value(0),values:Array.from({length:15},(_,f)=>e.game_bonus_value(f)),kinds:Array.from({length:e.game_pickup_count()},(_,i)=>e.game_pickup_value(i,0)),notice:e.game_value(10)};
     },mode);
-    assert.equal(result.mode,mode);assert.ok(result.kinds.every(kind=>kind<=(mode===2?23:18)));
+    assert.equal(result.mode,mode);assert.ok(result.kinds.every(kind=>kind<=(mode===2?26:18)));
     if(mode===0)assert.equal(result.kinds.length,0);
     if(mode!==2)assert.notEqual(result.notice,19);
     if(mode===2){for(const field of [1,2,3,4,5,6,7,8])assert.ok(result.values[field]>0);await page.waitForTimeout(120);assert.deepEqual(await page.evaluate(()=>sportheads.renderState().bonus),result.values,'pause freezes every new effect');await page.screenshot({path:`evidence/bonuses-v2-match-${name}.png`});const png=await page.evaluate(()=>document.querySelector('#field').toDataURL());require('node:fs').writeFileSync(`evidence/bonuses-v2-field-${name}.png`,Buffer.from(png.split(',')[1],'base64'));}
+    if(mode===2){
+     const preview=await page.evaluate(async()=>{
+      const module=new URL(document.querySelector('script[type=module]').src);module.pathname=module.pathname.replace('game.js','render.js');
+      const {drawBonusPickup,drawSprite}=await import(module.href);
+      const canvas=document.createElement('canvas');canvas.width=800;canvas.height=200;
+      const ctx=canvas.getContext('2d');ctx.fillStyle='#dce8d8';ctx.fillRect(0,0,800,200);
+      const kinds=[19,24,20,25,21,22,26,23];
+      for(const [i,id] of [1,2,3,4,9].entries())drawSprite(ctx,`pu-${id}`,1,50+i*100,48);
+      const colors=[];
+      for(const [i,id] of kinds.entries()){
+       const x=50+i*100;drawBonusPickup(ctx,id,x,145);
+       const [r,g,b]=ctx.getImageData(x+23,145,1,1).data;colors.push({id,r,g,b});
+      }
+      return {png:canvas.toDataURL(),colors};
+     });
+     for(const {id,r,b} of preview.colors){
+      if([24,25,26].includes(id))assert.ok(r>b*2,`red icon ${id}`);
+      if([19,20,22].includes(id))assert.ok(b>r*2,`blue icon ${id}`);
+     }
+     require('node:fs').writeFileSync(`evidence/bonuses-v2-design-${name}.png`,Buffer.from(preview.png.split(',')[1],'base64'));
+    }
     await page.locator('#paused [data-quit-match]').click();assert.equal(await page.evaluate(()=>sportheads.snapshot().setupStep),'home');
    }
    await page.context().close();console.log(JSON.stringify({passed:true,browser:name,mobile:true,modes:3,newBonuses:5,pauseFreezesTimers:true}));
   }
+  if(process.argv.includes('--local-only')){assert.deepEqual(errors,[]);return;}
   const host=await pageAt(chrome);await host.click('#play-online');await host.click('#create-room');
   await host.waitForFunction(()=>!document.querySelector('#room-details').hidden&&/^[A-HJ-NP-Z2-9]$/.test(sportheads.snapshot().code));
   const share=new URL(url);share.searchParams.set('room',await host.locator('#room-code').innerText());const guest=await pageAt(safari,share.href);await guest.click('#join-room');
@@ -43,12 +65,12 @@ const url=process.argv[2];assert.ok(url,'Usage: node scripts/check-bonuses.cjs U
   await guest.evaluate(async()=>{
    const source=new URL(document.querySelector('script[type=module]').src);source.pathname=source.pathname.replace('game.js','rooms.js');
    const {Room}=await import(source.href),send=Room.prototype.send;
-   Room.prototype.send=function(message,options){if(window.oldBonusClient&&message.type==='input'){message={...message};delete message.bonusV2;}return send.call(this,message,options);};window.oldBonusClient=true;
+   Room.prototype.send=function(message,options){if(window.oldBonusClient&&message.type==='input'){message={...message};message.bonusV2=1;}return send.call(this,message,options);};window.oldBonusClient=true;
   });
   await host.waitForFunction(()=>document.querySelector('#start').disabled&&document.querySelector('#start').textContent.includes('actualiser'));
   await guest.evaluate(()=>{window.oldBonusClient=false;});await host.waitForFunction(()=>!document.querySelector('#start').disabled);
   await host.click('#start');await guest.waitForFunction(()=>sportheads.snapshot().phase===1);await host.click('#pause');await guest.waitForFunction(()=>sportheads.snapshot().paused);
-  await host.evaluate(()=>{for(let id=19;id<=23;id++)for(const side of [0,1])sportheads.engine.game_collect(id,side);sportheads.render();});
+  await host.evaluate(()=>{for(let id=19;id<=26;id++)for(const side of [0,1])sportheads.engine.game_collect(id,side);sportheads.render();});
   await guest.waitForFunction(()=>sportheads.engine.game_bonus_value(1)===240&&sportheads.engine.game_bonus_value(8)===180);
   const a=await host.evaluate(()=>sportheads.renderState().bonus),b=await guest.evaluate(()=>sportheads.renderState().bonus);assert.deepEqual(a,b);
   assert.equal(await guest.evaluate(()=>typeof sportheads.engine.game_tick),'undefined');

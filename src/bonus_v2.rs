@@ -2,7 +2,7 @@
 use crate::{body::Shape, game::Game, math::Vec2, world::DT};
 
 pub const FIRST: u32 = 19;
-pub const LAST: u32 = 23;
+pub const LAST: u32 = 26;
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct BonusesV2 {
     pub charged: [u32; 2],
@@ -90,15 +90,15 @@ impl Game {
         self.notice_ticks = 70;
         self.sounds |= 32;
         match kind {
-            19 => self.v2.charged[side] = 240,
-            20 => self.v2.shield[side] = 150,
+            19 | 24 => self.v2.charged[if kind == 24 { 1 - side } else { side }] = 240,
+            20 | 25 => self.v2.shield[if kind == 25 { 1 - side } else { side }] = 150,
             21 => {
                 if self.v2.heavy == 0 {
                     self.scale_ball_mass(2.0);
                 }
                 self.v2.heavy = 180;
             }
-            22 => self.v2.spring[side] = 180,
+            22 | 26 => self.v2.spring[if kind == 26 { 1 - side } else { side }] = 180,
             23 => self.v2.trampoline = 180,
             _ => unreachable!(),
         }

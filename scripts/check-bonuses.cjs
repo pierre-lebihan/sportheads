@@ -44,9 +44,9 @@ const url=process.argv[2];assert.ok(url,'Usage: node scripts/check-bonuses.cjs U
       }
       return {png:canvas.toDataURL(),colors};
      });
-     for(const {id,r,b} of preview.colors){
+     for(const {id,r,g,b} of preview.colors){
       if([24,25,26].includes(id))assert.ok(r>b*2,`red icon ${id}`);
-      if([19,20,22].includes(id))assert.ok(b>r*2,`blue icon ${id}`);
+      if([19,20,22].includes(id))assert.ok(g>r*2&&g>b*2,`green icon ${id}`);
      }
      require('node:fs').writeFileSync(`evidence/bonuses-v2-design-${name}.png`,Buffer.from(preview.png.split(',')[1],'base64'));
     }

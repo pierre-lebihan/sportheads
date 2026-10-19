@@ -8,10 +8,10 @@ export const BONUS_MODES = Object.freeze([
 ].map(Object.freeze));
 export const BONUS_NAMES = Object.freeze(['', 'Vitesse augmentée', 'Vitesse réduite', 'Super saut', 'Petit saut', 'Gel adverse', 'Gel', 'Grand but', 'Petit but', 'Bombes', 'Grand ballon', 'Ballon rebondissant', 'Petit ballon', 'Ballon sans rebond', 'Grande tête', 'Petite tête', 'Pied adverse cassé', 'Pied cassé', 'Intrus sur le terrain', 'Frappe puissante', 'Bouclier de but', 'Ballon lourd', 'Tête ressort', 'Zone trampoline', 'Frappe puissante adverse', 'Bouclier de but adverse', 'Tête ressort adverse']);
 export const NEW_BONUSES = Object.freeze([
-  { id: 19, redId: 24, detail: 'Une frappe manuelle renforcée pendant 8 secondes. Bleu : pour vous ; rouge : pour l’adversaire.' },
-  { id: 20, redId: 25, detail: 'Le but repousse un seul ballon pendant 5 secondes. Bleu : votre but ; rouge : le but adverse.' },
+  { id: 19, redId: 24, detail: 'Une frappe manuelle renforcée pendant 8 secondes. Vert : pour vous ; rouge : pour l’adversaire.' },
+  { id: 20, redId: 25, detail: 'Le but repousse un seul ballon pendant 5 secondes. Vert : votre but ; rouge : le but adverse.' },
   { id: 21, color: '#667d96', detail: 'Un ballon plus lourd qui retombe plus vite pendant 6 secondes.' },
-  { id: 22, redId: 26, detail: 'La tête renvoie le ballon plus fort pendant 6 secondes. Bleu : pour vous ; rouge : pour l’adversaire.' },
+  { id: 22, redId: 26, detail: 'La tête renvoie le ballon plus fort pendant 6 secondes. Vert : pour vous ; rouge : pour l’adversaire.' },
   { id: 23, color: '#b96ab7', detail: 'Au centre, le sol fait bondir les deux joueurs et le ballon pendant 6 secondes.' },
 ].map(Object.freeze));
 export const validBonusMode = value => Number.isInteger(value) && value >= 0 && value <= 2;

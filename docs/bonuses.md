@@ -1,7 +1,7 @@
 # Les bonus du match
 
 Le sélecteur propose Aucun bonus (0), Bonus historiques (1, par défaut) et Bonus V2 (2).
-V2 ajoute cinq effets aux dix-huit historiques, dont trois avec variantes bleues
+V2 ajoute cinq effets aux dix-huit historiques, dont trois avec variantes vertes
 et rouges. Le pool compte donc 26 pastilles,
 avec la même fréquence d’apparition qu’avant : un bonus après 201 ticks actifs.
 La sélection s’applique au prochain match et reste verrouillée pendant celui-ci.
@@ -22,7 +22,7 @@ Les aides manuelles des joueurs restent un paramètre distinct des bonus à rama
 
 Les pastilles V2 reprennent le style historique : contour dentelé, dégradé,
 halo sombre et pictogramme jaune. Frappe puissante, Bouclier de but et Tête ressort
-existent en **bleu** (IDs 19, 20, 22) pour le dernier joueur ayant touché le ballon,
+existent en **vert** (IDs 19, 20, 22) pour le dernier joueur ayant touché le ballon,
 et en **rouge** (IDs 24, 25, 26) pour son adversaire. La couleur ne désigne pas
 le camp bleu ou rouge. Ballon lourd et Zone trampoline sont jaunes, car partagés.
 Les variantes ont exactement les mêmes effets et durées, seul le bénéficiaire change.

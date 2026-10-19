@@ -28,7 +28,7 @@ Les bonus à ramasser ont trois réglages : **Aucun bonus**, **Bonus historiques
 V2 ajoute une **frappe puissante** manuelle à usage unique (8 s pour l’utiliser),
 un **bouclier de but** pour un seul ballon (5 s), un **ballon lourd**, une
 **tête ressort** et une **zone trampoline** partagée au centre (6 s chacun).
-Frappe, bouclier et tête ressort ont une pastille bleue pour soi et une rouge
+Frappe, bouclier et tête ressort ont une pastille verte pour soi et une rouge
 pour l’adversaire ; les deux effets partagés sont jaunes.
 Les icônes et les effets sont visibles sur le terrain ; le guide des cinq ajouts
 se déplie dans les paramètres. Le choix est verrouillé pendant le match et

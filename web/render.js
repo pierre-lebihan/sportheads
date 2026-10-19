@@ -15,7 +15,7 @@ export function drawBonusPickup(ctx, kind, x, y, scale = 1) {
   if (!bonus) return;
   const red = bonus.redId === kind;
   const colors = bonus.redId ? (red ? ['#ff3c3c', '#ff0000', '#720000']
-    : ['#64c8ff', '#098df0', '#06396f']) : ['#f2ff00', '#e8ee00', '#797700'];
+    : ['#55e258', '#00c907', '#054800']) : ['#f2ff00', '#e8ee00', '#797700'];
   ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
   const burst = radius => {
     ctx.beginPath();

@@ -193,6 +193,7 @@ Il vérifie aussi l'affichage d'un diagnostic sur une erreur de transport inject
 Avec `--lan-only`, tous les serveurs ICE sont retirés et le test exige une route
 host-vers-host avec des octets reçus. Il valide le chemin direct sur l'ordinateur
 de test, sans reproduire le routeur ni les téléphones du joueur.
+
 Les interruptions simulées rendent temporairement le socket indisponible, soit
 dès l'offre/réponse, soit lors des premiers candidats ICE. La connexion doit
 aboutir après réouverture, et le diagnostic doit confirmer l'envoi des messages
@@ -216,3 +217,56 @@ Le test de fluidité applique 100 à 190 ms de délai variable aux états et sup
 une mise à jour sur neuf. Il compare, sur les mêmes images, les mouvements
 de la façade autoritaire et du rendu lissé. Il vérifie le canal sans retransmission
 et le retour à l’état exact en pause. Il ne mesure pas le réseau des téléphones.
+
+### Isoler le navigateur pendant une enquête Wi-Fi
+
+`check-rtc-control.cjs` ouvre deux processus Chrome distincts et échange un
+message dans chaque sens avec WebRTC natif, sans PeerJS, code de salle ni
+protocole du jeu. Le premier argument est une page HTTPS ou localhost :
+
+```sh
+node scripts/check-rtc-control.cjs https://pierre-lebihan.github.io/sportheads/
+node scripts/check-rtc-control.cjs https://pierre-lebihan.github.io/sportheads/ --lan-only
+node scripts/check-rtc-control.cjs https://pierre-lebihan.github.io/sportheads/ --webkit
+```
+
+`--webkit` remplace le second Chrome par le WebKit de Playwright ; `--headed`
+affiche les fenêtres. Un échec renvoie un code de sortie non nul. Le rapport
+conserve les versions, étapes ICE, types de candidats et compteurs de paquets,
+sans IP, nom local, SDP ni identifiants ICE. Si le témoin échoue aussi, examiner
+le navigateur et l'environnement réseau avant d'attribuer l'échec au jeu.
+
+Lors des premiers essais du 19 octobre 2026, WebKit de Playwright 27.2
+n'émettait aucun candidat, même dans le témoin. Après déverrouillage du Mac,
+le témoin a connecté Chrome 155 et WebKit 27.2, avec des candidats mDNS,
+un profil temporaire comme persistant, et sans changer les permissions ni le
+filtrage ICE. Des essais suivants ont aussi réussi alors que le registre de
+session signalait l'écran verrouillé : l'état de verrouillage seul ne suffit
+donc pas à expliquer le premier blocage.
+
+`NetworkMDNSRegister::registerMDNSName inet_addr error` et l'erreur mDNS 1
+apparaissent également pendant ces connexions réussies, avec des callbacks
+d'enregistrement réussis. Leur seule présence ne prouve pas une panne de
+connexion et ne doit pas entraîner un contournement du filtrage réseau.
+
+Le test du vrai jeu avait aussi une attente d'interface obsolète : après une
+erreur injectée pendant le match, il cherchait le diagnostic dans les réglages
+compacts, dont le panneau de salle est volontairement absent. Il vérifie
+maintenant la conservation du rapport pendant le match, puis l'affichage et
+le bouton de copie dans une salle neuve avant le début du match. Les vrais
+échanges, le retour du créateur et le canal temps réel restent vérifiés dans
+les deux rôles ; l'erreur injectée ne sert qu'au contrôle du diagnostic.
+
+Lors d'une fermeture forcée, WebKit peut également écrire
+`Error sending string through RTCDataChannel.` ou sa variante binaire depuis
+sa [file d'envoi native](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/Modules/mediastream/RTCDataChannel.cpp).
+Ce journal peut remonter comme `pageerror` dans Playwright sans être une
+exception JavaScript levée par l'application. Le test comptabilise ces deux
+messages exacts uniquement pendant ses déconnexions explicitement provoquées.
+Ils restent bloquants pendant le fonctionnement normal ; toutes les autres
+erreurs le restent aussi. Les compteurs apparaissent dans le résultat du test.
+
+Ces résultats ne prouvent pas la résolution de l'échec des téléphones sur un
+même Wi-Fi. Le WebKit de Playwright diffère du Safari installé. Deux processus
+sur un seul Mac ne valident pas le passage entre deux appareils à travers un
+point d'accès Wi-Fi.

@@ -25,37 +25,48 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
       const field = document.querySelector('#field'), r = field.getBoundingClientRect();
       const surface = document.querySelector('#game-surface').getBoundingClientRect();
       const score = document.querySelector('.scoreboard'), s = score.getBoundingClientRect();
+      const scores = [...score.querySelectorAll('strong')].map(node => node.getBoundingClientRect());
       const bar = getComputedStyle(document.querySelector('.match-bar'));
       const buttons = [...document.querySelectorAll('.match-bar button,.touch-pad button')].filter(b => b.getClientRects().length).map(b => ({ id: b.id || b.getAttribute('aria-label'), tool: !!b.closest('.match-bar'), r: b.getBoundingClientRect().toJSON() }));
       const overlaps = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > .5 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > .5;
       return {
         crop: field.height === 480 && Math.abs(r.width / r.height - 800 / 480) < .001 && Math.abs(surface.height - r.height) < .5,
-        score: s.top >= r.top && s.bottom < r.bottom && getComputedStyle(score).pointerEvents === 'none' && +getComputedStyle(score).opacity <= .65,
+        score: s.top >= r.top && s.bottom <= r.bottom + .5 && getComputedStyle(score).pointerEvents === 'none' && +getComputedStyle(score).opacity <= .9,
+        corners: scores.length === 2 && scores.every((box, side) => box.top >= r.top && box.bottom <= r.bottom
+          && ((side ? r.right - box.left : box.right - r.left) + box.bottom - r.top) / (r.width / 800) < 100 + 30 * Math.SQRT2 - 3)
+          && !document.querySelector('.score-divider'),
         transparent: bar.backgroundColor === 'rgba(0, 0, 0, 0)' && bar.pointerEvents === 'none',
         bounds: buttons.every(({ r }) => r.width >= 44 && r.height >= 44 && r.left >= -.5 && r.top >= -.5 && r.right <= innerWidth + .5 && r.bottom <= innerHeight + .5),
-        disjoint: buttons.every((a, index) => buttons.every((b, other) => index === other || !overlaps(a.r, b.r))),
+        disjoint: buttons.every((a, index) => buttons.every((b, other) => index === other || !overlaps(a.r, b.r)))
+          && scores.every(box => buttons.every(button => !overlaps(box, button.r))),
         lateral: innerWidth <= innerHeight || buttons.filter(b => b.tool).every(b => b.r.right <= r.left + .5 || b.r.left >= r.right - .5),
         dock: innerWidth <= innerHeight || document.querySelector('.ground-bar').getBoundingClientRect().height === 0,
         overflow: document.documentElement.scrollWidth <= innerWidth,
         field: r.toJSON(), buttons
       };
     });
-    for (const name of ['crop', 'score', 'transparent', 'bounds', 'disjoint', 'lateral', 'dock', 'overflow']) assert.equal(result[name], true, name + ': ' + JSON.stringify(result));
+    for (const name of ['crop', 'score', 'corners', 'transparent', 'bounds', 'disjoint', 'lateral', 'dock', 'overflow']) assert.equal(result[name], true, name + ': ' + JSON.stringify(result));
     return result;
   }
   try {
     for (const browser of [chrome, safari]) {
       const page = await pageAt(browser, true);
       for (const mode of ['local', 'ai']) {
+        assert.equal(await page.locator('#reload-page').isVisible(),true,'mode selection offers reload');
         await page.click('#play-' + mode);
+        assert.equal(await page.locator('#reload-page').isVisible(),false,'leaving the mode selection hides reload');
         if (mode === 'ai') await page.click('#setup-next');
-        await goToSetup(page, 'rules'); await page.selectOption('#bonuses', '0'); await page.click('#start');
+        for (const step of ['players', 'pitch', 'rules']) {
+          await goToSetup(page, step);
+          assert.equal(await page.locator('#reload-page').isVisible(),false,step + ' hides reload');
+        }
+        await page.selectOption('#bonuses', '0'); await page.click('#start');
         for (const layout of ['thumbs', 'three-fingers']) {
           await page.click('#play-view');
-          for (const selector of ['#setup-steps','#setup-navigation','#online-panel','#player-choice','#performance-diagnostic','.rules-screen .launch','[data-setup-screen=home]','[data-setup-screen=difficulty]','[data-setup-screen=pitch]']) {
+          for (const selector of ['#setup-steps','#setup-navigation','#online-panel','#player-choice','#performance-diagnostic','#reload-page','.rules-screen .launch','[data-setup-screen=home]','[data-setup-screen=difficulty]','[data-setup-screen=pitch]']) {
             assert.equal(await page.locator(selector).isVisible(),false,`match settings hide ${selector}`);
           }
-          for (const selector of ['[data-setup-screen=rules]','#target-score','#balance-controls','#quit-match-settings','#fullscreen-settings','#reload-page','#close-settings','#touch-settings']) {
+          for (const selector of ['[data-setup-screen=rules]','#target-score','#balance-controls','#quit-match-settings','#fullscreen-settings','#close-settings','#touch-settings']) {
             assert.equal(await page.locator(selector).isVisible(),true,`match settings keep ${selector}`);
           }
           await page.screenshot({path:`evidence/match-settings-${browser===chrome?'chrome':'webkit'}-${mode}.png`});
@@ -72,6 +83,10 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
         assert.equal(await page.locator('#play-local').isVisible(),true);
         assert.equal(await page.locator('#performance-diagnostic').isVisible(),true,'preparation retains its help sections');
       }
+      await page.click('#play-online');
+      assert.equal(await page.locator('#reload-page').isVisible(),false,'room preparation hides reload');
+      await page.click('#setup-back');
+      assert.equal(await page.locator('#reload-page').isVisible(),true,'returning to mode selection restores reload');
       await page.context().close();
     }
     const desktop = await pageAt(chrome, false);
@@ -89,6 +104,8 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
     await desktop.evaluate(() => document.exitFullscreen());
     await desktop.waitForFunction(() => !document.fullscreenElement && document.querySelector('#fullscreen-settings').textContent === 'Plein écran');
     assert.equal(await desktop.locator('#fullscreen-settings').innerText(), 'Plein écran');
+    await desktop.click('#quit-match-settings');
+    assert.equal(await desktop.locator('#reload-page').isVisible(),true);
     await desktop.evaluate(()=>{
       window.reloadMarker=true;
       const url=new URL(location.href);url.searchParams.set('room','A');url.searchParams.set('_refresh','stale');history.replaceState(null,'',url);
@@ -98,6 +115,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
     assert.equal(await desktop.evaluate(()=>window.loadError),undefined);
     assert.equal(await desktop.evaluate(()=>window.reloadMarker),undefined,'reloading creates a fresh document');
     assert.equal(await desktop.locator('#join-code').inputValue(),'A','room links survive refresh');
+    assert.equal(await desktop.locator('#reload-page').isVisible(),false,'a room link opens preparation, not mode selection');
     assert.equal(await desktop.evaluate(()=>sportheads.snapshot().started),false,'refresh returns to preparation');
     await desktop.context().close();
     const unsupported = await pageAt(chrome, true, true);
@@ -114,6 +132,6 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
     assert.equal(await installed.locator('#fullscreen-settings').isDisabled(), true);
     assert.equal(await installed.locator('#fullscreen-status').isVisible(), false);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, checks: ['800x480 crop without empty bars', 'small transparent score overlay', 'side tools in landscape', 'no overlap with either touch layout', 'local and AI on Chrome/WebKit mobile 320/390/740/844', 'real fullscreen enter/exit and external exit', 'unsupported-browser guidance and standalone manifest', 'reload retrieves a fresh document and keeps the room link'] }));
+    console.log(JSON.stringify({ passed: true, checks: ['800x480 crop without empty bars', 'scores stay inside the filled corners without a divider', 'side tools in landscape', 'no overlap between scores, tools or touch layouts', 'local and AI on Chrome/WebKit mobile 320/390/740/844', 'real fullscreen enter/exit and external exit', 'unsupported-browser guidance and standalone manifest', 'reload only on mode selection, retrieves a fresh document and keeps the room link'] }));
   } finally { await Promise.all([chrome.close(), safari.close()]); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

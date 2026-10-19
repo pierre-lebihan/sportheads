@@ -6,6 +6,7 @@ export function renderSetup({ screen, mode, role, started, ready, busy, connecte
   const $ = selector => document.querySelector(selector);
   // During a match this dialog is a compact settings view, never a wizard.
   const visibleScreen = started ? 'rules' : screen;
+  $('#reload-page').hidden = visibleScreen !== 'home';
   const steps = mode === 'ai' ? ['difficulty', ...PREPARATION_STEPS] : PREPARATION_STEPS;
   $('#online-panel').hidden = started || mode !== 'online' || screen === 'home';
   const guest = mode === 'online' && role === 'guest' && connected;

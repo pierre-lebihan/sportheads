@@ -39,8 +39,8 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-balanced-
           }
           if(balanced)checked.push(id);
         }
-        // Isolate the new visual markers from the original artwork, then
-        // compare their pixels with the actual native corner bodies (3 and 4).
+        // Filled pockets extend behind the original corner boxes (3 and 4),
+        // while their playable diagonal faces must retain the same boundary.
         const baseline=document.createElement('canvas');baseline.width=800;baseline.height=540;
         const base=baseline.getContext('2d');
         drawSprite(base,'stadium',3,4.45,-25.1,undefined,undefined,0,{filter:'contrast(0.3846153846153846) brightness(1.3)'});
@@ -53,18 +53,17 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-balanced-
         const corners=[3,4].map(i=>({x:e.game_body_value(i,0),y:e.game_body_value(i,1),a:e.game_body_value(i,4),
           hx:e.game_vertex_value(i,2,0),hy:e.game_vertex_value(i,2,1)}));
         const changed=(x,y)=>{const index=(Math.floor(y)*800+Math.floor(x))*4;return Math.max(...[0,1,2,3].map(channel=>Math.abs(actual[index+channel]-before[index+channel])));};
-        const distance=(s,x,y)=>{
-          const dx=x-s.x,dy=y-s.y,px=Math.abs(dx*Math.cos(s.a)+dy*Math.sin(s.a))-s.hx,
-            py=Math.abs(-dx*Math.sin(s.a)+dy*Math.cos(s.a))-s.hy;
-          return Math.hypot(Math.max(px,0),Math.max(py,0))+Math.min(Math.max(px,py),0);
+        const distance=(s,side,x,y)=>{
+          const localX=(x-s.x)*Math.cos(s.a)+(y-s.y)*Math.sin(s.a);
+          return (side?-localX:localX)-s.hx;
         };
         const occupied=[0,0];
         for(let y=0;y<480;y+=2)for(let x=0;x<800;x+=2)if(changed(x,y)>5){
-          if(!corners.some(s=>distance(s,x+.5,y+.5)<=3.5))throw Error(`Corner drawing outside native border at ${x},${y}`);
+          if(!corners.some((s,side)=>distance(s,side,x+.5,y+.5)<=3.5))throw Error(`Corner drawing beyond native diagonal at ${x},${y}`);
           occupied[x<400?0:1]++;
         }
         for(const [side,s] of corners.entries()){
-          if(occupied[side]<500)throw Error('Corner marker is missing');
+          if(occupied[side]<2000 || changed(side?795:4,4)<10)throw Error('Corner pocket is not completely filled');
           for(const t of [-.75,-.5,-.25,0,.25,.5,.75]){
             const lx=side?-s.hx:s.hx,ly=t*s.hy;
             const x=s.x+lx*Math.cos(s.a)-ly*Math.sin(s.a),y=s.y+lx*Math.sin(s.a)+ly*Math.cos(s.a);

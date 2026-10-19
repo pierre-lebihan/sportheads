@@ -93,15 +93,15 @@ export function drawPitch(ctx, pitch, balanced = false) {
   return true;
 }
 
-// The two original 60 x 200 border boxes at (50,50)/(750,50) stay
-// physically unchanged. Draw their exact silhouettes once in the backdrop.
+// Fill the inaccessible pockets behind the original chamfers. Their inner
+// faces remain x+y=100+30*sqrt(2), mirrored on the right; physics is unchanged.
 function drawArenaCorners(ctx) {
-  for (const [x, angle] of [[50, Math.PI / 4], [750, -Math.PI / 4]]) {
-    ctx.save(); ctx.translate(x, 50); ctx.rotate(angle);
-    ctx.beginPath(); ctx.rect(-30, -100, 60, 200);
-    ctx.fillStyle = '#26363e29'; ctx.fill();
-    ctx.lineJoin = 'round'; ctx.strokeStyle = '#f6efd8d9'; ctx.lineWidth = 4; ctx.stroke();
-    ctx.strokeStyle = '#26363ea6'; ctx.lineWidth = 1.5; ctx.stroke();
+  const extent = 100 + 30 * Math.SQRT2;
+  for (const side of [0, 1]) {
+    ctx.save();
+    if (side) { ctx.translate(800, 0); ctx.scale(-1, 1); }
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(extent, 0); ctx.lineTo(0, extent); ctx.closePath();
+    paintObstacle(ctx, extent, extent);
     ctx.restore();
   }
 }

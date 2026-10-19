@@ -192,13 +192,13 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     await host.waitForFunction(() => !document.querySelector('#start').disabled);
     // Opt-in layouts, live previews and the checkbox share the host's ownership.
     await goToSetup(host,'pitch'); await waitStep(guest,'pitch'); await host.check('#bonus-pitches');
-    for(const [id,name] of [[21,'Flipper'],[22,'Double tremplin'],[23,'Le pont'],[24,'Ricochets'],[25,'Plafond bas'],[26,'Le diamant']]) {
+    for(const [id,name] of [[21,'Flipper'],[24,'Ricochets'],[25,'Plafond bas'],[26,'Le diamant']]) {
       await host.selectOption('#pitch',String(id));
       await guest.waitForFunction(({id,name})=>document.querySelector('#bonus-pitches').checked
         && document.querySelector('#pitch').value===String(id) && document.querySelector('#pitch-caption').textContent===name,{id,name});
     }
     assert.equal(await guest.locator('#bonus-pitches').isEnabled(),false);
-    assert.equal(await guest.locator('#pitch option').count(),20);
+    assert.equal(await guest.locator('#pitch option').count(),18);
     await goToSetup(host,'rules'); await guest.evaluate(()=>{window.legacyBonusPitchInput=true;});
     await host.waitForFunction(()=>document.querySelector('#start').disabled && document.querySelector('#start').textContent.includes('actualiser'));
     await guest.waitForFunction(()=>sportheads.snapshot().pitch===8);
@@ -232,7 +232,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs
     assert.deepEqual((await state(host)).buffs, [[30,30,30,30,30],[0,0,0,0,0]]);
     await host.click('#play-view'); await host.click('#quit-match-settings'); await guest.waitForFunction(() => !sportheads.snapshot().connected);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '23 distinct portraits', '14 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'independent per-stat buffs and preset buttons', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'older guest must refresh before corrected pitch', 'six opt-in pitches sync read-only, old guests refresh, disabling falls back to open pitch', 'older host retains original rendering', 'replay', 'mobile layout'] }));
+    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '23 distinct portraits', '14 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'independent per-stat buffs and preset buttons', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'older guest must refresh before corrected pitch', 'four opt-in pitches sync read-only, old guests refresh, disabling falls back to open pitch', 'older host retains original rendering', 'replay', 'mobile layout'] }));
   } catch (error) {
     for (const [index, page] of pages.entries()) if (!page.isClosed()) {
       console.error(index, await state(page).catch(() => null));

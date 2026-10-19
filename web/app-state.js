@@ -1,7 +1,7 @@
 import { createBalance, copyBalance } from './balance.js';
 import { PLAYER_COUNT } from './players.js';
 import { PREPARATION_STEPS } from './setup-ui.js';
-import { PLAYABLE_PITCH_IDS, isBonusPitch, isKnownPitch } from './engine-contract.js';
+import { PLAYABLE_PITCH_IDS, PLAYABLE_BONUS_PITCH_IDS, isBonusPitch, isKnownPitch } from './engine-contract.js';
 import { AI_LEVELS } from './opponent.js';
 import { TOUCH_LAYOUTS } from './touch-layout.js';
 
@@ -30,7 +30,7 @@ function configuration(state, patch, remote = false) {
   if (Object.hasOwn(patch, 'bonusMode') && ![0, 1, 2].includes(patch.bonusMode)) throw TypeError('Invalid bonus mode');
   if (Object.hasOwn(patch, 'difficulty') && !AI_LEVELS.some(level => level.id === patch.difficulty)) throw TypeError('Invalid difficulty');
   const next = { ...state.config, ...patch };
-  if (Object.hasOwn(patch, 'pitch') && !(remote ? isKnownPitch(patch.pitch) : PLAYABLE_PITCH_IDS.includes(patch.pitch) || isBonusPitch(patch.pitch))) throw TypeError('Invalid pitch');
+  if (Object.hasOwn(patch, 'pitch') && !(remote ? isKnownPitch(patch.pitch) : PLAYABLE_PITCH_IDS.includes(patch.pitch) || PLAYABLE_BONUS_PITCH_IDS.includes(patch.pitch))) throw TypeError('Invalid pitch');
   if (isBonusPitch(next.pitch) && !next.bonusPitches) {
     if (Object.hasOwn(patch, 'pitch')) throw TypeError('Bonus pitches are disabled');
     next.pitch = 8;

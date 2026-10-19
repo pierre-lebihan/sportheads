@@ -21,9 +21,16 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-bonus-pit
           if(sportheads.snapshot().pitch>=21) throw Error('Bonus pitch exposed while disabled');
         }
       });
-      await page.check('#bonus-pitches'); assert.equal(await page.locator('#pitch option').count(),20);
+      await page.check('#bonus-pitches'); assert.equal(await page.locator('#pitch option').count(),18);
+      assert.equal(await page.locator('#pitch option[value="22"],#pitch option[value="23"]').count(),0);
+      await page.evaluate(()=>{
+        for(let i=0;i<40;i++) {
+          document.querySelector('#random-pitch').click();
+          if([22,23].includes(sportheads.snapshot().pitch)) throw Error('Removed pitch returned by random selection');
+        }
+      });
       const hashes=[];
-      for(const [id,name] of [[21,'Flipper'],[22,'Double tremplin'],[23,'Le pont'],[24,'Ricochets'],[25,'Plafond bas'],[26,'Le diamant']]) {
+      for(const [id,name] of [[21,'Flipper'],[24,'Ricochets'],[25,'Plafond bas'],[26,'Le diamant']]) {
         await page.selectOption('#pitch',String(id));
         assert.equal(await page.locator('#pitch-caption').innerText(),name);
         assert.ok((await page.locator('#pitch-detail').innerText()).length>20);
@@ -37,7 +44,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-bonus-pit
         assert.equal(await page.isChecked('#bonus-pitches'),true);
         assert.equal(await page.locator('#pitch').inputValue(),String(id));
       }
-      assert.equal(new Set(hashes).size,6,'six distinct previews');
+      assert.equal(new Set(hashes).size,4,'four distinct previews');
       await page.selectOption('#pitch','8');
       // Force the random index only during the click, proving that bonus layouts
       // participate without relying on a probabilistic sampling assertion.
@@ -58,7 +65,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-bonus-pit
       await page.waitForFunction(()=>sportheads.snapshot().phase===1);
       assert.equal(await page.evaluate(()=>sportheads.snapshot().pitch),25);
       assert.deepEqual(errors,[]);
-      console.log(JSON.stringify({passed:true,browser:type.name(),bonusPitches:6,defaultOff:true,randomOptIn:true,localMatches:6,aiMatch:true}));
+      console.log(JSON.stringify({passed:true,browser:type.name(),bonusPitches:4,removedPitches:[22,23],defaultOff:true,randomOptIn:true,localMatches:4,aiMatch:true}));
     } finally {await browser.close();}
   }
 })().catch(error=>{console.error(error);process.exitCode=1;});

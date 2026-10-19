@@ -1,12 +1,13 @@
 import { drawGame, drawSprite, drawPitch, getAssets } from './render.js';
 import { BONUS_PITCH_INFO } from './pitch-geometry.js';
 import { PLAYER_NAMES } from './players.js';
-import { PLAYABLE_PITCH_IDS } from './engine-contract.js';
+import { PLAYABLE_PITCH_IDS, PLAYABLE_BONUS_PITCH_IDS } from './engine-contract.js';
 
 export { PLAYER_NAMES } from './players.js';
 // Preserve original IDs for the available symmetric and corrected pitches.
 export const PITCHES = PLAYABLE_PITCH_IDS.map(id => ({ id, name: id === 8 ? 'Terrain libre' : `Terrain ${id}` }));
-export const availablePitches = (bonus = false) => bonus ? [...PITCHES, ...BONUS_PITCH_INFO] : PITCHES;
+const playableBonusPitches = BONUS_PITCH_INFO.filter(pitch => PLAYABLE_BONUS_PITCH_IDS.includes(pitch.id));
+export const availablePitches = (bonus = false) => bonus ? [...PITCHES, ...playableBonusPitches] : PITCHES;
 export function updatePitchChoices(select, bonus) {
   const choices = availablePitches(bonus);
   if (select.options.length === choices.length) return;

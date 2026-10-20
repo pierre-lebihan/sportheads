@@ -142,22 +142,29 @@ function leaveRoom() {
 }
 function quitMatch() {
   if (!app.value.started) return;
+  const wasMatchmaking = app.value.matchmaking;
   leaveRoom(); app.dispatch({ type: 'match.quit' });
   const url = new URL(location.href); url.searchParams.delete('room');
   history.replaceState(history.state, '', url);
-  update(); $('#play-' + app.value.mode).focus({ preventScroll: true });
+  update(); $('#play-' + (wasMatchmaking ? 'matchmaking' : app.value.mode)).focus({ preventScroll: true });
 }
 function selectMode(next) {
   leaveRoom(); app.dispatch({ type: 'mode.selected', mode: next }); track('mode_selected', { mode: next });
   $('#online-panel').hidden = next !== 'online'; $('#online-controls').hidden = next === 'local';
-  for (const name of ['local', 'online', 'ai']) $('#play-' + name).setAttribute('aria-pressed', String(next === name));
+  pressMode(next);
   update();
+}
+function pressMode(next) { for (const name of ['local', 'online', 'matchmaking', 'ai']) $('#play-' + name).setAttribute('aria-pressed', String(next === name)); }
+function findMatch() {
+  leaveRoom(); pressMode('matchmaking'); $('#online-controls').hidden = false; track('mode_selected', { mode: 'matchmaking' });
+  network.findMatch(); $('#online-panel').hidden = false; update();
 }
 
 for (const id of ['start', 'again', 'restart']) $('#' + id).addEventListener('click', reset);
 $('#play-local').addEventListener('click', () => selectMode('local'));
 $('#play-online').addEventListener('click', () => selectMode('online'));
 $('#play-ai').addEventListener('click', () => selectMode('ai'));
+for (const id of ['play-matchmaking', 'matchmaking-retry', 'matchmaking-again']) $('#' + id).addEventListener('click', findMatch);
 $('#join-code').addEventListener('input', () => { app.dispatch({ type: 'room.code-edited', value: $('#join-code').value }); });
 $('#create-room').addEventListener('click', () => connectRoom(true));
 $('#join-form').addEventListener('submit', event => { event.preventDefault(); app.dispatch({ type: 'room.code-edited', value: $('#join-code').value }); connectRoom(false); });
@@ -204,7 +211,7 @@ $('#play-view').addEventListener('click', () => {
 $('#close-settings').addEventListener('click', closeSettings);
 function navigateSetup(direction) {
   if (app.value.started || app.value.mode === 'online' && app.value.role === 'guest' && app.value.connected) return;
-  if (direction < 0 && app.value.setupStep === 'players' && app.value.mode === 'online') leaveRoom();
+  if (direction < 0 && (app.value.setupStep === 'players' && app.value.mode === 'online' || app.value.setupStep === 'matchmaking')) leaveRoom();
   else app.dispatch({ type: 'preparation.navigated', direction });
   update(); broadcast(); $('#setup-panel').scrollTop = 0;
 }

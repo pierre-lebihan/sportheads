@@ -12,7 +12,7 @@ distance. Les deux utilisent le même cœur Rust/WASM, sans IA. Le premier à at
 4. Le créateur prépare les écrans Joueurs, Terrain, puis Paramètres et lance
    la partie. Il joue Bleu ; l'invité joue Rouge.
 
-Le menu principal propose uniquement « 2 joueurs » et « En ligne ». En local,
+Le menu principal propose « 2 joueurs », « En ligne », « Matchmaking » et « Contre l’IA ». En local,
 la préparation passe par Joueurs → Terrain → Paramètres. En ligne, le créateur
 suit ce même parcours après la création de la salle.
 
@@ -47,6 +47,46 @@ si un code est occupé. Les deux places doivent être libres : un invité qui at
 le retour du créateur conserve sa salle. Si les 32 codes sont occupés, la création
 affiche un message explicite. Le code constitue l'invitation : aucune liste publique de
 salles, aucun compte ni historique. Il faut partager le code avec son adversaire.
+
+## Matchmaking
+
+Le mode « Matchmaking » du menu trouve un adversaire sans code à partager.
+Le site étant statique, la file d'attente est tenue par le PeerServer public
+déjà utilisé pour les salles, sans serveur à déployer :
+
+1. Chaque joueur tente de prendre l'identifiant unique `sportheads-lobby-v7`.
+   PeerServer n'accorde un identifiant qu'à une seule page : celle qui l'obtient
+   est la personne en attente. Elle crée aussitôt une salle privée ordinaire
+   avec un code de huit caractères impossible à deviner.
+2. Si l'identifiant est déjà pris, quelqu'un attend : la page l'appelle et
+   reçoit le code de sa salle, puis la rejoint comme invitée.
+3. La salle est ensuite une salle privée normale : le premier arrivé joue Bleu
+   et prépare le match, l'invité joue Rouge. L'attente est libérée dès que les
+   deux joueurs sont reliés, et la paire suivante peut se former.
+
+Cas particuliers :
+
+- Un seul code est promis à la fois ; les autres appelants réessaient toutes
+  les 1 à 2 secondes. Si l'invité promis n'arrive pas en 20 secondes, ou si sa
+  liaison échoue, la salle est proposée au suivant. Un invité qui échoue deux
+  fois à rejoindre la même salle ne la redemande plus.
+- « Annuler la recherche » quitte la file immédiatement. Sans adversaire au
+  bout de 3 minutes, la recherche s'arrête et propose de la relancer.
+- Une page masquée (téléphone verrouillé, autre application) quitte la file et
+  la reprend à son retour, car elle ne pourrait pas répondre.
+- Si l'adversaire se déconnecte, la reconnexion automatique des salles s'applique ;
+  le bouton « Chercher un autre adversaire » relance une recherche sans attendre.
+- Deux onglets du même navigateur peuvent se trouver : c'est voulu, et c'est
+  le moyen le plus simple de tester le mode seul.
+- Les caricatures des groupes d'amis se comportent comme en salle privée :
+  le personnage choisi par l'adversaire s'affiche, même s'il n'est pas
+  débloqué sur cet appareil.
+- Une version différente du jeu ne reçoit jamais de salle : l'identifiant de
+  la file et la version du protocole changent avec le protocole des salles.
+
+Un Worker Cloudflare avec Durable Object aurait été plus classique, mais il
+demande un déploiement et une clé ; PeerServer garantit déjà l'unicité des
+identifiants, ce qui suffit pour une file à une place.
 
 ## Synchronisation
 
@@ -198,6 +238,7 @@ un candidat `relay/udp` Cloudflare.
 node --test tests/*.test.mjs
 node scripts/check-game.cjs http://127.0.0.1:8765/_site/
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
+node scripts/check-matchmaking.cjs http://127.0.0.1:8765/_site/
 node scripts/check-rejoin.cjs http://127.0.0.1:8765/_site/
 node scripts/check-reconnect.cjs http://127.0.0.1:8765/_site/
 node scripts/check-prediction.cjs http://127.0.0.1:8765/_site/

@@ -66,11 +66,13 @@ export class Room {
     finally { this.collectingStats = false; }
   }
 
-  async create() {
+  // Matchmaking rooms take an unguessable eight-character code, leaving the
+  // short codes to rooms whose code is shared by hand.
+  async create({ long = false } = {}) {
     this.role = 'host';
     const first = ALPHABET.indexOf(randomCode());
-    for (let attempt = 0; attempt < ALPHABET.length; attempt++) {
-      this.code = ALPHABET[(first + attempt) % ALPHABET.length];
+    for (let attempt = 0; attempt < (long ? 3 : ALPHABET.length); attempt++) {
+      this.code = long ? Array.from({ length: 8 }, randomCode).join('') : ALPHABET[(first + attempt) % ALPHABET.length];
       try {
         await this.openPeer(PREFIX + this.code);
         // A surviving guest still owns this room while its creator is away.

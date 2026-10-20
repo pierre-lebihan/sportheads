@@ -57,8 +57,13 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
 .setup-navigation{position:sticky;bottom:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;padding-top:10px;background:#fffffff5;box-shadow:0 -8px 8px #ffffffd9}.setup-navigation .primary{margin-left:auto}.rules-screen .launch{position:static;box-shadow:none;padding:0;background:none}.rules-screen .launch h2{font-size:15px;margin:0 0 4px}.rules-screen .launch p{font-size:12px;margin:0 0 8px}.room-panel h1{font-size:24px}.setup-panel[data-screen="home"] .help{margin-top:0}.setup-panel[data-screen="room"] .room-panel{margin-top:16px}
 @media(max-width:650px){.setup-panel h1{font-size:26px}.setup-heading{margin-bottom:14px}.mode-screen .play-modes{gap:8px}.mode-screen .play-modes strong{font-size:20px}.mode-screen .play-modes span{font-size:11px}.setup-steps{gap:5px;margin-bottom:18px}.setup-steps li{font-size:11px;padding:7px 2px}.control-side{padding:14px 5px}.guest-profile .skin-label{display:block}.guest-profile .skin-label select{width:100%;margin-top:3px}.rules-screen .launch p{display:block}.setup-navigation .primary{padding:10px 15px;font-size:14px}.setup-navigation button{min-height:44px}}
 
-/* Three game modes and a compact, touch-sized difficulty choice. */
-.mode-screen .play-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+/* Four game modes in a square and a compact, touch-sized difficulty choice. */
+.mode-screen .play-modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.matchmaking-search{display:flex;align-items:center;gap:14px;margin:14px 0 4px}.matchmaking-search p{margin:0;font-size:13px;line-height:1.5;color:#34536f}
+.matchmaking-spinner{flex:none;width:30px;height:30px;border-radius:50%;border:4px solid #e2c98f;border-top-color:#244875;animation:matchmaking-spin 1s linear infinite}
+@keyframes matchmaking-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.matchmaking-spinner{animation-duration:3s}}
+#matchmaking-retry,#matchmaking-again{margin-top:10px}.matchmaking-help{font-size:10px;color:#728396;margin:4px 0 0;line-height:1.4}
 .difficulty-options{border:0;padding:0;margin:0;display:grid;gap:10px}.difficulty-options label{display:flex;align-items:center;gap:12px;cursor:pointer;border:1px solid var(--line);border-radius:7px;padding:14px;background:#f4f8fb}.difficulty-options label:has(input:checked){border-color:#285d94;background:#e3eef8;box-shadow:inset 4px 0 #285d94}.difficulty-options input{accent-color:#285d94;width:18px;height:18px;flex:none}.difficulty-options strong,.difficulty-options small{display:block}.difficulty-options strong{font-size:17px;color:#244875}.difficulty-options small{font-size:12px;color:#61798e;margin-top:4px;line-height:1.4}.difficulty-screen>p{font-size:12px;color:#61798e}
 @media(max-width:650px){.mode-screen .play-modes{grid-template-columns:1fr;margin:14px 0}.mode-screen .play-modes button{min-height:76px;padding:12px}.mode-screen .play-modes span{margin-top:5px}}
 /* Fixed-center angular joystick, or tall buttons with a separate index jump. */

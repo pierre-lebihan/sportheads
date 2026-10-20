@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
-  <meta name="description" content="Jouez à Sportheads contre l’IA à quatre niveaux, à deux sur le même écran ou à distance dans une salle privée.">
+  <meta name="description" content="Jouez à Sportheads contre l’IA à quatre niveaux, à deux sur le même écran, à distance dans une salle privée ou contre un joueur trouvé en ligne.">
   <title>Sportheads — contre l’IA ou à deux</title>
   <link rel="stylesheet" href="./game.css">
   <script src="./compat.js"></script>
@@ -64,7 +64,7 @@
           <button id="quit-match-settings" data-quit-match class="quit-match" hidden>Quitter le match</button>
           <section data-setup-screen="home" class="mode-screen">
             <h1>Comment jouez-vous ?</h1>
-            <div class="play-modes" role="group" aria-label="Comment jouez-vous ?"><button id="play-local"><strong>2 joueurs</strong><span>Sur le même écran</span></button><button id="play-online"><strong>En ligne</strong><span>Créer ou rejoindre une salle</span></button><button id="play-ai"><strong>Contre l’IA</strong><span>Quatre niveaux, jusqu’à Expert</span></button></div>
+            <div class="play-modes" role="group" aria-label="Comment jouez-vous ?"><button id="play-local"><strong>2 joueurs</strong><span>Sur le même écran</span></button><button id="play-online"><strong>En ligne</strong><span>Créer ou rejoindre une salle</span></button><button id="play-matchmaking"><strong>Matchmaking</strong><span>Affronter un joueur en ligne</span></button><button id="play-ai"><strong>Contre l’IA</strong><span>Quatre niveaux, jusqu’à Expert</span></button></div>
           </section>
           <section data-setup-screen="difficulty" hidden class="difficulty-screen">
             <h1>Choisissez votre adversaire</h1>
@@ -78,6 +78,10 @@
         <form id="join-form"><label for="join-code">Code de la salle</label><div><input id="join-code" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" placeholder="A" required><button id="join-room" type="submit" disabled>Rejoindre</button></div></form>
       </div>
       </div>
+      <div data-setup-screen="matchmaking" class="matchmaking-screen"><h1>Matchmaking</h1>
+        <div class="matchmaking-search"><span class="matchmaking-spinner" aria-hidden="true"></span><p>Nous cherchons un autre joueur en attente. Le match se prépare dès que vous êtes deux.</p></div>
+        <button id="matchmaking-retry" class="primary" hidden>Relancer la recherche</button>
+      </div>
       <div id="room-details" class="room-details" hidden>
         <div><span class="room-label">Code de la salle</span><strong id="room-code"></strong></div>
         <div class="share-actions"><button id="copy-code">Copier le code</button><button id="copy-link">Copier le lien</button><button id="leave-room">Quitter la salle</button></div>
@@ -85,6 +89,8 @@
       <p id="room-status" role="status" aria-live="polite">Créez une salle ou saisissez le code de votre adversaire.</p>
       <details id="network-diagnostic" hidden><summary>Détails de connexion</summary><pre id="network-report"></pre><button id="copy-diagnostic">Copier le diagnostic</button><span id="diagnostic-copy-status" role="status"></span></details>
       <p class="room-help">Deux joueurs maximum. La salle reste accessible tant qu’un joueur garde cet onglet ouvert.</p>
+      <p class="matchmaking-help">Gardez cet onglet ouvert pendant la recherche. Elle s’arrête au bout de 3 minutes sans adversaire.</p>
+      <button id="matchmaking-again" hidden>Chercher un autre adversaire</button>
     </section>
           <ol id="setup-steps" class="setup-steps" aria-label="Préparation du match" hidden><li id="difficulty-step" hidden>Niveau</li><li>Joueurs</li><li>Terrain</li><li>Paramètres</li></ol>
           <p id="setup-readonly" class="readonly-notice" role="status" hidden></p>

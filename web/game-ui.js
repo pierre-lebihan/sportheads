@@ -68,6 +68,7 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   $('#restart').hidden = app.value.mode === 'online';$('#restart').disabled = !app.value.started;
   $('#again').disabled = !canStart();$('#again').textContent = app.value.mode === 'online' && app.value.role === 'guest' ? 'Le créateur peut relancer' :
   'Rejouer';
+  $('#matchmaking-retry').disabled = !coreReady();$('#play-matchmaking').disabled = !coreReady();
   $('#create-room').disabled = !coreReady() || app.value.busy;$('#join-room').disabled = !coreReady() || app.value.busy;
   const settingsLocked = app.value.started && phase !== PHASE.finished || app.value.mode === 'online' && app.value.role === 'guest';
   $('#bonuses').disabled = !!settingsLocked;
@@ -80,13 +81,13 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   balancing.update({ disabled: !!settingsLocked, skins: config.skins });
   updateSelectionPreviews(state.pitch, config.skins, app.value.mode === 'online' && app.value.role === 'guest' ? app.value.remoteBalancedPitches : true);
   $('#settings-legend').textContent = 'Votre partie';
-  renderSetup({ screen: app.value.setupStep, mode: app.value.mode, role: app.value.role, started: app.value.started, ready: coreReady(), busy: app.value.busy, connected: app.value.connected });
+  renderSetup({ screen: app.value.setupStep, mode: app.value.mode, matchmaking: app.value.matchmaking, role: app.value.role, started: app.value.started, ready: coreReady(), busy: app.value.busy, connected: app.value.connected });
   for (const side of [0, 1]) {
     $('#' + ['skin-left', 'skin-right'][side]).disabled = app.value.mode === 'online' && (app.value.role === null || side !== ownSide());
   }
   characterSelection.update({ mode: app.value.mode, role: app.value.role, connected: app.value.connected });
   for (const [buttonId, selectId] of randomChoices) $('#' + buttonId).disabled = $('#' + selectId).disabled;
-  $('#status').textContent = app.value.mode === 'online' && !app.value.connected ? 'Salle privée · En attente d’un adversaire' :
+  $('#status').textContent = app.value.mode === 'online' && !app.value.connected ? `${app.value.matchmaking ? 'Matchmaking' : 'Salle privée'} · En attente d’un adversaire` :
   !app.value.started ? 'Choisissez vos joueurs et votre terrain' : phase === PHASE.countdown ? 'Préparez-vous…' : phase === PHASE.goal ? `But pour ${names[e.game_value(MATCH.lastScorer)]} !` :
   phase === PHASE.finished ? 'Match terminé' : app.value.mode === 'ai' ? `Contre l’IA · ${difficulty().label} · Vous jouez Bleu` : app.value.mode === 'online' ? `Duel à distance · Vous jouez ${app.value.role === 'host' ? 'Bleu' : 'Rouge'}` : 'Duel local · À vous de jouer';
   if (app.value.started && phase === PHASE.finished) {

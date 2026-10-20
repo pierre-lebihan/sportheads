@@ -68,3 +68,16 @@ test('running match settings cannot return to preparation, and quitting restores
     app.dispatch({type:'preparation.navigated',direction:1}); assert.equal(app.value.setupStep,'pitch');
   }
 });
+test('matchmaking is an online room that returns home when left or quit', () => {
+  const app = createAppStore(); app.dispatch({ type: 'matchmaking.started' });
+  assert.deepEqual([app.value.mode, app.value.matchmaking, app.value.busy, app.value.setupStep], ['online', true, true, 'matchmaking']);
+  app.dispatch({ type: 'room.connecting', create: false }); assert.equal(app.value.setupStep, 'matchmaking', 'joining the found room keeps the waiting screen');
+  app.dispatch({ type: 'preparation.changed', setupStep: 'players' }); app.dispatch({ type: 'connection.changed', connected: true, busy: false, role: 'host' });
+  app.dispatch({ type: 'preparation.navigated', direction: -1 }); assert.equal(app.value.setupStep, 'home');
+  app.dispatch({ type: 'matchmaking.started' }); app.dispatch({ type: 'room.left' });
+  assert.deepEqual([app.value.setupStep, app.value.matchmaking], ['home', false]);
+  app.dispatch({ type: 'matchmaking.started' }); app.dispatch({ type: 'mode.selected', mode: 'online' });
+  assert.deepEqual([app.value.setupStep, app.value.matchmaking], ['room', false]);
+  app.dispatch({ type: 'matchmaking.started' }); app.dispatch({ type: 'match.started' }); app.dispatch({ type: 'match.quit' });
+  assert.deepEqual([app.value.setupStep, app.value.matchmaking], ['home', false]);
+});

@@ -60,10 +60,10 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     assert.equal(await page.locator('#finished').isVisible(),true);
     await page.click('#again');
     const fresh=await page.evaluate(()=>sportheads.snapshot());assert.deepEqual(fresh.score,[0,0]);assert.equal(fresh.phase,0);
-    // Local, AI and online modes are exposed; the chosen target survives replay.
+    // Local, AI, online room and matchmaking modes are exposed; the chosen target survives replay.
     assert.equal(await page.locator('#skin-left option').count(),12); // Public roster: friends need a group link.
     assert.equal(await page.locator('#mode,#goals').count(),0);
-    assert.equal(await page.locator('.play-modes button').count(),3);
+    assert.equal(await page.locator('.play-modes button').count(),4);
     assert.deepEqual(await page.evaluate(()=>[sportheads.engine.game_value(12),sportheads.engine.game_value(14)]),[1,3]);
     assert.equal(await page.locator('#target-score').inputValue(),'3');
     for(let kind=1;kind<=18;kind++){

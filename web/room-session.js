@@ -1,5 +1,6 @@
 import { PHASE, MATCH, isBonusPitch, decodeFrame, encodeFrame } from './engine-contract.js';
 import { Room, normalizeCode, validCode, CODE_HELP } from './rooms.js';
+import { Matchmaker, SEARCH_LIMIT } from './matchmaking.js';
 import { captureState, createRemoteEngine } from './net-state.js';
 import { createRemoteView } from './net-render.js';
 import { createOwnPrediction } from './net-predict.js';
@@ -17,7 +18,7 @@ export function createRoomSession({ app, getCore, skins, bonusMode, targetScore,
  let room = null, remote = createRemoteEngine(), remoteView = createRemoteView(remote.engine, undefined, prediction);
  let lastBroadcast = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, receivedInput = -1;
  let remoteInput = 0, lastInputAt = 0, soundTick = -1, soundMatch = -1;
- let remoteJumpPending = false, receivedJump = null, sentJump = null, recoveryTimer;
+ let remoteJumpPending = false, receivedJump = null, sentJump = null, recoveryTimer, matchmaker = null;
  const pitchGeometry = 'balanced-v1';
  const engine = () => remote.engine;
 function refreshDiagnostic() {
@@ -132,22 +133,59 @@ function onMessage(message) {
   update();
 }
 
-async function connectRoom(create) {
+function stopMatchmaking() { matchmaker?.close(); matchmaker = null; }
+
+// The lobby picks a role; the match itself is an ordinary room afterwards.
+function findMatch() {
+  if (!getCore()) return;
+  stopMatchmaking(); clearTimeout(recoveryTimer); room?.close(); room = null; clearMatch();
+  app.dispatch({ type: 'matchmaking.started' });
+  $('#room-details').hidden = true;
+  const search = matchmaker = new Matchmaker({
+    onHost: () => {
+      if (matchmaker !== search) return;
+      if (room?.role === 'host' && !room.closed) { if (room.code) search.offer(room.code); }
+      else connectRoom(true, { search });
+    },
+    onGuest: code => { if (matchmaker === search) connectRoom(false, { search, code }); },
+    onTimeout: () => {
+      if (matchmaker !== search) return;
+      matchmaker = null; room?.close(); room = null; track('matchmaking_timeout');
+      app.dispatch({ type: 'connection.changed', busy: false, role: null, connected: false, code: '' });
+      roomStatus(`Personne n’est en attente depuis ${SEARCH_LIMIT / 60000} minutes. Relancez la recherche ou invitez un ami dans une salle privée.`, true); update();
+    },
+    onError: message => {
+      if (matchmaker !== search) return;
+      matchmaker = null; room?.close(); room = null;
+      app.dispatch({ type: 'connection.changed', busy: false, role: null, connected: false, code: '' }); roomStatus(message, true); update();
+    },
+  });
+  roomStatus('Recherche d’un adversaire en ligne…'); update(); audio.unlock();
+  search.start();
+}
+
+async function connectRoom(create, { search = null, code: found = '' } = {}) {
   const core = getCore();
-  if (!core || app.value.busy) return;
-  const code = normalizeCode(app.value.joinCode);
+  if (!core || app.value.busy && !search) return;
+  if (!search) stopMatchmaking();
+  const code = normalizeCode(found || app.value.joinCode);
   if (!create && !validCode(code)) {roomStatus(CODE_HELP, true);$('#join-code').focus();return;}
   app.dispatch({ type: "connection.changed", restoringSettings: false });clearTimeout(recoveryTimer);
   room?.close(); clearMatch(); app.dispatch({ type: 'room.connecting', create });
+  // The lobby only pairs players; a failed pairing goes back to it silently.
+  const searching = () => search && matchmaker === search && !candidate.hasConnected;
   const candidate = new Room({
     onReady: () => {
       if (room !== candidate) return;
+      const paired = search && matchmaker === search;
+      if (paired) { stopMatchmaking(); app.dispatch({ type: 'preparation.changed', setupStep: 'players' }); }
       app.dispatch({ type: 'connection.changed', role: candidate.role, connected: candidate.connected, code: candidate.code });
       remoteInput = 0;receivedInput = -1;receivedJump = null;sentJump = null;app.dispatch({ type: "connection.changed", busy: false });
       // The selected ICE pair is known a moment after the channel opens.
-      setTimeout(() => { if (room === candidate) track('online_connected', { role: candidate.role, resumed: !!candidate.resumed, path: connectionPath(candidate.diagnostic()) }); }, 3000);
-      roomStatus(app.value.role === 'host' ? 'Votre adversaire est là. Vous êtes Bleu : lancez le match quand vous êtes prêts.' : 'Vous êtes Rouge. Le créateur de la salle va lancer le match.');
-      $('#room-details').hidden = false;$('#room-actions').hidden = true;$('#room-code').textContent = candidate.code;
+      setTimeout(() => { if (room === candidate) track('online_connected', { role: candidate.role, resumed: !!candidate.resumed, matchmaking: !!search, path: connectionPath(candidate.diagnostic()) }); }, 3000);
+      roomStatus(paired ? app.value.role === 'host' ? 'Adversaire trouvé ! Vous êtes Bleu : préparez et lancez le match.' : 'Adversaire trouvé ! Vous êtes Rouge. Votre adversaire prépare le match.'
+        : app.value.role === 'host' ? 'Votre adversaire est là. Vous êtes Bleu : lancez le match quand vous êtes prêts.' : 'Vous êtes Rouge. Le créateur de la salle va lancer le match.');
+      $('#room-details').hidden = !!search;$('#room-actions').hidden = true;$('#room-code').textContent = candidate.code;
       if (app.value.role === 'host' && candidate.returningHost) {
         app.dispatch({ type: "connection.changed", restoringSettings: true });app.dispatch({ type: "connection.changed", busy: true });app.dispatch({ type: "preparation.changed", setupStep: 'players' });
         roomStatus('Salle retrouvée. Récupération des réglages auprès de votre adversaire…');
@@ -167,23 +205,32 @@ async function connectRoom(create) {
         receivedSequence = -1;app.dispatch({ type: 'connection.match-reset' });app.dispatch({ type: "preparation.changed", setupStep: 'players' });
         candidate.send({ type: 'room-settings', skins: skins(), pitch: app.value.config.pitch, bonusPitches: app.value.config.bonusPitches,
           targetScore: targetScore(), balance: app.value.config.balance, bonuses: bonusMode() !== 0, bonusMode: bonusMode() });
-        roomStatus('Vous êtes Rouge. Le créateur peut préparer et lancer le match.');sendInput();
+        if (!paired) roomStatus('Vous êtes Rouge. Le créateur peut préparer et lancer le match.');
+        sendInput();
       }
       update();
     },
     onMessage: (message) => {if (room === candidate) onMessage(message);},
-    onRedialFailed: () => {if (room === candidate) roomStatus('La connexion n’a pas pu être rétablie. Rejoignez la salle avec le même code.', true);},
+    onRedialFailed: () => {if (room === candidate) roomStatus(search ? 'La connexion n’a pas pu être rétablie. Cherchez un autre adversaire.' : 'La connexion n’a pas pu être rétablie. Rejoignez la salle avec le même code.', true);},
     onDisconnect: () => {
       if (room !== candidate) return;
       clearTimeout(recoveryTimer); app.dispatch({ type: 'room.disconnected' });
       clearInput(); remoteInput = 0; if (app.value.started) audio.stopAll();
-      roomStatus(candidate.role === 'guest' ? 'Vous êtes déconnecté du créateur. Reconnexion automatique… La salle reste ouverte avec le même code.'
+      roomStatus(search ? candidate.role === 'guest' ? 'Vous êtes déconnecté de votre adversaire. Reconnexion automatique…'
+        : 'Votre adversaire est déconnecté. Attendez son retour ou cherchez un autre adversaire.'
+        : candidate.role === 'guest' ? 'Vous êtes déconnecté du créateur. Reconnexion automatique… La salle reste ouverte avec le même code.'
         : 'Votre adversaire est déconnecté. Le match reprendra à son retour ; la salle reste ouverte avec le même code.', true);
-      $('#room-details').hidden = false;$('#room-actions').hidden = true;
+      $('#room-details').hidden = !!search;$('#room-actions').hidden = true;
       update();
     },
     onError: (message) => {
       if (room !== candidate) return;
+      if (searching()) {
+        // A waiting creator keeps its room; a guest that missed it asks the lobby again.
+        if (candidate.role === 'guest' || candidate.closed) { candidate.close(); room = null; search.retry(candidate.code); }
+        else search.reopen();
+        return;
+      }
       app.dispatch({ type: "connection.changed", restoringSettings: false });clearTimeout(recoveryTimer);
       app.dispatch({ type: 'connection.changed', busy: false, connected: candidate.connected }); roomStatus(message, true);
       track('online_failed', { role: candidate.role, connected_before: candidate.hasConnected, reason: message, path: connectionPath(candidate.diagnostic()) });
@@ -193,18 +240,23 @@ async function connectRoom(create) {
     }
   });
   room = candidate;frameSequence = 0;inputSequence = 0;
-  roomStatus(create ? 'Création de la salle…' : 'Connexion à la salle…');update();audio.unlock();
+  if (search) roomStatus(create ? 'Recherche d’un adversaire en ligne… Vous êtes le premier en attente.' : 'Adversaire trouvé, connexion…');
+  else roomStatus(create ? 'Création de la salle…' : 'Connexion à la salle…');
+  update();audio.unlock();
   try {
-    if (create) await candidate.create();else await candidate.join(code);
+    if (create) await candidate.create({ long: !!search });else await candidate.join(code);
     if (room !== candidate || candidate.closed) return;
     app.dispatch({ type: 'connection.changed', role: candidate.role, connected: candidate.connected, code: candidate.code });
-    if (create) {
+    if (search) { if (create && matchmaker === search) search.offer(candidate.code); }
+    else if (create) {
       track('room_created');
       app.dispatch({ type: "connection.changed", busy: false });$('#room-code').textContent = candidate.code;$('#room-details').hidden = false;$('#room-actions').hidden = true;
       if (!candidate.connected) roomStatus('Salle créée. Partagez le code ou le lien avec votre adversaire.');
     }
   } catch (error) {
     if (room !== candidate) return;
+    // Seats taken or signalling down: not this room's fault, so it is not counted.
+    if (searching()) { candidate.close(); room = null; search.retry(); return; }
     candidate.close();app.dispatch({ type: "connection.changed", busy: false });app.dispatch({ type: "connection.changed", role: null });app.dispatch({ type: "preparation.changed", setupStep: 'room' });
     roomStatus(error.message || 'Impossible de créer la connexion. Réessayez.', true);
     track('online_failed', { role: create ? 'host' : 'guest', connected_before: false, reason: error.message || 'unknown', path: 'unknown' });
@@ -220,13 +272,15 @@ async function copyRoom(link) {
   catch {roomStatus(`Copie indisponible. Votre code : ${room.code}.`);}
 }
  return Object.freeze({
-  connect: connectRoom, sendInput, broadcast, copy: copyRoom, status: roomStatus, refreshDiagnostic,
-  send: message => room?.send(message), suspend: () => room?.suspend(), resume: () => room?.resume(),
+  connect: create => connectRoom(create), findMatch, sendInput, broadcast, copy: copyRoom, status: roomStatus, refreshDiagnostic,
+  send: message => room?.send(message),
+  suspend() { room?.suspend(); matchmaker?.suspend(); },
+  resume() { room?.resume(); matchmaker?.resume(); },
   close() {
     // Closing a page can still emit keyup/blur; clear ownership before the
     // transport disappears so those events cannot send through a stale room.
     app.dispatch({ type: 'connection.changed', connected: false, busy: false, restoringSettings: false });
-    clearTimeout(recoveryTimer); room?.close(); room = null;
+    clearTimeout(recoveryTimer); stopMatchmaking(); room?.close(); room = null;
   },
   clearInput() { remoteJumpPending = false; },
   resetMatch() { remoteInput = 0; receivedSequence = receivedInput = -1; remoteJumpPending = false; remote = createRemoteEngine(); prediction.reset(); remoteView = createRemoteView(remote.engine, undefined, prediction); },

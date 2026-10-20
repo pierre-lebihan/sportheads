@@ -7,7 +7,7 @@ est écrit en Rust et compilé en WebAssembly. Le navigateur gère l'affichage e
 les entrées ; la physique, les commandes, le score, les remises en jeu et
 l’objectif de buts sont dans le cœur indépendant du navigateur.
 
-Trois choix : **Contre l’IA**, **2 joueurs sur le même écran** ou **En ligne dans une salle privée**.
+Quatre choix : **Contre l’IA**, **2 joueurs sur le même écran**, **En ligne dans une salle privée** ou **Matchmaking** contre un joueur en attente.
 Le premier à atteindre l’objectif de buts gagne : **7 par défaut**, réglable
 de 1 à 9 avec les boutons − et +, sans limite de temps. Choisissez parmi **14 terrains symétriques**, les **bonus au choix**
 et **12 joueurs récents** avec aperçu, plus des caricatures privées visibles seulement avec un lien de groupe. Les portraits des joueurs sont des caricatures originales ; les autres sprites, animations et sons viennent du
@@ -103,6 +103,11 @@ prendre la place libre. Le créateur retrouve Bleu et les réglages transmis par
 l'invité ; après fermeture de sa page, les joueurs reviennent au salon pour
 un nouveau match. Si les deux pages sont fermées, il faut recréer une salle.
 
+**Matchmaking** cherche un autre joueur qui attend aussi, sans code à partager.
+Le premier arrivé attend (3 minutes au plus, annulable) ; le suivant le rejoint
+et le match se prépare comme dans une salle privée : le premier arrivé joue Bleu
+et règle la partie. Voir [Multijoueur distant](docs/multiplayer.md#matchmaking).
+
 Les salles utilisent le service de mise en relation PeerServer et WebRTC.
 La connexion directe a été vérifiée. Pour les réseaux restrictifs (4G/5G,
 Wi-Fi filtrés), un relais TURN Cloudflare gratuit sert de secours :
@@ -150,6 +155,7 @@ node scripts/check-game.cjs http://127.0.0.1:8765/_site/
 node scripts/check-ai.cjs http://127.0.0.1:8765/_site/
 node --test tests/*.test.mjs
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
+node scripts/check-matchmaking.cjs http://127.0.0.1:8765/_site/
 node scripts/check-setup.cjs http://127.0.0.1:8765/_site/
 node scripts/check-mobile.cjs http://127.0.0.1:8765/_site/
 node scripts/check-pages.cjs http://127.0.0.1:8765/_site/physics.html

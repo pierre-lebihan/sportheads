@@ -14,7 +14,7 @@ const freeze = value => {
 const cleared = { started: false, paused: false, pauseFlags: [false, false], settingsOpen: false,
   guestBalancedPitches: false, remoteBalancedPitches: false, guestStatBuffs: false, guestBonusV2: false, guestBonusPitches: false };
 function initialAppState() {
-  return freeze({ ...cleared, mode: 'local', role: null, connected: false, code: '', joinCode: '', busy: false, restoringSettings: false,
+  return freeze({ ...cleared, mode: 'local', matchmaking: false, role: null, connected: false, code: '', joinCode: '', busy: false, restoringSettings: false,
     soundEnabled: true, touchLayout: 'thumbs', setupStep: 'home', lastValidTarget: 7, matchId: 0, roomNotice: { message: '', error: false },
     config: { skins: [1, 2], pitch: 8, bonusPitches: false, targetScore: 7, bonusMode: 1, difficulty: 'normal', balance: createBalance() } });
 }
@@ -50,14 +50,18 @@ export function transition(state, event) {
   switch (event.type) {
     case 'mode.selected':
       if (!['local', 'ai', 'online'].includes(event.mode)) throw TypeError('Invalid mode');
-      next = { ...state, ...cleared, mode: event.mode, role: null, connected: false, code: '', busy: false, restoringSettings: false,
+      next = { ...state, ...cleared, mode: event.mode, matchmaking: false, role: null, connected: false, code: '', busy: false, restoringSettings: false,
         setupStep: event.mode === 'local' ? 'players' : event.mode === 'ai' ? 'difficulty' : 'room' }; break;
+    // Matchmaking is an online room whose opponent is found by the lobby.
+    case 'matchmaking.started': next = { ...state, ...cleared, mode: 'online', matchmaking: true, role: null, connected: false, code: '', busy: true,
+      restoringSettings: false, setupStep: 'matchmaking' }; break;
     case 'match.cleared': next = { ...state, ...cleared }; break;
     case 'match.started': next = { ...state, matchId: state.matchId + 1, started: true, paused: false, pauseFlags: [false, false], settingsOpen: false, setupStep: 'rules' }; break;
     case 'room.left':
-    case 'match.quit': next = { ...state, ...cleared, role: null, connected: false, code: '', busy: false, restoringSettings: false,
-      setupStep: event.type === 'match.quit' || state.mode !== 'online' ? 'home' : 'room' }; break;
-    case 'room.connecting': next = { ...state, ...cleared, matchId: 0, busy: true, restoringSettings: false, connected: false, code: '', role: event.create ? 'host' : 'guest', setupStep: event.create ? 'players' : 'room' }; break;
+    case 'match.quit': next = { ...state, ...cleared, matchmaking: false, role: null, connected: false, code: '', busy: false, restoringSettings: false,
+      setupStep: event.type === 'match.quit' || state.mode !== 'online' || state.matchmaking ? 'home' : 'room' }; break;
+    case 'room.connecting': next = { ...state, ...cleared, matchId: 0, busy: true, restoringSettings: false, connected: false, code: '', role: event.create ? 'host' : 'guest',
+      setupStep: state.matchmaking ? 'matchmaking' : event.create ? 'players' : 'room' }; break;
     case 'connection.match-reset': next = { ...state, matchId: 0 }; break;
     case 'room.code-edited': next = { ...state, joinCode: String(event.value) }; break;
     case 'room.notice': next = { ...state, roomNotice: { message: event.message, error: !!event.error } }; break;
@@ -81,7 +85,7 @@ export function transition(state, event) {
       const index = steps.indexOf(state.setupStep);
       const step = event.direction > 0 && index >= 0 && index < steps.length - 1 ? steps[index + 1]
         : event.direction < 0 && index > 0 ? steps[index - 1]
-          : event.direction < 0 ? (state.setupStep === 'players' && state.mode === 'online' ? 'room' : 'home') : state.setupStep;
+          : event.direction < 0 ? (state.setupStep === 'players' && state.mode === 'online' && !state.matchmaking ? 'room' : 'home') : state.setupStep;
       next = { ...state, setupStep: step }; break;
     }
     default: {

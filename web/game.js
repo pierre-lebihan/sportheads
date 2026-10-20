@@ -279,9 +279,11 @@ function animate(time) {
   network.heartbeat();
   network.advance(time);
   const view = running && renderEngine() === core ? blend.view(clock.debtMs / TICK_MS) : renderEngine();
+  const resolution = canvas.width / 800;
+  ctx.setTransform(resolution, 0, 0, resolution, 0, 0);
   monitor.measure('render', () => drawGame(ctx, view, renderState()));
   monitor.record('simulationDebt', clock.debtMs);
-  pacer.drawn(time, running);
+  const saver = pacer.saver; pacer.drawn(time, running); if (pacer.saver !== saver) fitResolution();
   requestAnimationFrame(animate);
 }
 function performanceReport() {
@@ -291,7 +293,7 @@ function performanceReport() {
     planner: planner?.stats(), scheduler: { tickMs: 1000 / 30, maxStepsPerFrame: 2, debtMs: clock.debtMs, batterySaver: pacer.saver } };
 }
 setupPerformancePanel({ report: performanceReport, reset: () => monitor.reset(), resume() { closeSettings(); pause(false); } });
-window.sportheads = { resetPerformance: () => monitor.reset(), performance: performanceReport, inspectPlanner: () => planner.inspect(), get state() { return app.value; }, snapshot, renderState, get engine() {return engine();}, get renderEngine() {return renderEngine();}, render() {update();network.advance();drawGame(ctx, renderEngine(), renderState());} };
+window.sportheads = { resetPerformance: () => monitor.reset(), performance: performanceReport, inspectPlanner: () => planner.inspect(), get state() { return app.value; }, snapshot, renderState, get engine() {return engine();}, get renderEngine() {return renderEngine();}, render() {update();network.advance();ctx.setTransform(canvas.width / 800, 0, 0, canvas.width / 800, 0, 0);drawGame(ctx, renderEngine(), renderState());} };
 try {
   const response = await fetch('./physics-core.wasm');if (!response.ok) throw new Error('Chargement du moteur impossible.');
   const [wasm] = await Promise.all([WebAssembly.instantiateStreaming(response), loadAssets()]);
@@ -307,5 +309,15 @@ try {
   $('#status').textContent = 'Le jeu n’a pas pu se charger. Rechargez la page pour réessayer.';window.loadError = error.message;
 }
 layoutArena($('.field-wrap'), $('#game-surface'), $('#touch-controls'));
+// HD: only the canvas backing store follows the displayed size x devicePixelRatio,
+// up to twice the 800 x 480 scene. The simulation, its coordinates and the 30 Hz
+// tick never see it. The battery saver returns to the base resolution.
+function fitResolution() {
+  const wanted = pacer.saver ? 1 : canvas.clientWidth * (window.devicePixelRatio || 1) / 800;
+  const resolution = Math.min(2, Math.max(1, Math.round(wanted * 4) / 4));
+  if (canvas.width !== 800 * resolution) { canvas.width = 800 * resolution; canvas.height = 480 * resolution; }
+}
+new ResizeObserver(fitResolution).observe(canvas);
+fitResolution();
 setupFullscreen($('.arena'), $('#fullscreen'), $('#fullscreen-settings'), $('#fullscreen-status'), () => {clearInput();sendInput();clock.reset();});
 requestAnimationFrame(animate);

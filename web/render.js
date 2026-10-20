@@ -184,11 +184,13 @@ function drawArenaCorners(ctx) {
 // Safari before 18 ignores CanvasRenderingContext2D.filter, so the Flash colour
 // transform (each channel * 128/256 + 102/255) is a 50 % blend with #ccc instead.
 const stadiumLayers = new WeakMap();
-function stadiumLayer(frame, image) {
+function stadiumLayer(frame, image, resolution) {
   let layer = stadiumLayers.get(image);
-  if (!layer) {
-    layer = document.createElement('canvas'); layer.width = 800; layer.height = 540;
+  if (layer?.resolution !== resolution) {
+    layer = document.createElement('canvas'); layer.resolution = resolution;
+    layer.width = Math.round(800 * resolution); layer.height = Math.round(540 * resolution);
     const layerCtx = layer.getContext('2d');
+    layerCtx.scale(resolution, resolution);
     layerCtx.drawImage(image, 4.45 - frame.originX, -25.1 - frame.originY, frame.width, frame.height);
     layerCtx.globalCompositeOperation = 'source-atop'; layerCtx.globalAlpha = .5;
     layerCtx.fillStyle = '#ccc'; layerCtx.fillRect(0, 0, 800, 540);
@@ -199,7 +201,13 @@ function stadiumLayer(frame, image) {
 
 export function drawStadium(ctx, number = 3) {
   const frame = getAssets()?.sprites.stadium?.frames[number - 1], image = frame && imageFor(frame);
-  if (image?.complete && image.naturalWidth) ctx.drawImage(stadiumLayer(frame, image), 0, 0);
+  if (image?.complete && image.naturalWidth) ctx.drawImage(stadiumLayer(frame, image, resolutionOf(ctx)), 0, 0, 800, 540);
+}
+
+// HD screens draw the 800 x 540 scene through a scale transform; cached layers
+// follow it (in quarter steps), and previews drawn smaller keep the base size.
+function resolutionOf(ctx) {
+  return Math.max(1, Math.round((ctx.getTransform?.().a || 1) * 4) / 4);
 }
 
 function paintBackground(ctx, state, pitch) {
@@ -218,15 +226,17 @@ function drawBackground(ctx, state, pitch) {
   const stadium = getAssets()?.sprites.stadium?.frames[(state.stadiumFrame || 3) - 1];
   const image = stadium && imageFor(stadium);
   if (!assetsReady() || !image?.complete || !image.naturalWidth) { paintBackground(ctx, state, pitch); return; }
-  const key = `${state.stadiumFrame || 3}:${pitch || 0}:${!!state.balancedPitches}`;
+  const resolution = resolutionOf(ctx);
+  const key = `${state.stadiumFrame || 3}:${pitch || 0}:${!!state.balancedPitches}:${resolution}`;
   let cached = backgrounds.get(ctx);
   if (cached?.key !== key) {
     const canvas = document.createElement('canvas');
-    canvas.width = 800; canvas.height = 540;
-    paintBackground(canvas.getContext('2d'), state, pitch);
+    canvas.width = Math.round(800 * resolution); canvas.height = Math.round(540 * resolution);
+    const background = canvas.getContext('2d'); background.scale(resolution, resolution);
+    paintBackground(background, state, pitch);
     cached = { key, canvas }; backgrounds.set(ctx, cached);
   }
-  ctx.drawImage(cached.canvas, 0, 0);
+  ctx.drawImage(cached.canvas, 0, 0, 800, 540);
 }
 
 function polygons(ctx, engine) {

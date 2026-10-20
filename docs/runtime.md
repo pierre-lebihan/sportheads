@@ -208,3 +208,14 @@ entre deux ticks remplissent déjà. Si, pendant le jeu, la médiane des 90 dern
 intervalles dépasse celle de 45 images par seconde, l'appareil passe en économie
 pour la session : 30 images par seconde régulières, au lieu d'une cadence
 irrégulière. Le rapport de fluidité l'indique (`scheduler.batterySaver`).
+
+## Affichage HD
+
+Le canvas du terrain garde la scène de 800 × 480 et sa physique, mais sa
+mémoire d'image suit la taille affichée × `devicePixelRatio`, par quarts, jusqu'à
+2 × (1600 × 960). Le dessin passe par une seule transformation d'échelle ; le
+décor et le stade sont mis en cache à cette résolution. Le moteur, ses
+coordonnées et le tick à 30 Hz ne voient jamais cette résolution, et les
+commandes tactiles sont des boutons indépendants du canvas. Le mode économie
+revient à la résolution de base. `scripts/check-hd.cjs` compare une image HD
+réduite à l'image de base et vérifie la cadence de simulation.

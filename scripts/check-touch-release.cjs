@@ -7,7 +7,8 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-touch-rel
   for (const [name, type, options] of [['Chromium', chromium, { channel: 'chrome', args: ['--no-proxy-server'] }], ['WebKit', webkit, {}]]) {
     const browser = await type.launch({ headless: true, ...options });
     try {
-      const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+      // Phones draw the field in HD (devicePixelRatio 3); touch must map exactly as before.
+      const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, hasTouch: true, isMobile: true });
       await context.addInitScript(() => {
         window.dropPointerRelease = false; window.dropTouchRelease = false;
         for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) window.addEventListener(type, event => {

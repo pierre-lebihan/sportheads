@@ -1,5 +1,5 @@
 // Cosmetic roster: all avatars share the same physical/jump parameters.
-export const PLAYER_NAMES = ['Kylian Mbappé', 'Erling Haaland', 'Lamine Yamal', 'Ousmane Dembélé', 'Jude Bellingham', 'Cole Palmer', 'Pedri', 'Vitinha', 'Achraf Hakimi', 'Nuno Mendes', 'Virgil van Dijk', 'Gianluigi Donnarumma', 'Pierre', 'Vilma', 'Thibaud', 'Marie', 'Corentin', 'Pierre Nomad', 'Maël', 'Baptiste', 'Jerem', 'Arthur', 'Vilma Dreadlocks'];
+export const PLAYER_NAMES = ['Kiwan Mbarré', 'Erling Hallogène', 'Lamine Y’a Mal', 'Ousmane Dans-le-Blé', 'Jude Bellinjambon', 'Colle Palmier', 'Pétrin', 'Vitaminha', 'Achraf Hakiwi', 'Nounours Mendès', 'Virgule van Digue', 'Gianluigi Donnarhume', 'Pierre', 'Vilma', 'Thibaud', 'Marie', 'Corentin', 'Pierre Nomad', 'Maël', 'Baptiste', 'Jerem', 'Arthur', 'Vilma Dreadlocks'];
 export const PLAYER_COUNT = PLAYER_NAMES.length;
 // Keep the original atlas intact; new portraits use their own transparent sheet.
 export const AVATAR_SOURCE_FRAMES = [

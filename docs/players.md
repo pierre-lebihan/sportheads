@@ -40,8 +40,9 @@ L’ancienne API `game_set_assistance` reste réservée aux comparaisons histori
 
 ## Joueurs récents
 
-Mbappé, Haaland, Lamine Yamal, Dembélé, Bellingham, Palmer, Pedri, Vitinha,
-Hakimi, Nuno Mendes, Van Dijk et Donnarumma, plus Pierre, Vilma, Thibaud, Marie, Corentin, Pierre Nomad, Maël, Baptiste, Jerem, Arthur et Vilma Dreadlocks, dessinés à partir de leur photo. Le choix est cosmétique : mêmes
+Douze caricatures de pros sous des noms parodiques (Kiwan Mbarré, Erling Hallogène,
+Lamine Y’a Mal, Ousmane Dans-le-Blé, Jude Bellinjambon, Colle Palmier, Pétrin, Vitaminha,
+Achraf Hakiwi, Nounours Mendès, Virgule van Digue et Gianluigi Donnarhume), plus Pierre, Vilma, Thibaud, Marie, Corentin, Pierre Nomad, Maël, Baptiste, Jerem, Arthur et Vilma Dreadlocks, dessinés à partir de leur photo. Le choix est cosmétique : mêmes
 corps physiques et même hauteur de référence pour la condition de saut.
 Les différences de niveau proviennent uniquement des aides et des bonus.
 
@@ -62,7 +63,8 @@ en direct sur les deux appareils, avant que le créateur valide le duel et passe
 
 La sélection reprend les onze joueurs du [World 11 FIFPRO 2025](https://www.fifpro.org/en/articles/2025/11/who-is-in-the-2025-fifpro-men-s-world-11),
 avec [Haaland également présent dans les classements FIFA 2026](https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/power-rankings).
-Aucune appartenance à un club n'est affichée.
+Aucune appartenance à un club n'est affichée, et le vrai nom des joueurs n'apparaît
+nulle part dans le jeu : seuls les noms parodiques sont montrés (droit à l'image).
 
 Les portraits sont des caricatures générées pour ce projet avec l'outil
 intégré imagegen. L'atlas transparent `web/assets/modern-players.png` contient

@@ -26,7 +26,7 @@ test('responses without a usable relay are rejected', () => {
 
 test('no configured service keeps PeerJS defaults synchronously', () => {
   resetIceServers();
-  assert.deepEqual(peerIceOptions(), {});
+  assert.deepEqual(peerIceOptions(() => {}, ''), {});
 });
 
 test('credentials are fetched once, cached, and a failure falls back to defaults', async t => {

@@ -1,9 +1,9 @@
 // Optional TURN fallback for networks that block direct WebRTC routes.
 // A static site cannot hold a TURN secret, so a small credential service
-// (relay/turn-worker.js) returns short-lived ICE servers. The build fills
-// this URL from the SPORTHEADS_TURN_URL repository variable; empty keeps
-// the PeerJS built-in servers.
-export const TURN_CREDENTIALS_URL = '';
+// (relay/turn-worker.js) returns short-lived ICE servers. The build may
+// override this URL with the SPORTHEADS_TURN_URL repository variable; an
+// empty URL keeps the PeerJS built-in servers.
+export const TURN_CREDENTIALS_URL = 'https://sportheads-turn.lebihanp.workers.dev';
 const FETCH_TIMEOUT = 3000;
 const RETRY_AFTER_FAILURE = 60000;
 const REFRESH_MARGIN = 10 * 60000;
@@ -55,4 +55,5 @@ export function peerIceOptions(record = () => {}, url = TURN_CREDENTIALS_URL) {
   if (cached && Date.now() < cached.until) return cached.options;
   return pending ||= load(url, record);
 }
-export function resetIceServers() { cached = null; pending = null; }
+// Tests can pin the answer, e.g. resetIceServers({}) for PeerJS defaults.
+export function resetIceServers(options) { cached = options ? { options, until: Infinity } : null; pending = null; }

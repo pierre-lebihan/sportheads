@@ -156,18 +156,17 @@ inclut STUN et des relais TURN publics. Les essais réels ont validé les salles
 avec une connexion WebRTC directe. Le test qui interdit les connexions directes
 (`--relay`) échoue avec ces relais publics : aucun candidat relayé n'est obtenu.
 
-Un relais TURN dédié peut donc être branché en secours (voir
-[relay/README.md](../relay/README.md)). Si la variable de dépôt
-`SPORTHEADS_TURN_URL` est définie, la construction l'inscrit dans
-`web/ice-servers.js`. Avant d'ouvrir une salle, le navigateur demande alors à
+Un relais TURN dédié sert donc de secours (voir
+[relay/README.md](../relay/README.md)). Avant d'ouvrir une salle, le navigateur demande à
 ce service des identifiants TURN Cloudflare valables 4 heures, puis les réutilise.
 La liste ICE devient STUN Google, STUN Cloudflare et TURN Cloudflare (UDP 3478,
 TCP 3478 et TLS 443 ; le port 53, bloqué par les navigateurs, est retiré).
 ICE essaie toujours la route directe d'abord : le relais ne transporte le match
-que si aucune autre route n'aboutit. Sans réponse en 3 secondes, ou sans
-variable, les serveurs par défaut de PeerJS restent utilisés. Le diagnostic
+que si aucune autre route n'aboutit. Sans réponse en 3 secondes, les serveurs par défaut de PeerJS restent utilisés. Le diagnostic
 réseau note `turn-config` (`relay` ou `default`) sans jamais copier les
 identifiants. Aucun secret n'est publié : la clé TURN reste dans le Worker.
+Un essai réel avec `iceTransportPolicy: 'relay'` a transmis un message par
+un candidat `relay/udp` Cloudflare.
 
 ## Vérifications
 

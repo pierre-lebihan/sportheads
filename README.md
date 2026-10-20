@@ -103,7 +103,7 @@ un nouveau match. Si les deux pages sont fermées, il faut recréer une salle.
 
 Les salles utilisent le service de mise en relation PeerServer et WebRTC.
 La connexion directe a été vérifiée. Pour les réseaux restrictifs (4G/5G,
-Wi-Fi filtrés), un relais TURN gratuit peut servir de secours :
+Wi-Fi filtrés), un relais TURN Cloudflare gratuit sert de secours :
 voir [relay/README.md](relay/README.md).
 
 [État du match](docs/match-progress.md) · [État de la physique](docs/physics-progress.md) ·

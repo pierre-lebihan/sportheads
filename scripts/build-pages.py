@@ -38,10 +38,10 @@ if turn_url and not re.fullmatch(r'https://[A-Za-z0-9.-]+(?::\d+)?(?:/[A-Za-z0-9
 def web_source(name):
     data = (root / 'web' / name).read_bytes()
     if name == 'ice-servers.js' and turn_url:
-        placeholder = b"export const TURN_CREDENTIALS_URL = '';"
-        if data.count(placeholder) != 1:
-            raise SystemExit('TURN placeholder not found in ice-servers.js')
-        data = data.replace(placeholder, f"export const TURN_CREDENTIALS_URL = '{turn_url}';".encode())
+        data, count = re.subn(rb"^export const TURN_CREDENTIALS_URL = '[^']*';$",
+            f"export const TURN_CREDENTIALS_URL = '{turn_url}';".encode(), data, flags=re.M)
+        if count != 1:
+            raise SystemExit('TURN URL constant not found in ice-servers.js')
     return data
 # Every app module uses the same revision, including its transitive imports.
 # A refreshed page must not mix a new UI with cached networking code.
@@ -82,4 +82,4 @@ shutil.copyfile(root / 'probe/physics-core.wasm', site / 'physics-core.wasm')
 public_report = {key: report[key] for key in ('scope', 'tolerance', 'cases', 'unexpectedErrors')}
 (site / 'data/physics-parity.json').write_text(json.dumps(public_report, separators=(',', ':'), allow_nan=False))
 (site / '.nojekyll').touch()
-print(f'Packaged {len(report["cases"])} validated replays in {site.name}/' + (' with TURN fallback' if turn_url else ''))
+print(f'Packaged {len(report["cases"])} validated replays in {site.name}/' + (f' with TURN override {turn_url}' if turn_url else ''))

@@ -12,34 +12,29 @@ reste dans un petit Worker Cloudflare (`turn-worker.js`, offre gratuite) qui
 fournit au navigateur des identifiants valables 4 heures. Aucun secret n'est
 dans le dépôt ni dans les pages publiées.
 
-## Mise en place (une fois, environ 10 minutes)
+## Déploiement
 
-1. Créer un compte gratuit sur dash.cloudflare.com.
-2. **Clé TURN** : menu *Realtime* → *TURN Server* → *Create*. Garder la page
-   ouverte : elle affiche l'identifiant de clé (*Turn Token ID*) et le jeton
-   d'API, montré une seule fois.
-3. **Worker** : menu *Workers & Pages* → *Create* → *Hello World*, nom
-   `sportheads-turn` → *Deploy* → *Edit code*. Remplacer tout le code par le
-   contenu de `turn-worker.js`, puis *Deploy*.
-4. Dans le Worker : *Settings* → *Variables and Secrets* → *Add*, type
-   **Secret** :
-   - `TURN_KEY_ID` : l'identifiant de clé de l'étape 2 ;
-   - `TURN_KEY_API_TOKEN` : le jeton d'API de l'étape 2.
-5. Noter l'adresse du Worker, du type
-   `https://sportheads-turn.<compte>.workers.dev`.
-6. Sur GitHub : dépôt → *Settings* → *Secrets and variables* → *Actions* →
-   onglet **Variables** → *New repository variable* :
-   `SPORTHEADS_TURN_URL` = l'adresse du Worker. Ce n'est pas un secret.
-7. Relancer le déploiement (*Actions* → *Validate and deploy Pages* →
-   *Run workflow*). Le journal de construction indique « with TURN fallback ».
+Le Worker est déployé sur `https://sportheads-turn.lebihanp.workers.dev`, et
+cette adresse publique est inscrite dans `web/ice-servers.js`. Pour le
+redéployer depuis ce dossier :
 
-Ne collez jamais la clé ou le jeton dans un message, un ticket ou un commit.
-En cas de fuite, supprimer la clé dans *Realtime* → *TURN Server* et en créer
-une autre.
+```sh
+export CLOUDFLARE_API_TOKEN=…   # jeton « Edit Cloudflare Workers »
+export CLOUDFLARE_ACCOUNT_ID=…
+npx wrangler deploy
+npx wrangler secret put TURN_KEY_ID          # Realtime → TURN Server
+npx wrangler secret put TURN_KEY_API_TOKEN
+```
+
+La variable de dépôt GitHub `SPORTHEADS_TURN_URL` permet, si besoin, de
+remplacer l'adresse à la construction sans modifier le code.
+Ne jamais commiter la clé TURN ni le jeton Cloudflare. En cas de fuite,
+supprimer la clé dans *Realtime* → *TURN Server*, en créer une autre et
+remettre les deux secrets.
 
 ## Vérifier
 
-Ouvrir `https://sportheads-turn.<compte>.workers.dev` dans le navigateur doit
+Ouvrir `https://sportheads-turn.lebihanp.workers.dev` dans le navigateur doit
 répondre `Forbidden` : seul le site du jeu peut demander des identifiants.
 Dans une salle en ligne, le diagnostic réseau contient `turn-config` avec
 `source: relay`. Si le Worker ne répond pas en 3 secondes, le jeu garde les

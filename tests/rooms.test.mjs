@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { Room, PROTOCOL, normalizeCode, validCode } from '../web/rooms.js';
+import { resetIceServers } from '../web/ice-servers.js';
 
 class FakeConnection extends EventEmitter {
   constructor(metadata = { protocol: PROTOCOL, role: 'guest' }) {
@@ -29,6 +30,7 @@ class FakeConnection extends EventEmitter {
 
 function setup(t, plans = []) {
   t.mock.timers.enable({ apis: ['setTimeout', 'setInterval'] });
+  resetIceServers({}); // Offline: PeerJS default ICE servers, no credential fetch.
   const peers = [];
   class FakePeer extends EventEmitter {
     constructor(id, options) {
@@ -502,4 +504,16 @@ test('close destroys channels and clears handshake, heartbeat and reconnect work
   assert.deepEqual(events.ready, ['guest']);
   assert.deepEqual(events.errors, []);
   assert.deepEqual(events.disconnects, []);
+});
+
+test('a room waits for TURN credentials and passes them to PeerJS', async t => {
+  const { peers, createRoom } = setup(t);
+  resetIceServers();
+  const iceServers = [{ urls: ['turn:turn.cloudflare.com:3478?transport=udp'], username: 'u', credential: 'c' }];
+  t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify({ iceServers, expiresAt: Date.now() + 3600e3 })));
+  const { room } = createRoom();
+  await room.create();
+  assert.deepEqual(peers[0].options.config.iceServers.at(-1), iceServers[0]);
+  assert.ok(room.diagnostic().events.some(event => event.event === 'turn-config' && event.source === 'relay'));
+  resetIceServers();
 });

@@ -72,8 +72,8 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
           const kick = document.querySelector('.touch-pad.blue [data-action="8"]').getBoundingClientRect();
           const field = document.querySelector('#field').getBoundingClientRect();
           const outside = r => r.right <= field.left || r.left >= field.right || r.bottom <= field.top || r.top >= field.bottom;
-          return jump.bottom <= kick.top && jump.width < kick.width && jump.height < kick.height && outside(jump) && outside(kick);
-        }), 'the smaller jump stays above kick, outside the field');
+          return jump.bottom <= kick.top && Math.abs(jump.width-kick.width)<.5 && Math.abs(jump.height-kick.height)<.5 && outside(jump) && outside(kick);
+        }), 'jump matches kick size and stays above it, outside the field');
         if (await page.locator('#touch-layout').inputValue() === 'three-fingers') assert.ok(await page.evaluate(() => {
           const j = document.querySelector('.touch-pad.blue .index-jump').getBoundingClientRect(), f = document.querySelector('#field').getBoundingClientRect();
           return j.right <= f.left || j.left >= f.right || j.bottom <= f.top || j.top >= f.bottom;
@@ -117,7 +117,7 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       await gesture([point(1, movement, .5, .5), point(2, kick)]); await expectInput(8);
       await gesture([point(1, movement, .5, .2), point(2, kick)]); await expectJump(8);
       await gesture([]); await expectInput(0);
-      for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 390, height: 844 }]) {
+      for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 740, height: 320 }, { width: 390, height: 844 }]) {
         await page.setViewportSize(viewport); await fits();
         await page.screenshot({ path: `evidence/joystick-${type.name()}-${viewport.width}.png` });
       }
@@ -132,7 +132,7 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       await gesture([point(1, movement, .85, .5), point(3, kick)]); await expectInput(10);
       await gesture([point(1, movement, .85, .5)]); await expectInput(2);
       await gesture([]); await expectInput(0);
-      for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 390, height: 844 }]) {
+      for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 740, height: 320 }, { width: 390, height: 844 }]) {
         await page.setViewportSize(viewport); await fits();
         assert.ok(await page.locator('[data-side="0"] [data-action="1"]').evaluate(b => b.getBoundingClientRect().height >= 96));
         await page.screenshot({ path: `evidence/touch-three-${type.name()}-${viewport.width}.png` });

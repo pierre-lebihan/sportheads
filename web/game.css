@@ -75,7 +75,7 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
 .touch-actions{display:block}.touch-actions button{width:100%;min-height:56px}.touch-controls:not([data-mode="local"]) .touch-pad{grid-template-columns:136px minmax(72px,96px);justify-content:space-between;column-gap:12px}.touch-controls:not([data-mode="local"]) .touch-actions button{min-height:106px;font-size:30px}
 .touch-pad .precision-jump{display:none}
 .touch-controls:is([data-mode="ai"],[data-mode="online"]) .touch-actions{display:flex;flex-direction:column;align-items:center;gap:8px}
-.touch-controls:is([data-mode="ai"],[data-mode="online"]) .touch-actions .precision-jump{display:flex;flex:none;width:64px;height:48px;min-height:48px;font-size:22px;border-radius:8px}
+.touch-controls:is([data-mode="ai"],[data-mode="online"]) .touch-actions .precision-jump{display:flex;flex:none}
 .touch-controls[data-layout="three-fingers"] .joystick{display:none}
 .touch-controls[data-layout="three-fingers"] .touch-move{height:96px}
 .touch-controls[data-layout="three-fingers"] .touch-move>[data-action="1"],.touch-controls[data-layout="three-fingers"] .touch-move>[data-action="2"]{min-height:96px;height:96px;padding:3px;min-width:44px}
@@ -167,3 +167,5 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
 #performance-report { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .72rem; }
 /* Shown by compat.js on browsers too old for the game: no inset or flex gap. */
 .unsupported-browser{position:fixed;top:0;right:0;bottom:0;left:0;z-index:100;padding:30vh 24px 24px;background:#244875;color:#fff;text-align:center;font:16px/1.4 -apple-system,system-ui,sans-serif}.unsupported-browser strong{display:block;margin-bottom:12px;font-size:22px}
+
+@media(orientation:landscape) and (max-height:340px){.touch-controls:not([data-mode="local"])[data-layout="thumbs"] .touch-actions button{min-height:88px}}

@@ -68,18 +68,8 @@ Les portraits sont des caricatures générées pour ce projet avec l'outil
 intégré imagegen. L'atlas transparent `web/assets/modern-players.png` contient
 4 colonnes et 3 rangées, dans l'ordre de `web/players.js`. Le renderer découpe
 les cellules directement à l'affichage ; le fichier original est conservé.
-Les deux portraits personnels sont dans `web/assets/pierre-vilma.png`, deux cellules
-carrées côte à côte (Pierre puis Vilma). L’atlas `web/assets/thibaud-marie.png` utilise le même format (Thibaud puis Marie).
-Le portrait de Corentin est refait à partir de sa photo au bord du lac :
-`web/assets/corentin-v2.png`. Il conserve son nom et sa place dans la sélection.
-La variante Pierre Nomad, cheveux longs et moue de la photo, utilise
-`web/assets/pierre-nomad.png`. Elle se choisit séparément et conserve le Pierre original.
-Maël possède un portrait carré dans `web/assets/mael.png`, avec ses lunettes de soleil.
-Baptiste et Jerem partagent l’atlas `web/assets/baptiste-jerem.png`, deux cellules
-carrées côte à côte (Baptiste puis Jerem).
-Arthur possède un portrait carré dans `web/assets/arthur.png`.
-La variante Vilma Dreadlocks utilise `web/assets/vilma-dreadlocks.png`,
-avec sa coiffure asymétrique. Elle se choisit séparément de la Vilma originale.
+Les caricatures privées ont chacune leur fichier dans `web/assets/`, regroupé
+ensuite dans `portraits.webp` ; leur ordre est celui de `web/players.js`.
 Les photos de référence restent hors du dépôt.
 Le [prompt de création](avatar-prompt.md) documente leur provenance.
 

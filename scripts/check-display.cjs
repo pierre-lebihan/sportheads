@@ -30,7 +30,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
       const buttons = [...document.querySelectorAll('.match-bar button,.touch-pad button')].filter(b => b.getClientRects().length).map(b => ({ id: b.id || b.getAttribute('aria-label'), tool: !!b.closest('.match-bar'), r: b.getBoundingClientRect().toJSON() }));
       const overlaps = (a, b) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > .5 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > .5;
       return {
-        crop: field.height === 480 && Math.abs(r.width / r.height - 800 / 480) < .001 && Math.abs(surface.height - r.height) < .5,
+        crop: field.width >= 800 && field.height * 800 === field.width * 480 && Math.abs(r.width / r.height - 800 / 480) < .001 && Math.abs(surface.height - r.height) < .5,
         score: s.top >= r.top && s.bottom <= r.bottom + .5 && getComputedStyle(score).pointerEvents === 'none' && +getComputedStyle(score).opacity <= .9,
         corners: scores.length === 2 && scores.every((box, side) => box.top >= r.top && box.bottom <= r.bottom
           && ((side ? r.right - box.left : box.right - r.left) + box.bottom - r.top) / (r.width / 800) < 100 + 30 * Math.SQRT2 - 3)

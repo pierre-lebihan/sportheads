@@ -19,6 +19,9 @@ pub struct Revolute {
     motor_impulse: f64,
     mass: Mat22,
     motor_mass: f64,
+    // Anchor arms from `prepare`; angles do not change during velocity iterations.
+    ra: Vec2,
+    rb: Vec2,
 }
 impl Revolute {
     pub fn new(a: usize, b: usize, bodies: &[Body], anchor: Vec2, max_torque: f64) -> Self {
@@ -35,6 +38,8 @@ impl Revolute {
             motor_impulse: 0.0,
             mass: Mat22::default(),
             motor_mass: 0.0,
+            ra: Vec2::default(),
+            rb: Vec2::default(),
         }
     }
     pub fn angle(&self, bodies: &[Body]) -> f64 {
@@ -51,6 +56,8 @@ impl Revolute {
             a22: a.inv_mass + b.inv_mass + ra.x * ra.x * a.inv_i + rb.x * rb.x * b.inv_i,
         };
         self.motor_mass = 1.0 / (a.inv_i + b.inv_i);
+        self.ra = ra;
+        self.rb = rb;
         self.impulse.x *= ratio;
         self.impulse.y *= ratio;
         self.motor_impulse *= ratio;
@@ -72,8 +79,7 @@ impl Revolute {
         impulse = self.motor_impulse - old;
         a.omega -= a.inv_i * impulse;
         b.omega += b.inv_i * impulse;
-        let ra = a.rot().apply(self.local_a - a.local_center);
-        let rb = b.rot().apply(self.local_b - b.local_center);
+        let (ra, rb) = (self.ra, self.rb);
         let dx = b.velocity.x + -b.omega * rb.y - a.velocity.x - -a.omega * ra.y;
         let dy = b.velocity.y + b.omega * rb.x - a.velocity.y - a.omega * ra.x;
         let p = self.mass.solve(Vec2::new(-dx, -dy));

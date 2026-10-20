@@ -33,7 +33,7 @@ export async function duel({ level, rival = 'legacy', side = 1, pitch = 8, seed 
   return { level, rival, side, pitch, seed, own, other, played, ms: { mean: times.reduce((a,b)=>a+b,0)/times.length, p95: times[Math.floor(times.length*.95)], max: times.at(-1) } };
 }
 if (process.argv[1]?.endsWith('benchmark-ai.mjs')) {
-  const levels = process.argv.includes('--expert') ? ['expert'] : AI_LEVELS.map(level => level.id);
+  const levels = process.argv.includes('--insane') ? ['insane'] : process.argv.includes('--expert') ? ['expert'] : AI_LEVELS.map(level => level.id);
   const rival = process.argv.find(arg => arg.startsWith('--rival='))?.split('=')[1] || 'legacy';
   const results = [];
   for (const level of levels) for (const pitch of (process.argv.includes('--validation') ? [3, 7, 10, 12] : [8, 2, 6, 18])) for (const seed of (process.argv.includes('--validation') ? [3, 4] : [1, 2])) for (const side of [0, 1]) {

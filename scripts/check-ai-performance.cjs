@@ -1,9 +1,10 @@
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const v2 = process.argv.includes('--v2');
-const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-ai-performance.cjs URL');
+const level = process.argv.find(arg => arg.startsWith('--level='))?.split('=')[1] || 'expert';
+const url = process.argv.slice(2).find(arg => !arg.startsWith('--')); assert.ok(url, 'Usage: node scripts/check-ai-performance.cjs URL');
 (async () => {
-  const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
+  const browser = await chromium.launch({ ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : { channel: 'chrome' }), headless: true, args: ['--no-proxy-server'] });
   try {
     const context = await browser.newContext({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
     await context.addInitScript(() => {
@@ -23,7 +24,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-ai-perfor
     await cdp.send('Emulation.setFocusEmulationEnabled', { enabled: true });
     await page.goto(url); await page.waitForFunction(() => window.ready || window.loadError);
     assert.equal(await page.evaluate(() => window.loadError), undefined);
-    await page.click('#play-ai'); await page.check('[name="ai-level"][value="expert"]');
+    await page.click('#play-ai'); await page.check(`[name="ai-level"][value="${level}"]`);
     for (let i = 0; i < 3; i++) await page.click('#setup-next');
     await page.selectOption('#bonuses', v2 ? '2' : '0'); await page.click('#start');
     await page.waitForFunction(() => sportheads.snapshot().phase === 1);
@@ -42,11 +43,11 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-ai-perfor
     const diagnostic = await page.evaluate(() => sportheads.performance());
     const costs = await page.evaluate(() => aiCosts);
     const percentile = (values, p) => values.slice().sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(values.length*p))];
-    const result = { passed: true, bonusV2: v2, cpuSlowdown: 4, frames: frames.length, plans: diagnostic.planner.plans,
+    const result = { passed: true, level, bonusV2: v2, cpuSlowdown: 4, frames: frames.length, plans: diagnostic.planner.plans,
       frameP95Ms: percentile(frames, .95), frameMaxMs: Math.max(...frames),
       mainPlannerCalls: costs.length, costs: diagnostic.costs, planner: diagnostic.planner, assets: diagnostic.assets, physicalDeviceTested: false };
     console.log(JSON.stringify(result));
-    assert.ok(diagnostic.planner.plans >= 4 && diagnostic.planner.accepted > 0, 'the real Expert planner was exercised in the Worker');
+    assert.ok(diagnostic.planner.plans >= 4 && diagnostic.planner.accepted > 0, `the real ${level} planner was exercised in the Worker`);
     assert.equal(costs.length, 0, 'no native anticipation runs on the UI thread');
     assert.ok(result.frameP95Ms <= 50, 'at least 95% of frames stay within 50 ms under 4x CPU slowdown');
     assert.deepEqual(errors, []);

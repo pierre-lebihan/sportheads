@@ -65,9 +65,10 @@ Les boutons **Aléatoire** choisissent immédiatement un autre joueur ou terrain
 En local, les deux personnages sont choisis sur le même écran.
 
 Contre l’IA : **difficulté → joueurs → terrain → paramètres**. Vous jouez Bleu,
-l’IA joue Rouge ; les deux personnages sont au choix. Quatre niveaux : **Facile**
-(300 ms de réaction), **Normal** (environ 167 ms), **Difficile** (environ 67 ms)
-et **Expert** (environ 33 ms). Normal est présélectionné. La difficulté reste
+l’IA joue Rouge ; les deux personnages sont au choix. Cinq niveaux : **Facile**
+(300 ms de réaction), **Normal** (environ 167 ms), **Difficile** (environ 67 ms),
+**Expert** (environ 33 ms) et **Insane** (33 ms, avec une recherche physique à
+chaque tick). Normal est présélectionné. La difficulté reste
 verrouillée pendant le match ; elle peut être revue après sa fin. Les bonus,
 terrains et aides restent disponibles. Sur mobile, seule la manette du joueur
 humain s’affiche ; au clavier, les flèches/P ou Q/A, D, Z/W et espace contrôlent Bleu.
@@ -80,6 +81,8 @@ longue et deux réponses adverses estimées. Il compare jusqu’à douze combina
 de déplacement, saut et frappe sur dix-huit ticks de la physique réelle, avec
 les obstacles, les contacts et les bonus déjà visibles.
 Le calcul est borné et réutilisé entre les décisions pour préserver la fluidité.
+Insane relance cette recherche à chaque tick dans le Worker, sur deux étages et
+contre deux comportements adverses, toujours avec les seules commandes d’un joueur.
 Voir [le fonctionnement et les commandes de validation](docs/opponent.md).
 
 Le contrôleur local `web/opponent.js` utilise le planificateur `src/opponent.rs`.

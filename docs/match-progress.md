@@ -3,7 +3,7 @@
 La version publique exécute le cœur Rust/WASM en direct, sans Flash ni Ruffle.
 Elle propose 16 terrains symétriques : 7 dispositions originales et 9 dispositions corrigées,
 dont le terrain libre (numéro 8), avec les 18 bonus originaux, des aides individuelles
-facultatives et une IA locale à quatre niveaux.
+facultatives et une IA locale à cinq niveaux.
 
 ## Comportement
 
@@ -55,7 +55,7 @@ rejouer, perte de focus et absence de débordement sur écran étroit.
 
 ## Suite de la phase 1
 
-L'interface expose trois modes : contre une IA locale à quatre niveaux,
+L'interface expose trois modes : contre une IA locale à cinq niveaux,
 sur le même écran et à distance avec code de salle. L’IA utilise les commandes
 humaines, sans changer la physique du noyau ; elle ne reprend pas celle du Flash.
 `tests/opponent.test.mjs` couvre les réactions, les matchs complets, les 19 terrains historiques du noyau

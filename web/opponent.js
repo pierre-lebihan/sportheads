@@ -6,6 +6,7 @@ export const AI_LEVELS = Object.freeze([
   { id: 'normal', label: 'Normal', description: 'Anticipe les interceptions et prépare ses frappes.', reaction: 5, horizon: .65, error: 12, miss: .07 },
   { id: 'hard', label: 'Difficile', description: 'Défend les contres et enchaîne les frappes précises.', reaction: 2, horizon: 1, error: 2, miss: .01 },
   { id: 'expert', label: 'Expert', description: 'Anticipation maximale, défense serrée et frappes calculées.', reaction: 1, horizon: 1.2, error: 0, miss: 0 },
+  { id: 'insane', label: 'Insane', description: 'Simule la physique à l’avance à chaque instant. Bonne chance.', reaction: 1, horizon: 1.2, error: 0, miss: 0 },
 ].map(Object.freeze));
 const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
 
@@ -38,13 +39,14 @@ export function createOpponent({ difficulty = 'normal', seed = 1, planner = null
   const level = AI_LEVELS.find(item => item.id === difficulty);
   if (!level) throw new RangeError('Unknown AI difficulty');
   let rng = seed >>> 0, nextDecision = null, previousTick = -1, held = 0, kickUntil = 0, kickReady = 0;
-  let planned = 0, planUntil = 0, planningActive = false, offThread = false;
+  let planned = 0, planUntil = 0, plannedAt = -99, planningActive = false, offThread = false;
+  const insane = difficulty === 'insane', search = insane ? 2 : difficulty === 'expert' ? 1 : 0;
   const random = () => { rng = (Math.imul(rng, 1664525) + 1013904223) >>> 0; return rng / 4294967296; };
   return Object.freeze({
     step(engine) {
       const tick = engine.game_value(MATCH.tick);
       if (engine.game_value(MATCH.phase) !== PHASE.playing || tick < previousTick) {
-        nextDecision = null; held = 0; kickUntil = 0; kickReady = 0; planUntil = 0; planningActive = false;
+        nextDecision = null; held = 0; kickUntil = 0; kickReady = 0; planUntil = 0; plannedAt = -99; planningActive = false;
       }
       previousTick = tick;
       if (engine.game_value(MATCH.phase) !== PHASE.playing) return 0;
@@ -105,24 +107,26 @@ export function createOpponent({ difficulty = 'normal', seed = 1, planner = null
         offThread = !!planner && planner.stats().status !== 'unavailable';
         if (difficulty !== 'easy' && typeof engine.game_ai_plan === 'function') {
           const distance = Math.abs(ball.x - self.x);
-          const relevant = difficulty === 'expert' ? distance < 230 || ball.x > 550 || opponent.x > 550
-            : difficulty === 'hard' ? distance < 160 || ball.x > 650 : distance < 90 && ball.y > self.y - 100;
+          // Insane searches every tick, wherever the ball is.
+          const relevant = insane || (difficulty === 'expert' ? distance < 230 || ball.x > 550 || opponent.x > 550
+            : difficulty === 'hard' ? distance < 160 || ball.x > 650 : distance < 90 && ball.y > self.y - 100);
           if (relevant && tick >= planUntil) {
             let enemyInput = opponent.vx > 25 ? 2 : opponent.vx < -25 ? 1 : 0;
             if (opponent.vy < -30) enemyInput |= 4;
             if (ball.x > opponent.x && ball.x - opponent.x < 85 && Math.abs(ball.y - opponent.y) < 65) enemyInput |= 8;
             if (offThread) {
-              planner.request({ side: 1, preferred: held, opponentInput: enemyInput, expert: Number(difficulty === 'expert') });
-              planned = held;
-            } else planned = engine.game_ai_plan(1, held, enemyInput, difficulty === 'expert' ? 1 : 0);
-            planUntil = tick + (difficulty === 'expert' ? 4 : difficulty === 'hard' ? 4 : 5);
+              planner.request({ side: 1, preferred: held, opponentInput: enemyInput, expert: search });
+              // Insane keeps its latest searched command while the next search runs.
+              if (!insane || tick - plannedAt > 4) planned = held;
+            } else { planned = engine.game_ai_plan(1, held, enemyInput, search); plannedAt = tick; }
+            planUntil = tick + (insane ? 1 : difficulty === 'expert' ? 4 : difficulty === 'hard' ? 4 : 5);
           }
           if (relevant && tick < planUntil) { held = planned; planningActive = true; }
         }
       }
       if (planningActive && offThread) {
         const completed = planner.take(tick);
-        if (completed !== null) planned = completed;
+        if (completed !== null) { planned = completed; plannedAt = tick; }
         held = planned;
       }
       if (!planningActive) held = tick < kickUntil ? held | 8 : held & ~8;

@@ -31,7 +31,7 @@ if (!url) throw new Error('Usage: node scripts/check-ai.cjs URL');
       assert.ok(await page.locator('#play-ai').isVisible());
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       await page.screenshot({ path: `evidence/ai-home-${mobile ? 'mobile' : 'desktop'}-${browser === chrome ? 'chrome' : 'webkit'}.png` });
-      for (const level of ['easy', 'normal', 'hard', 'expert']) {
+      for (const level of ['easy', 'normal', 'hard', 'expert', 'insane']) {
         await page.click('#play-ai');
         assert.equal(await page.evaluate(() => sportheads.snapshot().setupStep), 'difficulty');
         await page.locator(`[name="ai-level"][value="${level}"]`).check();

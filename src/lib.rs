@@ -221,16 +221,15 @@ pub extern "C" fn game_tick(keys: u32) {
     GAME.with(|g| g.borrow_mut().step(keys));
 }
 /// Evaluate commands on private copies. Never advance or modify the live game.
+/// `expert`: 0 for Normal/Difficile, 1 for Expert, 2 for Insane.
 #[no_mangle]
 pub extern "C" fn game_ai_plan(side: u32, preferred: u32, opponent_input: u32, expert: u32) -> u32 {
     GAME.with(|g| {
-        opponent::plan(
-            &g.borrow(),
-            side as usize,
-            preferred,
-            opponent_input,
-            expert != 0,
-        )
+        let game = &g.borrow();
+        if expert >= 2 {
+            return opponent::plan_insane(game, side as usize, preferred, opponent_input);
+        }
+        opponent::plan(game, side as usize, preferred, opponent_input, expert != 0)
     })
 }
 #[no_mangle]

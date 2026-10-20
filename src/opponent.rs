@@ -197,3 +197,150 @@ pub fn plan(game: &Game, side: usize, preferred: u32, opponent_input: u32, exper
     }
     best
 }
+
+/// One simulated line: `first` is held for `hold` ticks, then the expert
+/// follow-up policy plays on. The rival either reacts with the same policy or
+/// keeps the command it is visibly holding now.
+fn line(
+    game: &Game,
+    side: usize,
+    first: u32,
+    hold: u32,
+    horizon: u32,
+    seen: u32,
+    stubborn: bool,
+) -> f64 {
+    let mut trial = game.clone();
+    trial.bonus_enabled = false;
+    let before = trial.score;
+    let mut score = 0.0;
+    for tick in 0..horizon {
+        let ours = if tick < hold {
+            first
+        } else {
+            follow_up(&trial, side)
+        };
+        let theirs = if stubborn {
+            seen & 15
+        } else if tick < 2 {
+            0
+        } else {
+            follow_up(&trial, 1 - side)
+        };
+        trial.step((ours << (side * 4)) | (theirs << ((1 - side) * 4)));
+        if trial.score != before {
+            // Sooner goals are surer; a late concession is still a concession.
+            let urgency = 1.0 + (horizon - tick) as f64 / horizon as f64;
+            return score
+                + if trial.score[side] > before[side] {
+                    60_000.0 * urgency
+                } else {
+                    -200_000.0 * urgency
+                };
+        }
+        score += evaluate(&trial, side) * if tick + 1 == horizon { 1.0 } else { 0.05 };
+    }
+    score + projection(&trial, side)
+}
+
+/// Where the ball is heading after the horizon: a free flight or roll towards a
+/// goal mouth is valued before the physics search can see it cross the line.
+/// It counts for less when a player already stands between the ball and goal.
+fn projection(game: &Game, side: usize) -> f64 {
+    let ball = &game.world.bodies[game.ball];
+    let br = radius(game, game.ball);
+    let (mut x, mut y, mut vx, mut vy) = (
+        ball.position.x,
+        ball.position.y,
+        ball.velocity.x,
+        ball.velocity.y,
+    );
+    let start = x;
+    // Whether a player stands between the ball and the goal at `toward_right`.
+    let between = |player: usize, toward_right: bool| {
+        let body = &game.world.bodies[game.player[player]];
+        body.position.y > 330.0 && (body.position.x > start) == toward_right
+    };
+    let gravity = game.world.gravity.y;
+    const TICKS: u32 = 90;
+    for tick in 0..TICKS {
+        let dt = 1.0 / 30.0;
+        vy += gravity * dt;
+        x += vx * dt;
+        y += vy * dt;
+        if y > 460.0 - br {
+            // A bounce loses speed; a rolling ball keeps most of it.
+            y = 460.0 - br;
+            if vy > 60.0 {
+                vy = -vy * 0.5;
+                vx *= 0.9;
+            } else {
+                vy = 0.0;
+                vx *= 0.99;
+            }
+        }
+        if y < 5.0 + br {
+            vy = vy.abs();
+        }
+        let (left, right) = (x < 62.0, x > 738.0);
+        if left || right {
+            // Side 0 defends the left goal, side 1 the right one.
+            let defender = if left { 0 } else { 1 };
+            if y <= 460.0 - game.goal_height(defender) as f64 {
+                return 0.0;
+            }
+            let urgency = 1.0 - tick as f64 / TICKS as f64;
+            let cover = if between(defender, right) { 0.25 } else { 1.0 };
+            return urgency * cover * if defender == side { -4_000.0 } else { 1_500.0 };
+        }
+        if x < 5.0 + br || x > 795.0 - br || vx.abs() < 5.0 {
+            return 0.0;
+        }
+    }
+    0.0
+}
+
+/// Insane level: a two-stage search over held commands with longer physics
+/// lookahead and a pessimistic rival. It only chooses the four player inputs.
+pub fn plan_insane(game: &Game, side: usize, preferred: u32, opponent_input: u32) -> u32 {
+    if side > 1
+        || game.phase != Phase::Playing
+        || game.powerups.freeze[side]
+        || game.powerups.bombed[side]
+    {
+        return 0;
+    }
+    let preferred = preferred & 15;
+    let mut seen = [false; 16];
+    let mut candidates = Vec::with_capacity(12);
+    for action in [preferred, 0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14] {
+        if action & 3 == 3
+            || seen[action as usize]
+            || (action & 8 != 0 && game.powerups.broken[side])
+        {
+            continue;
+        }
+        seen[action as usize] = true;
+        let bias = if action == preferred { 1.5 } else { 0.0 };
+        candidates.push((
+            action,
+            line(game, side, action, 4, 16, opponent_input, false) + bias,
+        ));
+    }
+    candidates.sort_by(|a, b| b.1.total_cmp(&a.1));
+    let mut best = candidates[0].0;
+    let mut best_score = f64::NEG_INFINITY;
+    for &(action, reacting) in candidates.iter().take(5) {
+        let committed = line(game, side, action, 9, 20, opponent_input, false);
+        let stubborn = line(game, side, action, 4, 16, opponent_input, true);
+        // We may continue either way against a reacting rival; the observed
+        // rival command is a second, independent test of the same choice.
+        let ours = reacting.max(committed);
+        let score = ours.min(stubborn) * 0.8 + ours.max(stubborn) * 0.2;
+        if score > best_score {
+            best_score = score;
+            best = action;
+        }
+    }
+    best
+}

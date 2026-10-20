@@ -7,3 +7,15 @@ compatibility_date = "2026-10-01"
 
 [vars]
 ALLOWED_ORIGINS = "https://pierre-lebihan.github.io"
+# The monthly budget check runs once the secrets ACCOUNT_ID and
+# ANALYTICS_TOKEN are set (`npx wrangler secret put ANALYTICS_TOKEN`).
+MONTHLY_BUDGET_GB = "500"
+
+# A player asks once per online session; 10 a minute per IP is plenty.
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60

@@ -68,3 +68,48 @@ test('worker only serves the game origin and never returns its API token', async
   assert.ok(body.expiresAt > Date.now());
   assert.doesNotMatch(JSON.stringify(body), /token/);
 });
+
+const gameRequest = ip => new Request('https://w.example/', { headers: { Origin: 'https://pierre-lebihan.github.io', 'CF-Connecting-IP': ip } });
+
+test('worker refuses an IP past its rate limit before asking Cloudflare', async t => {
+  const seen = new Map();
+  const RATE_LIMITER = { limit: async ({ key }) => ({ success: seen.set(key, (seen.get(key) || 0) + 1).get(key) <= 2 }) };
+  const env = { TURN_KEY_ID: 'key', TURN_KEY_API_TOKEN: 'token', RATE_LIMITER };
+  const upstream = t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify(cloudflare)));
+  const statuses = [];
+  for (let i = 0; i < 3; i++) statuses.push((await worker.fetch(gameRequest('1.2.3.4'), env)).status);
+  statuses.push((await worker.fetch(gameRequest('5.6.7.8'), env)).status);
+  assert.deepEqual(statuses, [200, 200, 429, 200]);
+  assert.equal(upstream.mock.callCount(), 3);
+});
+
+test('worker stops handing out credentials once the monthly TURN budget is used', async t => {
+  // A fresh module copy so the usage cache of other tests does not leak in.
+  const { default: fresh, monthEgressBytes } = await import('../relay/turn-worker.js?budget');
+  let egress = 499e9;
+  const upstream = t.mock.method(globalThis, 'fetch', async (url, init) => url.endsWith('/graphql')
+    ? new Response(JSON.stringify({ data: { viewer: { accounts: [{ callsTurnUsageAdaptiveGroups: [{ sum: { egressBytes: egress } }] }] } } }))
+    : new Response(JSON.stringify(cloudflare)));
+  const env = { TURN_KEY_ID: 'key', TURN_KEY_API_TOKEN: 'token', ACCOUNT_ID: 'acct', ANALYTICS_TOKEN: 'read', MONTHLY_BUDGET_GB: '500' };
+  assert.equal((await fresh.fetch(gameRequest('1.2.3.4'), env)).status, 200);
+  const [, init] = upstream.mock.calls[0].arguments;
+  const { variables } = JSON.parse(init.body);
+  assert.equal(init.headers.Authorization, 'Bearer read');
+  assert.match(variables.from, /^\d{4}-\d{2}-01$/);
+  egress = 501e9;
+  // Cached for ten minutes, then the new figure closes the relay.
+  assert.equal(await monthEgressBytes(env), 499e9);
+  assert.equal(await monthEgressBytes(env, new Date(Date.now() + 11 * 60000)), 501e9);
+  const refused = await fresh.fetch(gameRequest('1.2.3.4'), env);
+  assert.equal(refused.status, 503);
+  assert.equal(upstream.mock.calls.filter(call => call.arguments[0].includes('rtc.live')).length, 1);
+});
+
+test('an analytics outage keeps the relay open', async t => {
+  const { default: fresh } = await import('../relay/turn-worker.js?outage');
+  t.mock.method(console, 'warn', () => {});
+  t.mock.method(globalThis, 'fetch', async url => url.endsWith('/graphql')
+    ? new Response('nope', { status: 500 }) : new Response(JSON.stringify(cloudflare)));
+  const env = { TURN_KEY_ID: 'key', TURN_KEY_API_TOKEN: 'token', ACCOUNT_ID: 'acct', ANALYTICS_TOKEN: 'read' };
+  assert.equal((await fresh.fetch(gameRequest('1.2.3.4'), env)).status, 200);
+});

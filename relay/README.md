@@ -24,7 +24,12 @@ export CLOUDFLARE_ACCOUNT_ID=…
 npx wrangler deploy
 npx wrangler secret put TURN_KEY_ID          # Realtime → TURN Server
 npx wrangler secret put TURN_KEY_API_TOKEN
+npx wrangler secret put ACCOUNT_ID           # garde-fou budget (facultatif)
+npx wrangler secret put ANALYTICS_TOKEN      # jeton « Account Analytics: Read »
 ```
+
+Wrangler 4.36 ou plus récent est nécessaire pour la limite par IP
+(`[[ratelimits]]` dans `wrangler.toml`).
 
 La variable de dépôt GitHub `SPORTHEADS_TURN_URL` permet, si besoin, de
 remplacer l'adresse à la construction sans modifier le code.
@@ -44,9 +49,22 @@ Pour tester depuis un serveur local, ajouter son origine à la variable
 `ALLOWED_ORIGINS` du Worker (liste séparée par des virgules, par exemple
 `https://pierre-lebihan.github.io,http://127.0.0.1:8765`).
 
-## Limites
+## Garde-fous de coût
 
 Le contrôle d'origine empêche les autres sites d'utiliser le relais depuis un
-navigateur, mais un script peut imiter l'en-tête. Le risque se limite à
-consommer le quota gratuit ; Cloudflare permet d'ajouter une alerte de
-facturation et, si besoin, une règle de limitation de débit sur le Worker.
+navigateur, mais un script peut imiter l'en-tête. Deux protections s'ajoutent :
+
+- **Limite par IP** : 10 demandes d'identifiants par minute et par adresse
+  (liaison `RATE_LIMITER`). Au-delà, le Worker répond `429`.
+- **Budget mensuel** : avec les secrets `ACCOUNT_ID` et `ANALYTICS_TOKEN`, le
+  Worker lit le trafic TURN du mois (relevé toutes les 10 minutes) et refuse
+  de nouveaux identifiants dès `MONTHLY_BUDGET_GB` (500 Go par défaut, la
+  moitié de l'offre gratuite). Les identifiants déjà donnés expirent en
+  4 heures au plus, et leurs relais avec. Le jeu retombe alors sur les
+  serveurs par défaut de PeerJS. Si la lecture du trafic échoue, le relais
+  reste ouvert : la marge de 500 Go absorbe une panne passagère.
+
+Cloudflare ne propose pas de plafond de dépense strict : seules des alertes de
+facturation existent, d'où ce budget dans le Worker. L'offre gratuite des
+Workers, elle, ne facture jamais : au-delà de 100 000 requêtes par jour, les
+requêtes échouent.

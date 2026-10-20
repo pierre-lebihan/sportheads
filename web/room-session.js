@@ -2,6 +2,7 @@ import { PHASE, MATCH, isBonusPitch, decodeFrame, encodeFrame } from './engine-c
 import { Room, normalizeCode, validCode, CODE_HELP } from './rooms.js';
 import { captureState, createRemoteEngine } from './net-state.js';
 import { createRemoteView } from './net-render.js';
+import { createOwnPrediction } from './net-predict.js';
 import { availablePitches } from './selection.js';
 import { PLAYER_COUNT } from './players.js';
 import { createBalance, validBalance } from './balance.js';
@@ -11,7 +12,8 @@ import { bonusModeFromMessage, BONUS_V2_VERSION } from './bonuses.js';
 // Connection ownership, ordering, recovery and legacy compatibility live here.
 export function createRoomSession({ app, getCore, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio }) {
  const $ = selector => document.querySelector(selector);
- let room = null, remote = createRemoteEngine(), remoteView = createRemoteView(remote.engine);
+ const prediction = createOwnPrediction();
+ let room = null, remote = createRemoteEngine(), remoteView = createRemoteView(remote.engine, undefined, prediction);
  let lastBroadcast = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, receivedInput = -1;
  let remoteInput = 0, lastInputAt = 0, soundTick = -1, soundMatch = -1;
  let remoteJumpPending = false, receivedJump = null, sentJump = null, recoveryTimer;
@@ -33,9 +35,10 @@ function sendInput() {
   const jump = touch.jumpSequence;
   // The legacy mask keeps older hosts working. New hosts apply only held
   // controls plus a single tick per gesture counter, even if packets repeat.
-  if (room.send({ type: 'input', sequence: ++inputSequence, mask: app.value.paused ? 0 : input('legacy'), heldMask: app.value.paused ? 0 : input('held'), jump,
+  const heldMask = app.value.paused ? 0 : input('held');
+  if (room.send({ type: 'input', sequence: ++inputSequence, mask: app.value.paused ? 0 : input('legacy'), heldMask, jump,
     skin: app.value.config.skins[1], pitchGeometry, statBuffs: 1, bonusV2: BONUS_V2_VERSION, bonusPitches: 1 }, { volatile: app.value.started && !app.value.paused && jump === sentJump })) {
-    sentJump = jump;touch.consumeJumps();
+    sentJump = jump;touch.consumeJumps();prediction.sent(inputSequence, heldMask, jump);
   }
 }
 
@@ -54,7 +57,8 @@ function broadcast() {
   const packet = encodeFrame(frame);
   if (!app.value.guestStatBuffs) delete packet.buffs;
   if (!app.value.guestBonusV2) delete packet.bonus;
-  room.send({ type: 'frame', sequence: ++frameSequence, matchId: app.value.matchId, started: app.value.started,
+  // ack: the newest guest input already applied, so the guest can predict the rest.
+  room.send({ type: 'frame', sequence: ++frameSequence, ack: receivedInput, matchId: app.value.matchId, started: app.value.started,
     bonuses: bonusMode() !== 0, bonusMode: bonusMode(), setupStep: validSetupStep(app.value.setupStep) ? app.value.setupStep : 'players',
     pauseFlags: [...app.value.pauseFlags], pitchGeometry, bonusPitches: app.value.config.bonusPitches, balancePreset: app.value.config.balance.preset,
     balanceAmount: app.value.config.balance.amount, state: packet },
@@ -116,6 +120,7 @@ function onMessage(message) {
     setupStep: message.setupStep, balancedPitches: message.pitchGeometry === pitchGeometry, newMatch,
     config: { skins: [received.skins[0], skins()[1]], pitch: received.match.pitch, bonusPitches: message.bonusPitches ?? false, targetScore: received.match.targetScore,
       bonusMode: bonusModeFromMessage(message), balance: received.buffs ? { preset: message.balancePreset, amount: message.balanceAmount, buffs: received.buffs } : createBalance() } });
+  prediction.frame(remote.engine, message.ack, received.buffs, app.value.started && !app.value.paused && received.match.phase === PHASE.playing);
   remoteView.update({ active: app.value.started && !app.value.paused && received.match.phase === PHASE.playing,
     key: `${app.value.matchId}:${app.value.started}:${received.match.phase}:${received.match.pitch}` });
   if (newMatch) {if (app.value.started) app.dispatch({ type: 'settings.closed' });clearInput();music();if (app.value.started && document.hidden) pause(true);else if (app.value.started) canvas.focus({ preventScroll: true });}
@@ -218,7 +223,7 @@ async function copyRoom(link) {
     clearTimeout(recoveryTimer); room?.close(); room = null;
   },
   clearInput() { remoteJumpPending = false; },
-  resetMatch() { remoteInput = 0; receivedSequence = receivedInput = -1; remoteJumpPending = false; remote = createRemoteEngine(); remoteView = createRemoteView(remote.engine); },
+  resetMatch() { remoteInput = 0; receivedSequence = receivedInput = -1; remoteJumpPending = false; remote = createRemoteEngine(); prediction.reset(); remoteView = createRemoteView(remote.engine, undefined, prediction); },
   inputMask() { return (performance.now() - lastInputAt < 350 ? remoteInput | (remoteJumpPending ? 4 : 0) : 0) << 4; },
   consumedInput() { remoteJumpPending = false; },
   heartbeat() { if (app.value.role === 'host' && performance.now() - lastBroadcast > 200) broadcast(); },

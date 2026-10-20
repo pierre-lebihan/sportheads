@@ -66,6 +66,19 @@ salles, aucun compte ni historique. Il faut partager le code avec son adversaire
   Les états périmés sont ignorés ; les corps remplacés ne grossissent pas les
   messages. Une file d'envoi saturée abandonne les vues obsolètes.
 
+L'invité voit son propre joueur réagir tout de suite à ses commandes. Chaque
+état du créateur indique la dernière commande de l'invité déjà appliquée (`ack`).
+L'invité rejoue ses commandes plus récentes deux fois depuis cet état, avec la
+marche, le saut et la gravité du moteur (`web/net-predict.js`, recalé sur le WASM
+à moins de 3 px) : une fois comme pressées, une fois comme le créateur les suppose
+encore. Il décale son joueur et son pied de la différence, lissée sur 60 ms et
+bornée à 90 px ; les collisions s'annulent dans cette différence. C'est de
+l'affichage seulement : le créateur reste l'autorité pour les positions, les
+tirs et les buts, et l'écart disparaît quand il rattrape. Un créateur plus
+ancien n'envoie pas `ack` : l'invité garde alors l'affichage précédent. Avec
+150 ms ajoutées à l'envoi de l'invité, son joueur bouge en 30 à 60 ms au lieu de
+230 ms (`scripts/check-prediction.cjs`). Le geste de frappe du pied n'est pas prédit.
+
 Les deux navigateurs négocient un canal supplémentaire pour les positions et
 commandes du match : non ordonné, sans retransmission, avec une file bornée.
 Une mise à jour récente remplace une ancienne ; les numéros de séquence rejettent
@@ -187,6 +200,7 @@ node scripts/check-game.cjs http://127.0.0.1:8765/_site/
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
 node scripts/check-rejoin.cjs http://127.0.0.1:8765/_site/
 node scripts/check-reconnect.cjs http://127.0.0.1:8765/_site/
+node scripts/check-prediction.cjs http://127.0.0.1:8765/_site/
 node scripts/check-network-smoothness.cjs http://127.0.0.1:8765/_site/
 node scripts/check-setup.cjs http://127.0.0.1:8765/_site/
 node scripts/check-mobile.cjs http://127.0.0.1:8765/_site/

@@ -5,17 +5,19 @@ const HORIZON = 80, CORRECTION = 50, MAX_TRAVEL = 40, TELEPORT = 60;
 const clamp = (value, limit) => Math.max(-limit, Math.min(limit, value));
 const angleDelta = value => Math.atan2(Math.sin(value), Math.cos(value));
 
-export function createRemoteView(authority, now = () => performance.now()) {
+// prediction (optional) shifts the guest's own player; see net-predict.js.
+export function createRemoteView(authority, now = () => performance.now(), prediction = null) {
   let poses = [], displayed = [], receivedAt = 0, epoch, running = false;
   function advance(time = now()) {
     const age = Math.max(0, time - receivedAt), seconds = Math.min(age, HORIZON) / 1000;
     const residual = Math.max(0, 1 - age / CORRECTION);
-    displayed = poses.map(pose => ({
-      role: pose.role, radius: pose.radius,
-      x: pose.x + (running ? clamp(pose.vx * seconds, MAX_TRAVEL) + pose.dx * residual : 0),
-      y: pose.y + (running ? clamp(pose.vy * seconds, MAX_TRAVEL) + pose.dy * residual : 0),
-      angle: pose.angle + (running ? clamp(pose.omega * seconds, 1.2) + pose.da * residual : 0),
-    }));
+    displayed = poses.map(pose => {
+      const lead = running ? prediction?.offset(pose.role, time) : null;
+      return { role: pose.role, radius: pose.radius,
+        x: pose.x + (running ? clamp(pose.vx * seconds, MAX_TRAVEL) + pose.dx * residual + (lead?.x || 0) : 0),
+        y: pose.y + (running ? clamp(pose.vy * seconds, MAX_TRAVEL) + pose.dy * residual + (lead?.y || 0) : 0),
+        angle: pose.angle + (running ? clamp(pose.omega * seconds, 1.2) + pose.da * residual : 0) };
+    });
   }
   const engine = Object.freeze({ ...authority,
     game_body_value(index, field) {

@@ -39,8 +39,9 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-balanced-
           }
           if(balanced)checked.push(id);
         }
-        // Filled pockets extend behind the original corner boxes (3 and 4),
-        // while their playable diagonal faces must retain the same boundary.
+        // Filled pockets extend behind the original top borders: the 45° corner
+        // boxes (3 and 4) and the 8° walls (5 to 8). Their playable faces must
+        // keep the same boundary, and no part of them may stay invisible.
         const baseline=document.createElement('canvas');baseline.width=800;baseline.height=540;
         const base=baseline.getContext('2d');
         drawStadium(base,3);
@@ -50,19 +51,24 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-balanced-
         drawGame(ctx,null,{});
         const actual=ctx.getImageData(0,0,800,480).data, before=comparisonContext.getImageData(0,0,800,480).data;
         e.game_start_balanced_pitch(1,7,0,8);
-        const corners=[3,4].map(i=>({x:e.game_body_value(i,0),y:e.game_body_value(i,1),a:e.game_body_value(i,4),
-          hx:e.game_vertex_value(i,2,0),hy:e.game_vertex_value(i,2,1)}));
+        const borders=[3,4,5,6,7,8].map(i=>({x:e.game_body_value(i,0),y:e.game_body_value(i,1),a:e.game_body_value(i,4),
+          hx:Math.abs(e.game_vertex_value(i,2,0)),hy:Math.abs(e.game_vertex_value(i,2,1))}));
         const changed=(x,y)=>{const index=(Math.floor(y)*800+Math.floor(x))*4;return Math.max(...[0,1,2,3].map(channel=>Math.abs(actual[index+channel]-before[index+channel])));};
-        const distance=(s,side,x,y)=>{
-          const localX=(x-s.x)*Math.cos(s.a)+(y-s.y)*Math.sin(s.a);
-          return (side?-localX:localX)-s.hx;
-        };
+        const distance=(x,y)=>Math.min(...borders.map(s=>{
+          const dx=x-s.x,dy=y-s.y;
+          const px=Math.abs(dx*Math.cos(s.a)+dy*Math.sin(s.a))-s.hx;
+          const py=Math.abs(-dx*Math.sin(s.a)+dy*Math.cos(s.a))-s.hy;
+          return Math.hypot(Math.max(px,0),Math.max(py,0))+Math.min(Math.max(px,py),0);
+        }));
         const occupied=[0,0];
-        for(let y=0;y<480;y+=2)for(let x=0;x<800;x+=2)if(changed(x,y)>5){
-          if(!corners.some((s,side)=>distance(s,side,x+.5,y+.5)<=3.5))throw Error(`Corner drawing beyond native diagonal at ${x},${y}`);
-          occupied[x<400?0:1]++;
+        for(let y=0;y<480;y+=2)for(let x=0;x<800;x+=2){
+          const d=distance(x+.5,y+.5);
+          if(changed(x,y)>5){
+            if(d>3.5)throw Error(`Corner drawing beyond native border at ${x},${y}`);
+            occupied[x<400?0:1]++;
+          } else if(d<-1.5)throw Error(`Invisible arena border at ${x},${y}`);
         }
-        for(const [side,s] of corners.entries()){
+        for(const [side,s] of borders.slice(0,2).entries()){
           if(occupied[side]<2000 || changed(side?795:4,4)<10)throw Error('Corner pocket is not completely filled');
           for(const t of [-.75,-.5,-.25,0,.25,.5,.75]){
             const lx=side?-s.hx:s.hx,ly=t*s.hy;

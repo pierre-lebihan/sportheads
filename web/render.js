@@ -168,14 +168,25 @@ export function drawPitch(ctx, pitch, balanced = false) {
   return true;
 }
 
-// Fill the inaccessible pockets behind the original chamfers. Their inner
-// faces remain x+y=100+30*sqrt(2), mirrored on the right; physics is unchanged.
+// Fill the inaccessible pockets behind the original top borders. Each corner
+// is bounded by the 45° chamfer and the two 8° walls of MainTimeline.initLevel
+// (60 px thick boxes): x+y = 100+30*sqrt(2), x*cos8+y*sin8 = d and
+// x*sin8+y*cos8 = d, mirrored on the right; physics is unchanged.
+const ARENA_CORNER = (() => {
+  const c = Math.cos(Math.PI / 22.5), s = Math.sin(Math.PI / 22.5);
+  const chamfer = 100 + 30 * Math.SQRT2, wall = -20 * c + 240 * s + 30;
+  // Where a slanted wall's face meets the chamfer (both faces are symmetric in x and y).
+  const near = (wall - chamfer * s) / (c - s), far = chamfer - near;
+  return [[0, 0], [wall / s, 0], [far, near], [near, far], [0, wall / s]];
+})();
 function drawArenaCorners(ctx) {
-  const extent = 100 + 30 * Math.SQRT2;
+  const extent = ARENA_CORNER[1][0];
   for (const side of [0, 1]) {
     ctx.save();
     if (side) { ctx.translate(800, 0); ctx.scale(-1, 1); }
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(extent, 0); ctx.lineTo(0, extent); ctx.closePath();
+    ctx.beginPath();
+    for (const [x, y] of ARENA_CORNER) ctx.lineTo(x, y);
+    ctx.closePath();
     paintObstacle(ctx, extent, extent);
     ctx.restore();
   }

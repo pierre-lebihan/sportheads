@@ -70,6 +70,10 @@ Les portraits sont des caricatures générées pour ce projet avec l'outil
 intégré imagegen. L'atlas transparent `web/assets/modern-players.png` contient
 4 colonnes et 3 rangées, dans l'ordre de `web/players.js`. Le renderer découpe
 les cellules directement à l'affichage ; le fichier original est conservé.
+Le jeu affiche `web/assets/modern-players-parody.png`, produit par
+`scripts/parody-portraits.py` : nez et oreilles grossis, plus un gag lié à
+chaque nom parodique (ampoule, pansements, brin de blé, groin, palmier, toque…).
+Après modification, relancer ce script puis `scripts/optimize-portraits.py`.
 Les caricatures privées ont chacune leur fichier dans `web/assets/`, regroupé
 ensuite dans `portraits.webp` ; leur ordre est celui de `web/players.js`.
 Les photos de référence restent hors du dépôt.

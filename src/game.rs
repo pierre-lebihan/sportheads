@@ -233,8 +233,9 @@ impl Game {
         self.adjusted_goal_height(side, self.powerups.goal_height[side])
     }
     fn adjusted_goal_height(&self, side: usize, height: u32) -> u32 {
-        // Integer rounding is shared by scoring, the crossbar and rendering.
-        (height * (100 - self.buffs[side][2]) + 50) / 100
+        // Half-strength protection; preserve odd percentages before rounding.
+        // Scoring, the crossbar and rendering all use the same height.
+        (height * (200 - self.buffs[side][2]) + 100) / 200
     }
     fn apply_goal_style(&mut self) {
         let height = match self.goal_style {

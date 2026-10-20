@@ -57,8 +57,8 @@ fn head_and_goal_buffs_apply_to_both_camps_without_enlarging_the_feet() {
             445.0 - game.goal_height(side) as f64
         );
     }
-    assert_eq!(game.goal_height(0), 50);
-    assert_eq!(game.goal_height(1), 70);
+    assert_eq!(game.goal_height(0), 75);
+    assert_eq!(game.goal_height(1), 85);
     game.set_buffs(0, 0, 0, 0, 0, 0);
     assert_eq!(radius(&game, 0), 20.0);
     assert_eq!(game.goal_height(0), 100);
@@ -71,7 +71,7 @@ fn protected_goal_scoring_matches_its_physical_crossbar() {
         game.set_buffs(side, 0, 0, 50, 0, 0);
         let ball = game.ball;
         let x = if side == 0 { 40.0 } else { 760.0 };
-        game.world.set_transform(ball, Vec2::new(x, 380.0), 0.0);
+        game.world.set_transform(ball, Vec2::new(x, 370.0), 0.0);
         assert_eq!(game.goal_scorer(), None);
         game.world.set_transform(ball, Vec2::new(x, 430.0), 0.0);
         assert_eq!(game.goal_scorer(), Some(1 - side));
@@ -87,12 +87,12 @@ fn buffs_compose_with_pickups_and_survive_expiry_and_round_resets() {
     assert_eq!(game.powerups.scale[0], 1.5);
     game.collect(Kind::GoalSmall, 1); // Original pickup targets the other goal.
     assert_eq!(game.powerups.goal_height[0], 60);
-    assert_eq!(game.goal_height(0), 30);
+    assert_eq!(game.goal_height(0), 45);
     game.powerups.timers.size[0] = 599;
     game.powerups.timers.goals[0] = 599;
     game.step(0);
     assert_eq!(radius(&game, 0), 30.0);
-    assert_eq!(game.goal_height(0), 50);
+    assert_eq!(game.goal_height(0), 75);
     game.world
         .set_transform(game.ball, Vec2::new(40.0, 440.0), 0.0);
     game.world.bodies[game.ball].velocity = Vec2::default();
@@ -104,8 +104,8 @@ fn buffs_compose_with_pickups_and_survive_expiry_and_round_resets() {
     assert_eq!(game.phase, Phase::Countdown);
     assert_eq!(game.buffs, [[30, 50, 50, 15, 37], [10, 23, 17, 48, 9]]);
     assert_eq!(radius(&game, 0), 30.0);
-    assert_eq!(game.goal_height(0), 50);
-    assert_eq!(game.goal_height(1), 83);
+    assert_eq!(game.goal_height(0), 75);
+    assert_eq!(game.goal_height(1), 92);
     assert_eq!(game.world.bodies[game.player[0]].position.y, 430.0);
     assert_eq!(Game::score_match(1, 7, false).buffs, [[0; 5]; 2]);
 }
@@ -161,4 +161,34 @@ fn speed_and_kick_are_independent_precise_multipliers_and_respect_pickups() {
     let before = game.xspeed[0];
     game.step(LEFT_RIGHT);
     assert_eq!(game.xspeed[0], before * 0.7);
+}
+
+#[test]
+fn goal_protection_has_half_the_effect_for_both_camps_and_pickup_sizes() {
+    for side in 0..2 {
+        for (percent, expected) in [
+            (0, [60, 100, 140]),
+            (10, [57, 95, 133]),
+            (30, [51, 85, 119]),
+            (50, [45, 75, 105]),
+        ] {
+            for (height, wanted) in [60, 100, 140].into_iter().zip(expected) {
+                let mut game = ready();
+                game.powerups.goal_height[side] = height;
+                game.set_buffs(side, 0, 0, percent, 0, 0);
+                assert_eq!(game.goal_height(side), wanted);
+                assert_eq!(
+                    game.world.bodies[9 + side].position.y,
+                    445.0 - wanted as f64
+                );
+                assert_eq!(game.goal_height(1 - side), 100);
+                assert_eq!(game.buffs[side], [0, 0, percent, 0, 0]);
+            }
+        }
+        for (percent, expected) in [(1, 100), (17, 92), (49, 76)] {
+            let mut game = ready();
+            game.set_buffs(side, 0, 0, percent, 0, 0);
+            assert_eq!(game.goal_height(side), expected);
+        }
+    }
 }

@@ -2,7 +2,7 @@
 export const BUFF_STATS = Object.freeze([
   { id: 'jump', label: 'Puissance de saut', detail: 'Pour atteindre les ballons plus hauts.' },
   { id: 'head', label: 'Taille de la tête', detail: 'Une plus grande surface pour intercepter.' },
-  { id: 'goal', label: 'Protection du but', detail: 'Réduit la hauteur de votre but : +50 % le rend deux fois plus petit.' },
+  { id: 'goal', label: 'Protection du but', detail: 'Réduit la hauteur de votre but : +50 % donne une réduction de 25 %.' },
   { id: 'speed', label: 'Vitesse', detail: 'Accélération et vitesse de course augmentées.' },
   { id: 'kick', label: 'Frappe', detail: 'Un mouvement du pied plus rapide pour frapper plus fort.' },
 ].map(Object.freeze));

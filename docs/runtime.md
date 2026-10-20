@@ -26,6 +26,15 @@ référence enregistrée, sans aucune différence numérique. Seules les emprein
 approuvées de `game.rs` et `pitches.rs` ont été actualisées ; les scénarios et
 leurs résultats n’ont pas été régénérés. Les autres sources Rust sont intactes.
 
+Le rééquilibrage de la protection du but divise uniquement son effet par deux :
++50 % réduit désormais la hauteur de 25 %, avec un arrondi commun au dessin,
+à la barre et au score. Les références avec cette protection ont été actualisées
+volontairement. Avant cette mise à jour, le WASM précédent a été vérifié contre
+la référence existante ; puis 48 scénarios sans protection de but (autres aides
+et trois modes de bonus actifs) ont été comparés entre les deux binaires :
+28 800 ticks identiques. Seule la formule de hauteur dans `game.rs` change ;
+les sources du solveur et les effets des bonus historiques restent intacts.
+
 Le test ne réécrit jamais cette référence. Une future modification volontaire
 du moteur exige une revue explicite et une nouvelle référence, avec
 `node scripts/physics-reference.mjs --write`. Ne pas régénérer cette référence

@@ -19,7 +19,7 @@ Un match simple contre l’IA ou entre deux humains. L’**équilibrage** propos
 En **Manuel**, touchez le portrait d’un camp et réglez séparément, de 0 à +50 %
 par pas de 1 %, la puissance de saut, la taille de tête, la protection de son but,
 la vitesse et la frappe.
-La protection réduit la hauteur du but : +50 % donne un but deux fois plus petit.
+La protection réduit la hauteur du but avec un effet de moitié : +50 % donne une réduction de 25 %.
 La vitesse renforce l’accélération et la course ; la frappe accélère le mouvement
 du pied. Le bonus de tête conserve la taille du pied. Les réglages sont verrouillés pendant le match.
 À distance, le créateur les règle pour les deux camps et l’invité les voit en lecture seule.

@@ -22,7 +22,8 @@ pour les aides bleues ou rouges. L’invité voit les mêmes choix en lecture se
 
 Les cinq stats sont l’impulsion de saut, le rayon de la tête, la protection
 du but, la vitesse de course et le mouvement de frappe. Le saut multiplie l’impulsion verticale, pas directement la hauteur atteinte.
-La protection réduit la hauteur du but d’autant : +50 % la divise par deux.
+La protection réduit la hauteur du but de la moitié de sa valeur : +10 / +30 / +50 %
+réduisent sa hauteur de 5 / 15 / 25 %. Les arrondis se font sur la hauteur finale.
 Le dessin, la barre physique et la détection des buts utilisent la même hauteur.
 Le bonus de tête agrandit sa collision et son portrait, en conservant la taille du pied.
 La vitesse multiplie l’accélération et la course ; la frappe multiplie la vitesse

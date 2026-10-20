@@ -56,12 +56,12 @@ const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 
         const e=sportheads.engine;
         return {buffs:[0,1].map(side=>[0,1,2,3,4].map(stat=>e.game_buff_value(side,stat))), legacy:[0,1].map(side=>e.game_player_value(side,6)), goals:[e.game_value(8),e.game_value(9)]};
       });
-      assert.deepEqual(actual.buffs,[[2,50,49,37,11],[49,23,17,5,43]]);assert.deepEqual(actual.legacy,[0,0]);assert.deepEqual(actual.goals,[51,83]);
+      assert.deepEqual(actual.buffs,[[2,50,49,37,11],[49,23,17,5,43]]);assert.deepEqual(actual.legacy,[0,0]);assert.deepEqual(actual.goals,[76,92]);
       const pickup = await page.evaluate(()=>{
         sportheads.engine.game_collect(7,1); sportheads.engine.game_collect(14,0); sportheads.render();
         return {height:sportheads.engine.game_value(8),frame:sportheads.renderState().goalFrames[0]};
       });
-      assert.deepEqual(pickup,{height:71,frame:2},'arbitrary percentages preserve the big-goal drawing as well as its collision');
+      assert.deepEqual(pickup,{height:106,frame:2},'arbitrary percentages preserve the big-goal drawing as well as its collision');
       await page.screenshot({path:`evidence/buffs-match-${name}-${mobile?'mobile':'desktop'}.png`});
       await page.click('#play-view');assert.equal(await page.locator('[data-balance-preset=normal]').isEnabled(),false);assert.equal(await page.locator('#buff-jump').isEnabled(),false);
       await page.locator('[data-balance-side="1"]').click();assert.equal(await page.locator('#buff-head').inputValue(),'23','locked settings can still inspect either camp');

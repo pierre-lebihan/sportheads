@@ -177,7 +177,10 @@ const ARENA_CORNER = (() => {
   const chamfer = 100 + 30 * Math.SQRT2, wall = -20 * c + 240 * s + 30;
   // Where a slanted wall's face meets the chamfer (both faces are symmetric in x and y).
   const near = (wall - chamfer * s) / (c - s), far = chamfer - near;
-  return [[0, 0], [wall / s, 0], [far, near], [near, far], [0, wall / s]];
+  // The outline runs 10 px past the canvas edges so that its stroke never
+  // lands on the visible edge columns, which must show the filled wall.
+  const edge = (wall + 10 * c) / s;
+  return [[-10, -10], [edge, -10], [far, near], [near, far], [-10, edge]];
 })();
 function drawArenaCorners(ctx) {
   const extent = ARENA_CORNER[1][0];

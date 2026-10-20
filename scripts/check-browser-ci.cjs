@@ -9,6 +9,19 @@ const readline = require('node:readline');
 const root = path.resolve(__dirname, '..');
 const reports = path.join(root, 'browser-report');
 const checks = ['game', 'setup', 'character-selection', 'ai', 'buffs', 'touch-layouts', 'touch-release', 'display', 'balanced-pitches', 'bonus-pitches', 'bonuses', 'runtime', 'offline', 'hd'];
+// CI runs these groups as parallel jobs (`--shard 2`), each about 95 s long.
+// Every check belongs to exactly one group, so the jobs together run them all.
+const shards = [
+  ['ai', 'buffs', 'game', 'setup'],
+  ['character-selection', 'runtime'],
+  ['touch-layouts', 'bonuses', 'bonus-pitches', 'touch-release', 'display', 'balanced-pitches', 'offline', 'hd'],
+];
+const grouped = shards.flat();
+if (grouped.length !== checks.length || checks.some(name => !grouped.includes(name)))
+  throw Error('Browser check shards must contain every check exactly once');
+const shardArg = process.argv.indexOf('--shard');
+const selected = shardArg < 0 ? checks : shards[Number(process.argv[shardArg + 1]) - 1];
+if (!selected) throw Error(`Unknown shard: ${process.argv[shardArg + 1]} (1-${shards.length})`);
 const results = [];
 let server, child;
 
@@ -62,7 +75,7 @@ async function main() {
     if (!response.ok) throw Error(`Local build returned HTTP ${response.status}`);
   } finally { clearTimeout(timer); lines.close(); }
   try {
-    for (const name of checks) await run(name, url);
+    for (const name of selected) await run(name, url);
   } finally { await fs.writeFile(path.join(reports, 'server.log'), serverLog); }
 }
 
@@ -72,7 +85,7 @@ for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => {
 main().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   server?.kill();
   await fs.mkdir(reports, { recursive: true });
-  await fs.writeFile(path.join(reports, 'results.json'), JSON.stringify({ passed: results.length === checks.length && results.every(r => r.passed), results }, null, 2));
+  await fs.writeFile(path.join(reports, 'results.json'), JSON.stringify({ passed: results.length === selected.length && results.every(r => r.passed), results }, null, 2));
   if (process.env.GITHUB_STEP_SUMMARY) await fs.appendFile(process.env.GITHUB_STEP_SUMMARY,
     `### Browser checks\n\n${results.map(r => `- ${r.passed ? '✅' : '❌'} ${r.name} (${(r.ms / 1000).toFixed(1)}s)`).join('\n')}\n`);
 });

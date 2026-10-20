@@ -198,7 +198,7 @@ physique ni une mesure de performances sur téléphone.
 Le site contient le match, son moteur WASM et les replays numériques.
 
 Mesure d'audience : `web/analytics.js` envoie des événements anonymes à PostHog
-(serveurs UE) dès que la clé publique `POSTHOG_KEY` y est renseignée : visites,
+(serveurs UE) (clé publique `POSTHOG_KEY`, projet « Sportheads ») : visites,
 mode choisi, matchs lancés, terminés ou quittés, salles créées, connexions en
 ligne (relais TURN ou direct) et installations. Aucun SDK n'est chargé et
 aucune donnée personnelle n'est envoyée ; l'identifiant aléatoire du visiteur

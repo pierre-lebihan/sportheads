@@ -1,8 +1,8 @@
-// Anonymous audience measurement (PostHog, EU cloud). Without a key it does nothing.
+// Anonymous audience measurement (PostHog, EU cloud, project "Sportheads"). The key is public by design.
 // No SDK is loaded: each event is one small request sent after the page is ready.
 // A random visitor id lives in localStorage for 13 months at most, nothing personal
 // is sent, and Do Not Track, Global Privacy Control or ?stats=off turn it off.
-export const POSTHOG_KEY = '';
+export const POSTHOG_KEY = 'phc_yYc3dWFC6psqGbek5mTdVXLiKH8xKgofk5S9NELeG29D';
 export const POSTHOG_HOST = 'https://eu.i.posthog.com';
 const VISITOR = 'sportheads-visitor', OPT_OUT = 'sportheads-stats-off', VISITOR_DAYS = 395;
 

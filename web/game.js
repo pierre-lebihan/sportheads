@@ -5,6 +5,7 @@ import { createRoomSession } from './room-session.js';
 import { createPlannerService } from './planner.js';
 import { createPerformanceMonitor } from './performance.js';
 import { createFixedStepper } from './fixed-step.js';
+import { createFramePacer } from './frame-pacing.js';
 import { createTickBlend } from './tick-blend.js';
 import { createGameUI } from './game-ui.js';
 import { createAppStore } from './app-state.js';
@@ -25,7 +26,7 @@ import { createTouchControls } from './touch-controls.js';
 import { AI_LEVELS, createOpponent } from './opponent.js';
 import { BONUS_NAMES, NEW_BONUSES } from "./bonuses.js";
 
-const app = createAppStore(), monitor = createPerformanceMonitor(), clock = createFixedStepper();
+const app = createAppStore(), monitor = createPerformanceMonitor(), clock = createFixedStepper(), pacer = createFramePacer();
 const $ = (selector) => document.querySelector(selector);
 const randomChoices = [['random-player-0', 'skin-left'], ['random-player-1', 'skin-right'], ['random-pitch', 'pitch']];
 const canvas = $('#field'),ctx = canvas.getContext('2d'),keys = new Set(),audio = createAudio();
@@ -261,6 +262,7 @@ function update() {
   monitor.measure('ui', renderUI);
 }
 function animate(time) {
+  if (!pacer.due(time)) { requestAnimationFrame(animate); return; }
   monitor.frame(time);
   const running = core && app.value.started && !app.value.paused && engine().game_value(MATCH.phase) !== PHASE.finished
     && (app.value.mode !== 'online' || (app.value.role === 'host' && app.value.connected));
@@ -279,13 +281,14 @@ function animate(time) {
   const view = running && renderEngine() === core ? blend.view(clock.debtMs / TICK_MS) : renderEngine();
   monitor.measure('render', () => drawGame(ctx, view, renderState()));
   monitor.record('simulationDebt', clock.debtMs);
+  pacer.drawn(time, running);
   requestAnimationFrame(animate);
 }
 function performanceReport() {
   return { revision: 1, browser: navigator.userAgent, mode: app.value.mode, role: app.value.role, started: app.value.started, paused: app.value.paused, matchId: app.value.matchId, difficulty: app.value.mode === 'ai' ? difficulty().id : null,
     costs: monitor.report(), assets: { ...assetStats(), imageTransferBytes: performance.getEntriesByType('resource')
       .filter(entry => /\/assets\/.*\.(svg|png|webp)(?:\?|$)/.test(entry.name)).reduce((sum, entry) => sum + entry.encodedBodySize, 0) },
-    planner: planner?.stats(), scheduler: { tickMs: 1000 / 30, maxStepsPerFrame: 2, debtMs: clock.debtMs } };
+    planner: planner?.stats(), scheduler: { tickMs: 1000 / 30, maxStepsPerFrame: 2, debtMs: clock.debtMs, batterySaver: pacer.saver } };
 }
 setupPerformancePanel({ report: performanceReport, reset: () => monitor.reset(), resume() { closeSettings(); pause(false); } });
 window.sportheads = { resetPerformance: () => monitor.reset(), performance: performanceReport, inspectPlanner: () => planner.inspect(), get state() { return app.value; }, snapshot, renderState, get engine() {return engine();}, get renderEngine() {return renderEngine();}, render() {update();network.advance();drawGame(ctx, renderEngine(), renderState());} };

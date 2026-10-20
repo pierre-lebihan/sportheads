@@ -199,3 +199,12 @@ reste compatible : l’absence d’option vaut `false`.
   marchent sans réseau. Les musiques sont mises en cache à leur première écoute.
   La page est toujours demandée au réseau d'abord, pour recevoir les mises à jour.
 
+
+## Cadence d'affichage et batterie
+
+`frame-pacing.js` limite l'affichage à environ 60 images par seconde : un écran
+120 Hz dessine une image sur deux, ce que la simulation à 30 Hz et le lissage
+entre deux ticks remplissent déjà. Si, pendant le jeu, la médiane des 90 derniers
+intervalles dépasse celle de 45 images par seconde, l'appareil passe en économie
+pour la session : 30 images par seconde régulières, au lieu d'une cadence
+irrégulière. Le rapport de fluidité l'indique (`scheduler.batterySaver`).

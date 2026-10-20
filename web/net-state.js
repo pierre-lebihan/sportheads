@@ -60,7 +60,7 @@ export function isValidState(packet) {
       for (const side of [0, 1]) {
         const head = bodies.find(body => body[BODY.role] === BODY_ROLE.blue + side);
         if (Math.abs(head[BODY.radius] - 20 * players[side][PLAYER.scale] * (1 + packet.buffs[side][BUFF.head] / 100)) > 1e-9
-          || ![60, 100, 140].some(base => Math.round(base * (100 - packet.buffs[side][BUFF.goal]) / 100) === v[side ? MATCH.redGoalHeight : MATCH.blueGoalHeight])) return false;
+          || ![60, 100, 140].some(base => Math.floor((base * (200 - packet.buffs[side][BUFF.goal]) + 100) / 200) === v[side ? MATCH.redGoalHeight : MATCH.blueGoalHeight])) return false;
       }
     }
     if (!rows(pickups, 16, 4, pickup => integer(pickup[0], 1, bonusCount) && integer(pickup[3], 0, 600))) return false;

@@ -163,8 +163,8 @@ test('independent buffs and their actual collisions survive snapshots, including
   host.game_collect(14,0); host.game_collect(8,1);
   const packet = captureState(host,[13,23]), guest = createRemoteEngine();
   assert.deepEqual(packet.buffs,[[13,50,50,15,37],[50,23,17,48,9]]);
-  assert.equal(packet.values[8],30);
-  assert.equal(packet.values[9],83);
+  assert.equal(packet.values[8],45); // Half-strength goal protection: +50 % removes a quarter.
+  assert.equal(packet.values[9],92);
   assert.equal(packet.bodies.find(body => body[9]===1)[8],45);
   assert.equal(guest.update(packet),true);
   for (const side of [0,1]) for (const stat of [0,1,2,3,4]) assert.equal(guest.engine.game_buff_value(side,stat),packet.buffs[side][stat]);

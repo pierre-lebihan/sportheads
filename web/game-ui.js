@@ -40,6 +40,8 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   $('#close-settings').hidden = !app.value.started;
   $('#quit-match-settings').hidden = !app.value.started;
   $('#touch-controls').hidden = !app.value.started;
+  // Safari before 15.4 has no :has(), so the dock follows the controls by class.
+  $('.ground-bar').classList.toggle('with-controls', app.value.started);
   touch.update({ mode: app.value.mode, side: ownSide(), names, enabled: app.value.started && !app.value.paused && phase !== PHASE.finished && (app.value.mode !== 'online' || app.value.connected) });
   $('.team.blue span').textContent = names[0];$('.team.red span').textContent = names[1];
   $('.team.blue span').title = names[0];$('.team.red span').title = names[1];

@@ -181,10 +181,27 @@ function drawArenaCorners(ctx) {
   }
 }
 
+// Safari before 18 ignores CanvasRenderingContext2D.filter, so the Flash colour
+// transform (each channel * 128/256 + 102/255) is a 50 % blend with #ccc instead.
+const stadiumLayers = new WeakMap();
+function stadiumLayer(frame, image) {
+  let layer = stadiumLayers.get(image);
+  if (!layer) {
+    layer = document.createElement('canvas'); layer.width = 800; layer.height = 540;
+    const layerCtx = layer.getContext('2d');
+    layerCtx.drawImage(image, 4.45 - frame.originX, -25.1 - frame.originY, frame.width, frame.height);
+    layerCtx.globalCompositeOperation = 'source-atop'; layerCtx.globalAlpha = .5;
+    layerCtx.fillStyle = '#ccc'; layerCtx.fillRect(0, 0, 800, 540);
+    stadiumLayers.set(image, layer);
+  }
+  return layer;
+}
+
 function paintBackground(ctx, state, pitch) {
   // bgPitch's groundBg child is placed at (4.45,-25.1) in the original scene.
   // Root bgPitch has multiplier128/256 and additive102/255 on RGB channels.
-  drawSprite(ctx, 'stadium', state.stadiumFrame || 3, 4.45, -25.1, undefined, undefined, 0, { filter: 'contrast(0.3846153846153846) brightness(1.3)' });
+  const frame = getAssets()?.sprites.stadium?.frames[(state.stadiumFrame || 3) - 1], image = frame && imageFor(frame);
+  if (image?.complete && image.naturalWidth) ctx.drawImage(stadiumLayer(frame, image), 0, 0);
   drawSprite(ctx, 'bottom-bar', 1, 0, 0);
   drawSprite(ctx, 'ground-texture', 1, 400, 470, 800, 20);
   drawArenaCorners(ctx);

@@ -9,7 +9,7 @@
 .match-bar button{display:flex;align-items:center;justify-content:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:4px;border-color:transparent;background:transparent;color:#244875b3;font-size:23px;line-height:1;touch-action:manipulation;text-shadow:0 1px 2px #ffffff80}.match-bar button:hover:enabled{background:#ffffff26;color:#244875}
 .scoreboard{position:absolute;inset:0;pointer-events:none;font-variant-numeric:tabular-nums;opacity:.85;text-shadow:0 1px 2px #15232d80}.team{position:absolute;top:2.5%;left:2.5%;display:flex;align-items:center;min-width:0}.scoreboard .blue{color:#9bd2ff}.scoreboard .red{left:auto;right:2.5%;color:#ffb5b8}.team strong{font-size:clamp(12px,3vw,26px);line-height:1;font-weight:bold}
 @media(orientation:portrait){.bar-tools{left:50%;transform:translateX(calc(-100% - 1px))}.bar-tools:last-child{left:calc(50% + 1px);right:auto;transform:none}}
-.ground-bar{display:none;flex:none;width:100%;max-width:800px;color:#244875}.touch-device .ground-bar:has(.touch-controls:not([hidden])){display:block}
+.ground-bar{display:none;flex:none;width:100%;max-width:800px;color:#244875}.touch-device .ground-bar.with-controls{display:block}
 .bonus-notice{position:absolute;top:36px;left:50%;transform:translateX(-50%);margin:0;padding:3px 7px;background:#fff4c7c9;border-radius:4px;color:#5e4c21;font-weight:bold;font-size:11px;white-space:nowrap;pointer-events:none}
 .display-settings{margin-top:14px;font-size:11px;color:#61798e}.display-settings button{min-height:44px}.display-actions{display:flex;gap:8px;align-items:stretch}.display-actions button{flex:1;min-width:0}#reload-page{background:#b12f3b;border-color:#b12f3b;color:white;touch-action:manipulation}#reload-page:hover:enabled{background:#922531;border-color:#922531}.display-settings p{line-height:1.5;margin:7px 0 0}
 @media(orientation:portrait){#fullscreen{display:none}}
@@ -39,7 +39,7 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
   .touch-device .touch-controls:not([data-mode="local"]) .touch-pad{display:flex;align-items:center;justify-content:space-between;width:100%}
   .touch-device .touch-controls:not([data-mode="local"]) .touch-name{position:absolute;left:0}
   .touch-device .touch-controls:not([data-mode="local"]) .touch-move,.touch-device .touch-controls:not([data-mode="local"]) .touch-actions{width:104px}
-  .touch-device .cover-panel{max-width:calc(100vw - 256px);max-height:calc(100dvh - 90px);padding:12px 20px}.touch-device .cover-panel h2{font-size:26px}.touch-device .cover-panel .fixture{display:none}
+  .touch-device .cover-panel{max-width:calc(100vw - 256px);max-height:calc(100vh - 90px);max-height:calc(100dvh - 90px);padding:12px 20px}.touch-device .cover-panel h2{font-size:26px}.touch-device .cover-panel .fixture{display:none}
 }
 
 @media(max-width:650px){.launch{position:sticky;bottom:0;background:#fffffff5;padding-top:8px;box-shadow:0 -6px 8px #ffffffd9;z-index:1}.launch p{display:none}}
@@ -161,3 +161,5 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
 .bonuses-help{flex-basis:100%;margin:0;color:#61798e;font-size:11px;line-height:1.4}.v2-guide{width:100%;font-size:12px}.v2-guide summary{cursor:pointer;color:#244875}.v2-guide ul{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:10px}.v2-guide li{display:grid;grid-template-columns:76px 1fr;gap:3px 8px;align-items:center}.v2-guide canvas{grid-row:1/3;width:76px;height:40px}.v2-guide strong{font-size:12px}.v2-guide span{grid-column:2;line-height:1.4;color:#61798e;font-size:11px}.settings #bonuses{max-width:100%}
 
 #performance-report { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .72rem; }
+/* Shown by compat.js on browsers too old for the game: no inset or flex gap. */
+.unsupported-browser{position:fixed;top:0;right:0;bottom:0;left:0;z-index:100;padding:30vh 24px 24px;background:#244875;color:#fff;text-align:center;font:16px/1.4 -apple-system,system-ui,sans-serif}.unsupported-browser strong{display:block;margin-bottom:12px;font-size:22px}

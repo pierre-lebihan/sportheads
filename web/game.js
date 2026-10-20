@@ -299,6 +299,8 @@ try {
   const code = normalizeCode(new URL(location.href).searchParams.get('room') || '');
   if (validCode(code)) {selectMode('online'); app.dispatch({ type: 'room.code-edited', value: code }); roomStatus('Code reçu. Cliquez sur Rejoindre pour entrer dans la salle.');}
   update();
+  // Installable, and playable offline vs the AI or 2P once loaded. A refusal only costs the cache.
+  if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('./sw.js').catch(() => {});
 } catch (error) {
   $('#start').textContent = 'Recharger la page';$('#start').disabled = false;$('#start').addEventListener('click', () => location.reload());
   $('#status').textContent = 'Le jeu n’a pas pu se charger. Rechargez la page pour réessayer.';window.loadError = error.message;

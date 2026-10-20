@@ -30,7 +30,7 @@ for old, new in replacements.items():
         raise SystemExit(f'Expected exactly one occurrence of {old}')
     html = html.replace(old, new)
 (site / 'physics.html').write_text(html)
-browser_files = ('index.html', 'game.js', 'game.css', 'render.js', 'rooms.js', 'ice-diagnostics.js', 'ice-signaling.js', 'ice-servers.js', 'net-state.js', 'net-render.js', 'selection.js', 'players.js', 'touch-controls.js', 'touch-layout.js', 'bonuses.js', 'balance.js', 'balance-ui.js', 'arena-ui.js', 'setup-ui.js', 'opponent.js', 'engine-contract.js', 'assets.js', 'app-state.js', 'game-ui.js', 'room-session.js', 'planner.js', 'planner-runtime.js', 'planner-worker.js', 'performance.js', 'fixed-step.js', 'tick-blend.js', 'performance-ui.js', 'engine-view.js', 'manifest.webmanifest', 'terrains.html', 'terrains.js', 'pitch-geometry.js')
+browser_files = ('index.html', 'compat.js', 'game.js', 'game.css', 'render.js', 'rooms.js', 'ice-diagnostics.js', 'ice-signaling.js', 'ice-servers.js', 'net-state.js', 'net-render.js', 'selection.js', 'players.js', 'touch-controls.js', 'touch-layout.js', 'bonuses.js', 'balance.js', 'balance-ui.js', 'arena-ui.js', 'setup-ui.js', 'opponent.js', 'engine-contract.js', 'assets.js', 'app-state.js', 'game-ui.js', 'room-session.js', 'planner.js', 'planner-runtime.js', 'planner-worker.js', 'performance.js', 'fixed-step.js', 'tick-blend.js', 'performance-ui.js', 'engine-view.js', 'manifest.webmanifest', 'terrains.html', 'terrains.js', 'pitch-geometry.js')
 # Optional TURN credential service (see relay/). It is a public URL, not a secret.
 turn_url = os.environ.get('SPORTHEADS_TURN_URL', '').strip()
 if turn_url and not re.fullmatch(r'https://[A-Za-z0-9.-]+(?::\d+)?(?:/[A-Za-z0-9._~/-]*)?', turn_url):
@@ -77,6 +77,24 @@ for filename in sorted(files):
     shutil.copyfile(source, destination)
 (site / 'assets/manifest.json').write_text(json.dumps(manifest, separators=(',', ':'), ensure_ascii=False))
 shutil.copytree(root / 'web/vendor', site / 'vendor')
+shutil.copytree(root / 'web/icons', site / 'icons')
+# Precache what a match needs offline, with the exact URLs the page requests:
+# modules and images carry ?v=revision, sounds and vendor code do not. Music
+# is cached when first played, so the install stays light on mobile data.
+offline = ['./', 'manifest.webmanifest', f'physics-core.wasm?v={revision}', 'vendor/peerjs-1.5.5.min.js']
+offline += [f'{name}?v={revision}' for name in browser_files if name.endswith(('.js', '.css')) and not name.startswith('terrains')]
+offline += [f'icons/{icon.name}' for icon in sorted((root / 'web/icons').iterdir())]
+match_frames = {frame['file'] for spec in catalogue['boot'] + catalogue['common'] + catalogue['bonuses']
+    for frame in (manifest['sprites'][spec]['frames'] if isinstance(spec, str)
+        else [manifest['sprites'][spec['sprite']]['frames'][number - 1] for number in spec['frames']])}
+offline += [f'assets/{name}?v={revision}' for name in sorted(match_frames | {'manifest.json', 'runtime.json', catalogue['portraitAtlas']})]
+offline += [f'assets/{name}' for name in sorted(manifest['sounds'].values()) if not Path(name).name.startswith('music-')]
+worker = (root / 'web/sw.js').read_text()
+for old, new in (("REVISION = 'dev'", f"REVISION = '{revision}'"), ('FILES = []', 'FILES = ' + json.dumps(offline))):
+    if worker.count(old) != 1:
+        raise SystemExit(f'Expected exactly one occurrence of {old} in sw.js')
+    worker = worker.replace(old, new)
+(site / 'sw.js').write_text(worker)
 shutil.copyfile(root / 'probe/physics-core.wasm', site / 'physics-core.wasm')
 # Omit runtime diagnostics; publish only numeric scenes and measured results.
 public_report = {key: report[key] for key in ('scope', 'tolerance', 'cases', 'unexpectedErrors')}

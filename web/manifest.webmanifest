@@ -2,9 +2,16 @@
   "id": "./",
   "name": "Sportheads",
   "short_name": "Sportheads",
+  "description": "Le foot à grosses têtes, contre l’IA, à deux ou en ligne.",
+  "lang": "fr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#b9d4e5",
-  "theme_color": "#244875"
+  "theme_color": "#244875",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
 }

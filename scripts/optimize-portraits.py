@@ -24,5 +24,6 @@ for index, frame in enumerate(frames):
         portrait = original.convert('RGBA').crop(bounds).resize((TILE, TILE), Image.Resampling.LANCZOS)
         atlas.paste(portrait, ((index % COLUMNS) * TILE, (index // COLUMNS) * TILE))
 output = ROOT / 'web/assets/portraits.webp'
-atlas.save(output, format='WEBP', lossless=True, method=6)
+# Lossy colour with lossless alpha: a quarter of the lossless size, same edges.
+atlas.save(output, format='WEBP', quality=85, alpha_quality=100, method=6)
 print(f'{len(frames)} portraits: {atlas.width}x{atlas.height}, {output.stat().st_size} bytes, {atlas.width * atlas.height * 4} decoded bytes')

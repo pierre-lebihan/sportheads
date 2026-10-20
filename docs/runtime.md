@@ -65,14 +65,14 @@ Les originaux sont conservés dans le dépôt pour les comparaisons et les futur
 retouches. Le build ne publie que les fichiers décrits dans
 `web/assets/runtime.json`, et les sons utilisés.
 
-Les 23 portraits partagent `portraits.webp`, un atlas transparent WebP sans
-perte de 960 × 960 pixels : 192 × 192 par personnage, avec les mêmes cadrages
+Les 23 portraits partagent `portraits.webp`, un atlas transparent WebP
+(couleurs avec perte, qualité 85, transparence sans perte : 250 Ko au lieu de 800 Ko) de 960 × 960 pixels : 192 × 192 par personnage, avec les mêmes cadrages
 et orientations. Sa régénération demande Pillow avec WebP et Node :
 `python3 scripts/optimize-portraits.py`. Cette dépendance est uniquement un
 outil de génération : ni le jeu ni le build courant ne nécessitent Pillow.
 
 Au démarrage, seules les ressources essentielles et le décor visible sont
-décodés : 21 images, environ 1,49 Mo transféré et 7,05 Mo de pixels décodés,
+décodés : 21 images, environ 0,93 Mo transféré (1,49 Mo avant la compression des portraits) et 7,05 Mo de pixels décodés,
 contre 166 images, 17,77 Mo et 105,06 Mo auparavant dans le relevé Chromium.
 Ces tailles décodées sont des estimations RGBA issues des dimensions d'image,
 pas une mesure du tas ou de toute la mémoire GPU du téléphone.
@@ -181,3 +181,21 @@ commandes invité et le booléen correspondant dans les messages de préparation
 Un ancien invité peut continuer à lire la préparation sur le terrain libre,
 mais doit actualiser avant de jouer sur un nouveau terrain. Un ancien créateur
 reste compatible : l’absence d’option vaut `false`.
+
+## Navigateurs, installation et hors ligne
+
+- Le jeu demande iOS/Safari 15, Chrome 93, Firefox 91 ou plus récent. `compat.js`,
+  chargé avant les modules, complète `Object.hasOwn` et `Array.prototype.at`
+  (absents avant Safari 15.4) et affiche un message clair sur un navigateur plus
+  ancien, au lieu d'une page figée.
+- Safari avant la version 18 ignore `ctx.filter` : la transformation de couleur
+  Flash du stade (canal × 0,5 + 0,4) est donc un mélange à 50 % avec `#ccc`.
+- Le bandeau des commandes tactiles suit une classe, sans `:has()` (Safari 15.4).
+- Sans Worker module, l'anticipation de l'IA tourne sur le fil principal.
+- `manifest.webmanifest` déclare des icônes (`scripts/make-icons.py`) : le jeu
+  s'installe sur l'écran d'accueil. `sw.js`, généré par `build-pages.py`, met en
+  cache le code, le moteur, les images et les bruitages d'un match (environ
+  1,9 Mo) : après une première visite, contre l'IA et à deux sur le même écran
+  marchent sans réseau. Les musiques sont mises en cache à leur première écoute.
+  La page est toujours demandée au réseau d'abord, pour recevoir les mises à jour.
+

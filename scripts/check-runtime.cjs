@@ -29,7 +29,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-runtime.c
         resources: performance.getEntriesByType('resource').map(resource => resource.name) }));
       assert.equal(boot.assets.images, 21, 'load only the visible stadium, shared atlas and essential match graphics');
       assert.ok(boot.assets.decodedBytes < 8_000_000 && boot.assets.imageTransferBytes < 1_100_000);
-      assert.ok(!boot.resources.some(name => /\/(heads-\d|pu-\d|modern-players(-parody)?\.png|pierre-vilma\.png|arthur\.png)/.test(name)), 'archive portraits and bonus sprites are not startup dependencies');
+      assert.ok(!boot.resources.some(name => /\/(heads-\d|pu-\d|modern-players\.png|pierre-vilma\.png|arthur\.png)/.test(name)), 'archive portraits and bonus sprites are not startup dependencies');
       await page.evaluate(() => { document.querySelector('#target-score').value = '9'; document.querySelector('#pitch').value = '3'; });
       assert.equal((await page.evaluate(() => sportheads.snapshot())).targetScore, 7, 'the DOM cannot silently change application configuration');
       assert.equal((await page.evaluate(() => sportheads.snapshot())).pitch, 8);

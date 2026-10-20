@@ -4,7 +4,7 @@ export const PLAYER_COUNT = PLAYER_NAMES.length;
 // Keep the original atlas intact; new portraits use their own transparent sheet.
 export const AVATAR_SOURCE_FRAMES = [
   ...Array.from({ length: 12 }, (_, index) => ({
-    file: 'modern-players-parody.png', sourceRect: [(index % 4) / 4, Math.floor(index / 4) / 3, 1 / 4, 1 / 3],
+    file: 'modern-players.png', sourceRect: [(index % 4) / 4, Math.floor(index / 4) / 3, 1 / 4, 1 / 3],
   })),
   ...Array.from({ length: 2 }, (_, index) => ({
     file: 'pierre-vilma.png', sourceRect: [index / 2, 0, 1 / 2, 1], flipX: index === 0,

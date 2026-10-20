@@ -1,7 +1,8 @@
 const assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const { goToSetup, setTarget, setBalance } = require('./setup-browser.cjs');
-const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-setup.cjs URL [--local-only]');
+// Friends' caricatures are only listed with a group link.
+const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 'Usage: node scripts/check-setup.cjs URL [--local-only]');
 (async () => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
   const pages = [], errors = [];

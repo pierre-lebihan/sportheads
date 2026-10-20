@@ -13,8 +13,8 @@ import { loadAssets, prepareMatchAssets, matchAssetsReady, drawGame, drawBonusPi
 import './vendor/peerjs-1.5.5.min.js';
 import { normalizeCode, validCode } from "./rooms.js";
 
-import { PLAYER_NAMES, createCharacterSelection } from "./selection.js";
-import { PLAYER_COUNT } from './players.js';
+import { createCharacterSelection } from "./selection.js";
+import { syncSkinOptions } from './roster-access.js';
 import { isBonusPitch } from './engine-contract.js';
 import { BALANCED_PITCHES } from './pitch-geometry.js';
 
@@ -58,9 +58,7 @@ for (const level of AI_LEVELS) {
 }
 const difficulty = () => AI_LEVELS.find(level => level.id === app.value.config.difficulty);
 
-for (const [id, selected] of [['skin-left', 1], ['skin-right', 2]]) {
-  for (let i = 1; i <= PLAYER_COUNT; i++) {const option = new Option(PLAYER_NAMES[i - 1], i);option.selected = i === selected;$('#' + id).add(option);}
-}
+for (const [id, selected] of [['skin-left', 1], ['skin-right', 2]]) {syncSkinOptions($('#' + id), [1, 2]);$('#' + id).value = selected;}
 const characterSelection = createCharacterSelection($('#player-choice'));
 const engine = () => app.value.mode === 'online' && app.value.role === 'guest' ? network.engine : core;
 const renderEngine = () => app.value.mode === 'online' && app.value.role === 'guest' && app.value.started && !app.value.paused && app.value.connected && engine().game_value(MATCH.phase) === PHASE.playing ? network.viewEngine : engine();

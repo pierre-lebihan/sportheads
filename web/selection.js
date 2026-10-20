@@ -1,6 +1,7 @@
 import { drawGame, drawSprite, drawPitch, getAssets } from './render.js';
 import { BONUS_PITCH_INFO } from './pitch-geometry.js';
 import { PLAYER_NAMES } from './players.js';
+import { isVisible } from './roster-access.js';
 import { PLAYABLE_PITCH_IDS, PLAYABLE_BONUS_PITCH_IDS } from './engine-contract.js';
 
 export { PLAYER_NAMES } from './players.js';
@@ -35,9 +36,10 @@ export function createCharacterSelection(container) {
     });
     button.addEventListener('keydown', event => {
       const columns = getComputedStyle($('#character-roster')).gridTemplateColumns.split(' ').length;
-      const delta = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columns, ArrowDown: columns, Home: -index, End: buttons.length - 1 - index }[event.key];
+      const shown = buttons.filter(other => !other.hidden), position = shown.indexOf(button);
+      const delta = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columns, ArrowDown: columns, Home: -position, End: shown.length - 1 - position }[event.key];
       if (delta === undefined) return;
-      event.preventDefault(); buttons[Math.max(0, Math.min(buttons.length - 1, index + delta))].focus();
+      event.preventDefault(); shown[Math.max(0, Math.min(shown.length - 1, position + delta))].focus();
     });
     $('#character-roster').append(button); return button;
   });
@@ -60,6 +62,7 @@ export function createCharacterSelection(container) {
     $('#roster-target').textContent = 'Choix pour ' + (side ? 'Rouge' : 'Bleu');
     for (const [index, button] of buttons.entries()) {
       const camps = skins.flatMap((skin, camp) => skin === index + 1 ? [camp ? 'Rouge' : 'Bleu'] : []);
+      button.hidden = !isVisible(index + 1, skins);
       button.disabled = selects[side].disabled;
       button.dataset.blue = String(skins[0] === index + 1); button.dataset.red = String(skins[1] === index + 1);
       button.setAttribute('aria-pressed', String(skins[side] === index + 1));

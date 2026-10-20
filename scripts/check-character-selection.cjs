@@ -1,7 +1,8 @@
 // Exercise the visible portrait grid, including actual WebRTC lobby updates.
 const assert = require('node:assert/strict');
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character-selection.cjs URL [--local-only]');
+const publicUrl = process.argv[2]; assert.ok(publicUrl, 'Usage: node scripts/check-character-selection.cjs URL [--local-only]');
+const url = publicUrl + '?groupe=tout';
 (async () => {
   const chrome = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
   const safari = await webkit.launch({ headless: true });
@@ -17,6 +18,22 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character
   const tile = (page, id) => page.locator(`[data-character="${id}"]`);
   const skins = page => page.evaluate(() => sportheads.renderState().skins);
   try {
+    {
+      // Public view: only the 12 pros; a group link unlocks the friends and is remembered.
+      const page = await pageAt(chrome, publicUrl);
+      await page.click('#play-local');
+      assert.equal(await page.locator('.character-tile:visible').count(), 12);
+      assert.equal(await page.locator('#skin-left option').count(), 12);
+      await page.goto(url); await page.waitForFunction(() => window.ready || window.loadError);
+      assert.equal(new URL(page.url()).search, '', 'group code leaves the address bar');
+      await page.goto(publicUrl); await page.waitForFunction(() => window.ready || window.loadError);
+      await page.click('#play-local');
+      assert.equal(await page.locator('.character-tile:visible').count(), 23);
+      await page.goto(publicUrl + '?groupe=aucun'); await page.waitForFunction(() => window.ready || window.loadError);
+      await page.click('#play-local');
+      assert.equal(await page.locator('.character-tile:visible').count(), 12);
+      await page.context().close();
+    }
     for (const browser of [chrome, safari]) {
       const page = await pageAt(browser);
       await page.click('#play-local');
@@ -65,10 +82,11 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character
     }
     if (process.argv.includes('--local-only')) {
       assert.deepEqual(errors, []);
-      console.log(JSON.stringify({ passed: true, localOnly: true, checks: ['23 visible portraits', 'local and AI choices', 'random and keyboard selection', 'both camp markers', 'mobile layouts in Chromium and WebKit', 'characters preserved into the match'] }));
+      console.log(JSON.stringify({ passed: true, localOnly: true, checks: ['12 public portraits', 'group link unlocks and forgets', '23 visible portraits', 'local and AI choices', 'random and keyboard selection', 'both camp markers', 'mobile layouts in Chromium and WebKit', 'characters preserved into the match'] }));
       return;
     }
-    const host = await pageAt(chrome), guest = await pageAt(safari);
+    // The guest has no group link: the host's hidden pick must still show and play.
+    const host = await pageAt(chrome), guest = await pageAt(safari, publicUrl);
     await host.click('#play-online'); await host.click('#create-room');
     await host.waitForFunction(() => /^[A-HJ-NP-Z2-9]$/.test(document.querySelector('#room-code').textContent));
     const code = await host.locator('#room-code').innerText();
@@ -89,9 +107,10 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character
     assert.equal(await tile(host, 6).getAttribute('data-red'), 'true');
     await host.screenshot({ path: 'evidence/character-selection-online-host.png' });
     await guest.screenshot({ path: 'evidence/character-selection-online-guest.png' });
-    await tile(host, 23).click(); await tile(guest, 14).click();
-    await Promise.all([host, guest].map(page => page.waitForFunction(() => document.querySelector('#fighter-name-0').textContent === 'Vilma Dreadlocks' && document.querySelector('#fighter-name-1').textContent === 'Vilma')));
-    assert.deepEqual(await skins(host), [23, 14]); assert.deepEqual(await skins(guest), [23, 14]);
+    await tile(host, 23).click(); await tile(guest, 9).click();
+    await Promise.all([host, guest].map(page => page.waitForFunction(() => document.querySelector('#fighter-name-0').textContent === 'Vilma Dreadlocks' && document.querySelector('#fighter-name-1').textContent === 'Achraf Hakimi')));
+    assert.deepEqual(await skins(host), [23, 9]); assert.deepEqual(await skins(guest), [23, 9]);
+    assert.equal(await tile(guest, 23).isVisible(), true); assert.equal(await tile(guest, 14).isVisible(), false);
     assert.equal(await guest.locator('#setup-next').isVisible(), false);
     await host.click('#setup-next');
     await guest.waitForFunction(() => sportheads.snapshot().setupStep === 'pitch');
@@ -103,13 +122,13 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-character
     await guest.waitForFunction(() => sportheads.snapshot().setupStep === 'players');
     assert.equal(await guest.locator('#fighter-name-1').innerText(), 'Vilma Dreadlocks');
     assert.equal(await tile(guest, 23).getAttribute('aria-pressed'), 'true');
-    await tile(guest, 14).click();
-    await host.waitForFunction(() => document.querySelector('#skin-right').value === '14');
+    await tile(guest, 9).click();
+    await host.waitForFunction(() => document.querySelector('#skin-right').value === '9');
     await host.click('#setup-next'); await host.click('#setup-next'); await host.click('#start');
     await guest.waitForFunction(() => sportheads.snapshot().started);
-    assert.deepEqual(await skins(host), [23, 14]); assert.deepEqual(await skins(guest), [23, 14]);
+    assert.deepEqual(await skins(host), [23, 9]); assert.deepEqual(await skins(guest), [23, 9]);
     await guest.screenshot({ path: 'evidence/vilma-dreadlocks-original-online-match.png' });
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, checks: ['23 visible portraits', 'choose either camp in local and AI', 'shared character markers', 'random targets the correct camp', 'keyboard', '320/390/844/1280 layout in Chrome and WebKit', 'live bidirectional choices before validation', 'online ownership', 'host validation and guest compact choice'] }));
+    console.log(JSON.stringify({ passed: true, checks: ['23 visible portraits', 'choose either camp in local and AI', 'shared character markers', 'random targets the correct camp', 'keyboard', '320/390/844/1280 layout in Chrome and WebKit', 'live bidirectional choices before validation', 'online ownership', 'host validation and guest compact choice', 'hidden host pick shown to a public guest'] }));
   } finally { await Promise.all([chrome.close(), safari.close()]); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

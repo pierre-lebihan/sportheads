@@ -4,6 +4,7 @@ import { AI_LEVELS } from './opponent.js';
 import { matchAssetsReady } from './assets.js';
 import { renderSetup } from './setup-ui.js';
 import { updateSelectionPreviews, updatePitchChoices } from './selection.js';
+import { syncSkinOptions } from './roster-access.js';
 
 // Only this view projects application state into controls and menus.
 export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerUpdateNeeded, hasTouch, touch, balancing, characterSelection, clearInput, audio, randomChoices }) {
@@ -20,7 +21,7 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   if (uiKey === lastUiKey) return;
   lastUiKey = uiKey;
   $('#join-code').value = app.value.joinCode;
-  $('#skin-left').value = config.skins[0]; $('#skin-right').value = config.skins[1];
+  for (const [side, id] of ['skin-left', 'skin-right'].entries()) { syncSkinOptions($('#' + id), config.skins); $('#' + id).value = config.skins[side]; }
   updatePitchChoices($('#pitch'), config.bonusPitches);
   $('#bonus-pitches').checked = config.bonusPitches;
   $('#pitch').value = config.pitch; $('#target-score').value = config.targetScore; $('#bonuses').value = config.bonusMode;

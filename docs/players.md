@@ -45,7 +45,14 @@ Hakimi, Nuno Mendes, Van Dijk et Donnarumma, plus Pierre, Vilma, Thibaud, Marie,
 corps physiques et même hauteur de référence pour la condition de saut.
 Les différences de niveau proviennent uniquement des aides et des bonus.
 
-La sélection présente les deux portraits face à face et une grille de 23 personnages.
+La sélection présente les deux portraits face à face et une grille de personnages.
+En public, seuls les 12 joueurs pros apparaissent. Les caricatures de potes
+s’affichent avec un lien de groupe, retenu ensuite sur l’appareil :
+`?groupe=rennes`, `?groupe=insa`, `?groupe=famille` ou `?groupe=tout` (tout
+afficher), et `?groupe=aucun` pour revenir à la vue publique. Les groupes sont
+définis dans `web/roster-access.js`. C’est un simple masquage : les images restent
+dans `portraits.webp` et dans le dépôt public. En ligne, un personnage caché choisi
+par l’adversaire reste affiché et jouable.
 En local et contre l’IA, touchez le camp Bleu ou Rouge puis une case pour choisir
 son personnage. Le bouton Aléatoire reste disponible pour chaque camp. Les repères
 Bleu/Rouge indiquent les deux choix, y compris quand ils portent sur la même case.

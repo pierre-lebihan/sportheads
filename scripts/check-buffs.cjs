@@ -1,7 +1,8 @@
 const assert = require('node:assert/strict');
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const { goToSetup, setBalance, setManualBuffs, setTarget } = require('./setup-browser.cjs');
-const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-buffs.cjs URL');
+// Friends' caricatures are only listed with a group link.
+const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 'Usage: node scripts/check-buffs.cjs URL');
 (async () => {
   const chrome = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
   const safari = await webkit.launch({ headless: true });

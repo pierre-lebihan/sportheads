@@ -104,6 +104,7 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
 .duel-selection[data-selection-side="1"] #roster-target{color:var(--red)}
 .character-roster{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
 .character-tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-width:0;padding:4px 3px 7px;border:1px solid #c6d5e1;border-radius:3px;background:#edf1f5;touch-action:manipulation}
+.character-tile[hidden]{display:none}
 .character-tile canvas{display:block;width:66px;height:66px;max-width:100%;object-fit:contain;pointer-events:none}
 .character-name{font-size:10px;line-height:1.2;color:#34536f;overflow-wrap:anywhere;pointer-events:none}
 .character-marker{position:absolute;top:3px;width:17px;height:17px;display:none;align-items:center;justify-content:center;border-radius:2px;color:#fff;font-size:10px;font-weight:bold;pointer-events:none}

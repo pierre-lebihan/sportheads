@@ -127,6 +127,40 @@ la parité du vrai Worker, les limites de rattrapage, les transitions de sortie
 et le repli sans Worker. Les timings de performance restent des mesures
 diagnostiques, pas un seuil de FPS dépendant de la machine du runner.
 
+## Fluidité sur iPhone
+
+Sur iPhone, tous les navigateurs (Chrome compris) utilisent WebKit. Un match
+complet de 9 buts contre l'IA, mesuré le 20 octobre 2026 dans Chromium avec
+le fil principal ralenti ×4, n'a montré aucune accumulation : le moteur
+reconstruit son monde à chaque but, le tas restait vers 5 Mo et les coûts par
+image étaient stables. Les corrections suivantes visent donc les coûts propres
+à WebKit sur téléphone, sans toucher au moteur Rust ni au WASM :
+
+- **Son.** Les bruitages ne créent plus un élément `Audio` à chaque événement
+  (environ 220 par match). Un seul `AudioContext` décode chaque son une fois,
+  au premier geste, puis le rejoue. Le volume est appliqué par un gain, car iOS
+  ignore `volume` sur les éléments audio. La musique reprend où elle s'était
+  arrêtée après une pause. `navigator.audioSession` garde, quand il existe,
+  le comportement précédent avec le bouton silencieux de l'iPhone.
+- **Dessin.** WebKit redessine un SVG à chaque `drawImage`. Chaque image de
+  sprite (jusqu'à 640 px) est désormais rasterisée une fois en ×2, puis
+  réutilisée. Les grands décors restent dans le cache de scène existant. Le halo
+  flou des bonus V2 est aussi mis en cache.
+- **Cadence.** La physique reste à 30 ticks exacts par seconde. Avant, un écran
+  à 60 Hz affichait 0 ou 2 ticks par image dès que son horloge variait.
+  `web/tick-blend.js` affiche désormais, entre les deux derniers ticks, la
+  position correspondant au retard de simulation. Les téléportations, les
+  changements de taille et les nouvelles parties ne sont jamais interpolés.
+  L'IA, le réseau et les règles lisent toujours l'état exact.
+- **Tactile.** La barre d'adresse d'iOS redimensionne la page en hauteur pendant
+  le jeu, ce qui relâchait toutes les commandes. Seul un changement de largeur
+  (rotation, écran partagé) les relâche désormais. Le joystick lit la mise en
+  page une fois avant d'écrire ses styles.
+
+Ces changements n'ont pas encore été mesurés sur un iPhone physique. Pour le
+faire, comparez deux diagnostics **Fluidité du jeu**, l'un en début de match et
+l'autre en fin de match.
+
 ## Terrains bonus
 
 `data/bonus-pitches.json` possède les noms, descriptions et géométries des

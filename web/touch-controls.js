@@ -17,17 +17,19 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
     return result;
   }
   function paint(notify = true) {
-    const held = contacts();
+    const held = contacts(), sticks = [...root.querySelectorAll('[data-joystick]')];
+    // Read the layout before writing classes and styles, once per paint.
+    const travels = sticks.map(stick => Math.max(0, stick.clientWidth / 2 - 29));
     for (const button of buttons) {
       const index = +button.closest('[data-side]').dataset.side, action = +button.dataset.action;
       const pressed = (layout === 'three-fingers' || !button.closest('[data-movement]'))
         && held.some(contact => contact.side === index && contact.action === action);
       button.classList.toggle('pressed', pressed); button.setAttribute('aria-pressed', String(pressed));
     }
-    for (const stick of root.querySelectorAll('[data-joystick]')) {
+    for (const [position, stick] of sticks.entries()) {
       const index = +stick.closest('[data-side]').dataset.side;
       const contact = held.find(contact => contact.side === index && contact.movement);
-      const travel = Math.max(0, stick.clientWidth / 2 - 29);
+      const travel = travels[position];
       stick.style.setProperty('--stick-x', `${(contact?.vector?.x || 0) * travel}px`);
       stick.style.setProperty('--stick-y', `${(contact?.vector?.y || 0) * travel}px`);
       stick.dataset.mask = String((contact?.action || 0) | (contact ? (pendingJumps >> (index * 4)) & 4 : 0));
@@ -129,7 +131,10 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
   listen(root, 'lostpointercapture', release);
   listen(window, 'pointerup', release, true); listen(window, 'pointercancel', release, true);
   listen(window, 'blur', clear); listen(window, 'pagehide', clear); listen(window, 'orientationchange', clear);
-  listen(window, 'resize', clear);
+  // iOS resizes the viewport whenever its toolbar slides in or out. Only a new
+  // width (rotation, split view) moves the pads under the fingers.
+  let viewportWidth = innerWidth;
+  listen(window, 'resize', () => { if (innerWidth !== viewportWidth) { viewportWidth = innerWidth; clear(); } });
   listen(document, 'visibilitychange', () => { if (document.hidden) clear(); });
   return {
     get layout() { return layout; },

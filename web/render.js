@@ -65,6 +65,19 @@ export function drawBonusPickup(ctx, kind, x, y, scale = 1) {
   ctx.restore();
 }
 
+// The pickup's blurred halo is costly to repaint on each frame. Shadow blur
+// ignores transforms, so the cache keeps the in-game scale of 1.
+const PICKUP_EXTENT = 44, pickups = new Map();
+function drawCachedPickup(ctx, kind, x, y) {
+  let raster = pickups.get(kind);
+  if (!raster) {
+    raster = document.createElement('canvas'); raster.width = raster.height = PICKUP_EXTENT * 2;
+    drawBonusPickup(raster.getContext('2d'), kind, PICKUP_EXTENT, PICKUP_EXTENT);
+    pickups.set(kind, raster);
+  }
+  ctx.drawImage(raster, x - PICKUP_EXTENT, y - PICKUP_EXTENT);
+}
+
 function drawBonusArena(ctx, bonus, heights) {
   if (bonus.trampoline > 0 || bonus.trampolineFlash > 0) {
     ctx.save(); ctx.strokeStyle='#ad52b5'; ctx.lineWidth=3; ctx.fillStyle='#c76acf55';
@@ -78,6 +91,22 @@ function drawBonusArena(ctx, bonus, heights) {
     ctx.strokeStyle=(side ? bonus.redShield : bonus.blueShield)>0?'#30c3e7':'#f1b550';ctx.lineWidth=4;ctx.globalAlpha=(side ? bonus.redShield : bonus.blueShield)>0?.8:(side ? bonus.redShieldFlash : bonus.blueShieldFlash)/12;
     ctx.setLineDash((side ? bonus.redShield : bonus.blueShield)>0?[9,4]:[3,8]);ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,460);ctx.stroke();ctx.restore();
   }
+}
+
+// WebKit, which every iOS browser uses, renders the SVG again on each drawImage.
+// Moving sprites are rasterized once, with headroom for enlarged bonuses; large
+// backdrop art is excluded because the cached scene already holds it.
+const RASTER_SCALE = 2, RASTER_LIMIT = 640, rasters = new WeakMap();
+function rasterFor(frame, image) {
+  if (frame.sourceRect || !frame.file.endsWith('.svg') || frame.width > RASTER_LIMIT || frame.height > RASTER_LIMIT) return null;
+  let raster = rasters.get(image);
+  if (!raster) {
+    raster = document.createElement('canvas');
+    raster.width = Math.ceil(frame.width * RASTER_SCALE); raster.height = Math.ceil(frame.height * RASTER_SCALE);
+    raster.getContext('2d').drawImage(image, 0, 0, frame.width * RASTER_SCALE, frame.height * RASTER_SCALE);
+    rasters.set(image, raster);
+  }
+  return raster;
 }
 
 /** Frame numbers are 1-based, like MovieClip.gotoAndStop. Width/height default
@@ -99,7 +128,11 @@ export function drawSprite(ctx, name, number, x, y, width, height, angle = 0, op
     const [x, y, w, h] = frame.sourceRect;
     ctx.drawImage(image, x * image.naturalWidth, y * image.naturalHeight, w * image.naturalWidth, h * image.naturalHeight,
       -frame.originX, -frame.originY, frame.width, frame.height);
-  } else ctx.drawImage(image, -frame.originX, -frame.originY, frame.width, frame.height);
+  } else {
+    const raster = rasterFor(frame, image);
+    if (raster) ctx.drawImage(raster, -frame.originX, -frame.originY, raster.width / RASTER_SCALE, raster.height / RASTER_SCALE);
+    else ctx.drawImage(image, -frame.originX, -frame.originY, frame.width, frame.height);
+  }
   ctx.restore();
   return true;
 }
@@ -211,7 +244,7 @@ export function drawGame(ctx, engine, state = {}) {
     bodies.push({ i, x: engine.game_body_value(i, BODY.x), y: engine.game_body_value(i, BODY.y), angle: engine.game_body_value(i, BODY.angle), r: engine.game_body_value(i, BODY.radius), role: engine.game_body_value(i, BODY.role) });
   }
   for (const pu of state.powerups || []) {
-    if (pu.kind > 18) drawBonusPickup(ctx, pu.kind, pu.x, pu.y);
+    if (pu.kind > 18) drawCachedPickup(ctx, pu.kind, pu.x, pu.y);
     else drawSprite(ctx, `pu-${pu.kind}`, 1, pu.x, pu.y);
   }
   for (const effect of state.effects || []) {
@@ -268,21 +301,70 @@ export function drawGame(ctx, engine, state = {}) {
 }
 
 // Caller invokes once per simulation event, after a user gesture unlocks audio.
+// Sounds share one AudioContext and are decoded once: iOS gives every
+// HTMLAudioElement its own media player and ignores its volume.
 export function createAudio() {
-  let unlocked = false;
-  const players = new Map();
-  const effects = new Set();
+  const Context = globalThis.AudioContext || globalThis.webkitAudioContext;
+  const decoded = new Map(), loading = new Map(), loops = new Map(), effects = new Set();
+  let context = null;
+  function load(name) {
+    if (!loading.has(name)) loading.set(name, fetch(new URL(getAssets().sounds[name], base))
+      .then(response => { if (!response.ok) throw Error(response.statusText); return response.arrayBuffer(); })
+      // The callback form also works with older Safari releases.
+      .then(data => new Promise((resolve, reject) => context.decodeAudioData(data, resolve, reject)))
+      .then(buffer => { decoded.set(name, buffer); }, () => { loading.delete(name); }));
+    return loading.get(name);
+  }
+  function start(buffer, volume, loop, offset = 0) {
+    const source = context.createBufferSource(), gain = context.createGain();
+    source.buffer = buffer; source.loop = loop; gain.gain.value = volume;
+    source.connect(gain); gain.connect(context.destination);
+    source.start(0, offset);
+    return { source, gain, startedAt: context.currentTime - offset };
+  }
+  function startLoop(name, music) {
+    const buffer = decoded.get(name);
+    if (!buffer) { load(name).then(() => { if (music.wanted && !music.node && decoded.has(name)) startLoop(name, music); }); return; }
+    music.node = start(buffer, music.volume, true, music.offset);
+  }
   return {
-    unlock() { unlocked = true; },
-    play(name, { loop = false, volume = .5 } = {}) {
-      if (!unlocked || !getAssets()?.sounds[name]) return;
-      const player = loop && players.has(name) ? players.get(name) : new Audio(new URL(getAssets().sounds[name], base).href);
-      player.loop = loop; player.volume = volume;
-      if (loop) players.set(name, player);
-      else { effects.add(player); player.addEventListener('ended', () => effects.delete(player), { once: true }); }
-      player.play().catch(() => effects.delete(player));
-      return player;
+    unlock() {
+      if (!Context) return;
+      if (!context) {
+        context = new Context();
+        // Keep the previous HTMLAudio behaviour: play even with the ringer switch off.
+        if (navigator.audioSession) try { navigator.audioSession.type = 'playback'; } catch { /* Optional API. */ }
+        for (const name of Object.keys(getAssets()?.sounds || {})) if (!name.startsWith('music-')) load(name);
+      }
+      if (context.state !== 'running') context.resume().catch(() => {});
     },
-    stopAll() { for (const player of [...players.values(), ...effects]) player.pause(); effects.clear(); },
+    play(name, { loop = false, volume = .5 } = {}) {
+      if (!context || !getAssets()?.sounds[name]) return;
+      // iOS interrupts the context after calls or app switches.
+      if (context.state !== 'running') context.resume().catch(() => {});
+      if (loop) {
+        const music = loops.get(name) || { offset: 0, node: null };
+        loops.set(name, music); music.volume = volume; music.wanted = true;
+        if (music.node) music.node.gain.gain.value = volume; else startLoop(name, music);
+        return;
+      }
+      const buffer = decoded.get(name);
+      if (!buffer) { load(name); return; }
+      const node = start(buffer, volume, false);
+      effects.add(node);
+      node.source.onended = () => { effects.delete(node); node.gain.disconnect(); };
+    },
+    stopAll() {
+      for (const music of loops.values()) {
+        music.wanted = false;
+        if (!music.node) continue;
+        // Resume the match music where it stopped, like a paused media element.
+        const { source, gain, startedAt } = music.node;
+        music.offset = (context.currentTime - startedAt) % source.buffer.duration;
+        source.stop(); gain.disconnect(); music.node = null;
+      }
+      for (const node of effects) node.source.stop();
+      effects.clear();
+    },
   };
 }

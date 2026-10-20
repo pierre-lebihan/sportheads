@@ -5,9 +5,10 @@ import { createRoomSession } from './room-session.js';
 import { createPlannerService } from './planner.js';
 import { createPerformanceMonitor } from './performance.js';
 import { createFixedStepper } from './fixed-step.js';
+import { createTickBlend } from './tick-blend.js';
 import { createGameUI } from './game-ui.js';
 import { createAppStore } from './app-state.js';
-import { PHASE, MATCH, readMatch } from "./engine-contract.js";
+import { PHASE, MATCH, TICK_MS, readMatch } from "./engine-contract.js";
 import { loadAssets, prepareMatchAssets, matchAssetsReady, drawGame, drawBonusPickup, createAudio } from './render.js';
 import './vendor/peerjs-1.5.5.min.js';
 import { normalizeCode, validCode } from "./rooms.js";
@@ -38,7 +39,7 @@ for (const bonus of NEW_BONUSES) {
   row.append(icon, title, detail);$('#v2-bonus-list').append(row);
 }
 let planner;
-let core, network;
+let core, network, blend;
 
 let opponent = null;
 
@@ -270,14 +271,15 @@ function animate(time) {
     const opponentMask = app.value.mode === 'ai' ? monitor.measure('aiMain', () => opponent.step(core)) << 4
       : app.value.mode === 'online' ? network.inputMask() : 0;
     const mask = human | opponentMask;
-    monitor.measure('physics', () => core.game_tick(mask));
+    monitor.measure('physics', () => core.game_tick(mask)); blend.capture();
     touch.consumeJumps(); network.consumedInput(); playSounds(core.game_value(MATCH.sounds));
   });
   if (advanced) broadcast();
   if (running) update();
   network.heartbeat();
   network.advance(time);
-  monitor.measure('render', () => drawGame(ctx, renderEngine(), renderState()));
+  const view = running && renderEngine() === core ? blend.view(clock.debtMs / TICK_MS) : renderEngine();
+  monitor.measure('render', () => drawGame(ctx, view, renderState()));
   monitor.record('simulationDebt', clock.debtMs);
   requestAnimationFrame(animate);
 }
@@ -293,7 +295,7 @@ try {
   const response = await fetch('./physics-core.wasm');if (!response.ok) throw new Error('Chargement du moteur impossible.');
   const [wasm] = await Promise.all([WebAssembly.instantiateStreaming(response), loadAssets()]);
   planner = createPlannerService(wasm.instance.exports, wasm.module, monitor);
-  core = planner.engine; core.game_reset(1);window.ready = true;
+  core = planner.engine; blend = createTickBlend(core); core.game_reset(1);window.ready = true;
   const code = normalizeCode(new URL(location.href).searchParams.get('room') || '');
   if (validCode(code)) {selectMode('online'); app.dispatch({ type: 'room.code-edited', value: code }); roomStatus('Code reçu. Cliquez sur Rejoindre pour entrer dans la salle.');}
   update();

@@ -6,7 +6,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   const browser=await chromium.launch({channel:'chrome',headless:true,args:['--no-proxy-server']});
   try{
     const page=await browser.newPage({viewport:{width:1280,height:1024}});const errors=[];
-    await page.addInitScript(()=>{const OriginalAudio=window.Audio;window.playedAudio=[];window.Audio=class extends OriginalAudio{constructor(...args){super(...args);window.playedAudio.push(this);}};});
+    await page.addInitScript(()=>{window.playedAudio=[];const start=AudioBufferSourceNode.prototype.start;AudioBufferSourceNode.prototype.start=function(...args){const sound={loop:this.loop,decoded:!!this.buffer,playing:true};this.addEventListener('ended',()=>{sound.playing=false;});window.playedAudio.push(sound);return start.apply(this,args);};});
     page.on('pageerror',e=>errors.push(e.message));
     page.on('requestfailed',r=>errors.push(r.url()));
     page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`);});
@@ -76,9 +76,10 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
     // A real scoring frame must play decoded audio, and mute must stop the cheer too.
     await page.evaluate(()=>sportheads.engine.game_probe_start(40,400,0,0));
     await page.waitForFunction(()=>sportheads.snapshot().phase===2);
-    await page.waitForFunction(()=>window.playedAudio.some(a=>!a.loop&&!a.paused&&a.readyState>=2));
+    await page.waitForFunction(()=>window.playedAudio.some(a=>!a.loop&&a.playing&&a.decoded));
     await page.click('#sound');
-    assert.ok(await page.evaluate(()=>window.playedAudio.every(a=>a.paused)),'mute stops music and active effects');
+    // Stopped Web Audio sources report their end asynchronously.
+    await page.waitForFunction(()=>window.playedAudio.every(a=>!a.playing),null,{timeout:2000});
     await page.click('#sound');
     // Leaving the page must clear pressed keys and pause its clock.
     await page.evaluate(()=>window.dispatchEvent(new Event('blur')));

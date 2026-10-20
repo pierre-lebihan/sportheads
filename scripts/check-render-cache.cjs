@@ -25,7 +25,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-render-ca
         reference.drawImage = function(image, ...args) {
           // Sprite rasters are canvases too; only the 800 x 540 scene is the cached backdrop.
           if (!(image instanceof HTMLCanvasElement) || image.width !== 800 || image.height !== 540) return original.call(this, image, ...args);
-          r.drawSprite(this, 'stadium', state.stadiumFrame || 3, 4.45, -25.1, undefined, undefined, 0, { filter: 'contrast(0.3846153846153846) brightness(1.3)' });
+          r.drawStadium(this, state.stadiumFrame || 3);
           r.drawSprite(this, 'bottom-bar', 1, 0, 0);
           r.drawSprite(this, 'ground-texture', 1, 400, 470, 800, 20);
           if (active && state.blueprintFrame) r.drawPitch(this, state.blueprintFrame, state.balancedPitches);

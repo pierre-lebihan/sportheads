@@ -12,7 +12,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-balanced-
       const checked=await page.evaluate(async()=>{
         const source=new URL(document.querySelector('script[type="module"]').src);
         const module=name=>{const u=new URL(source);u.pathname=u.pathname.replace('game.js',name);return import(u.href);};
-        const {ORIGINAL_PITCHES,BONUS_PITCH_INFO}=await module('pitch-geometry.js'), {drawPitch,drawGame,drawSprite}=await module('render.js'), {PITCHES}=await module('selection.js');
+        const {ORIGINAL_PITCHES,BONUS_PITCH_INFO}=await module('pitch-geometry.js'), {drawPitch,drawGame,drawSprite,drawStadium}=await module('render.js'), {PITCHES}=await module('selection.js');
         const e=sportheads.engine, canvas=document.createElement('canvas');canvas.width=800;canvas.height=480;
         const ctx=canvas.getContext('2d'), checked=[];
         for(const balanced of [true,false]) for(const id of balanced ? [...PITCHES,...BONUS_PITCH_INFO].map(p=>p.id) : Object.keys(ORIGINAL_PITCHES).map(Number)) {
@@ -43,7 +43,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-balanced-
         // while their playable diagonal faces must retain the same boundary.
         const baseline=document.createElement('canvas');baseline.width=800;baseline.height=540;
         const base=baseline.getContext('2d');
-        drawSprite(base,'stadium',3,4.45,-25.1,undefined,undefined,0,{filter:'contrast(0.3846153846153846) brightness(1.3)'});
+        drawStadium(base,3);
         drawSprite(base,'bottom-bar',1,0,0);drawSprite(base,'ground-texture',1,400,470,800,20);
         const comparison=document.createElement('canvas');comparison.width=800;comparison.height=480;
         const comparisonContext=comparison.getContext('2d');comparisonContext.drawImage(baseline,0,0);

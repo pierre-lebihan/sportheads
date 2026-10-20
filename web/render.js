@@ -197,11 +197,15 @@ function stadiumLayer(frame, image) {
   return layer;
 }
 
+export function drawStadium(ctx, number = 3) {
+  const frame = getAssets()?.sprites.stadium?.frames[number - 1], image = frame && imageFor(frame);
+  if (image?.complete && image.naturalWidth) ctx.drawImage(stadiumLayer(frame, image), 0, 0);
+}
+
 function paintBackground(ctx, state, pitch) {
   // bgPitch's groundBg child is placed at (4.45,-25.1) in the original scene.
   // Root bgPitch has multiplier128/256 and additive102/255 on RGB channels.
-  const frame = getAssets()?.sprites.stadium?.frames[(state.stadiumFrame || 3) - 1], image = frame && imageFor(frame);
-  if (image?.complete && image.naturalWidth) ctx.drawImage(stadiumLayer(frame, image), 0, 0);
+  drawStadium(ctx, state.stadiumFrame || 3);
   drawSprite(ctx, 'bottom-bar', 1, 0, 0);
   drawSprite(ctx, 'ground-texture', 1, 400, 470, 800, 20);
   drawArenaCorners(ctx);

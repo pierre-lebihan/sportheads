@@ -33,6 +33,7 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   $('#touch-layout-help').textContent = app.value.touchLayout === 'thumbs' ?
   'Pouce gauche : orientez le joystick pour marcher. Une remontée déclenche un seul saut, même en diagonale. Revenez au centre ou dans la moitié basse, puis remontez pour resauter. Pouce droit : Tir.' :
   'Pouce gauche : déplacement. Index gauche : Saut, en haut à gauche. Pouce droit : Tir. En local, Rouge a son bouton Saut en haut à droite.';
+  if (app.value.mode !== 'local') $('#touch-layout-help').textContent += ' Le petit bouton Saut au-dessus de Tir déclenche aussi un saut par appui, sans déplacement.';
   $('#measure-performance').disabled = !app.value.started;
   $('#measure-performance-paused').disabled = !app.value.started;
   $('#play-view').disabled = !app.value.started;

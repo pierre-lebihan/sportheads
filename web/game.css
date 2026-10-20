@@ -73,6 +73,9 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
 .stick-guide{position:absolute;font-size:16px;opacity:.45;pointer-events:none}.stick-left{left:7px;top:calc(50% - 8px)}.stick-right{right:7px;top:calc(50% - 8px)}.stick-up{top:7px;left:calc(50% - 8px)}
 .joystick:is([data-mask="1"],[data-mask="5"]) .stick-left,.joystick:is([data-mask="2"],[data-mask="6"]) .stick-right,.joystick:is([data-mask="4"],[data-mask="5"],[data-mask="6"]) .stick-up{opacity:1;font-weight:bold}
 .touch-actions{display:block}.touch-actions button{width:100%;min-height:56px}.touch-controls:not([data-mode="local"]) .touch-pad{grid-template-columns:136px minmax(72px,96px);justify-content:space-between;column-gap:12px}.touch-controls:not([data-mode="local"]) .touch-actions button{min-height:106px;font-size:30px}
+.touch-pad .precision-jump{display:none}
+.touch-controls:is([data-mode="ai"],[data-mode="online"]) .touch-actions{display:flex;flex-direction:column;align-items:center;gap:8px}
+.touch-controls:is([data-mode="ai"],[data-mode="online"]) .touch-actions .precision-jump{display:flex;flex:none;width:64px;height:48px;min-height:48px;font-size:22px;border-radius:8px}
 .touch-controls[data-layout="three-fingers"] .joystick{display:none}
 .touch-controls[data-layout="three-fingers"] .touch-move{height:96px}
 .touch-controls[data-layout="three-fingers"] .touch-move>[data-action="1"],.touch-controls[data-layout="three-fingers"] .touch-move>[data-action="2"]{min-height:96px;height:96px;padding:3px;min-width:44px}

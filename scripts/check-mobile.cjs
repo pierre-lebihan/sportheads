@@ -51,8 +51,10 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
       async hold(actions) {
         points = [];
         for (const [side, action] of actions) {
-          const joystick = await page.locator('#touch-layout').inputValue() === 'thumbs' && action !== 8;
-          const box = await page.locator(`[data-side="${side}"] ${joystick ? '[data-joystick]' : `[data-action="${action}"]`}`).boundingBox();
+          const precise = action === 'precise-jump';
+          const joystick = await page.locator('#touch-layout').inputValue() === 'thumbs' && action !== 8 && !precise;
+          const control = precise ? '.precision-jump' : action === 4 ? '.index-jump' : `[data-action="${action}"]`;
+          const box = await page.locator(`[data-side="${side}"] ${joystick ? '[data-joystick]' : control}`).boundingBox();
           assert.ok(box && box.width >= 44 && box.height >= 44, 'finger-sized visible control');
           points.push({ id: points.length + 1, x: box.x + box.width * (joystick ? action & 1 ? .1 : action & 2 ? .9 : .5 : .5), y: box.y + box.height * (joystick && (action & 4) ? .1 : .5), radiusX: 5, radiusY: 5, force: 1 });
         }
@@ -130,7 +132,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
       assert.ok(b.y < a.y - 10, 'both touch players jump while moving');
     }
     for (const role of [4, 5]) assert.ok(Math.abs(after.find(b => b.role === role).angle - before.find(b => b.role === role).angle) > .1, 'both touch players kick simultaneously');
-    for (const side of [0, 1]) for (const action of [side ? 1 : 2, 4, 8]) assert.equal(await p.locator(`[data-side="${side}"] [data-action="${action}"]`).getAttribute('aria-pressed'), 'true');
+    for (const side of [0, 1]) for (const action of [side ? 1 : 2, 4, 8]) assert.equal(await p.locator(`[data-side="${side}"] ${action === 4 ? '.index-jump' : `[data-action="${action}"]`}`).getAttribute('aria-pressed'), 'true');
     await p.screenshot({ path: 'evidence/mobile-local-portrait.png' });
     await local.moveOutside();
     assert.equal(await p.locator('.touch-pad [data-action="8"].pressed').count(), 2, 'kicks stay held independently while movement leaves the pad');
@@ -248,6 +250,20 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-mobile.cj
     await guest.hold([[1, 4]]); await waitTicks(h, 8);
     assert.equal(await h.evaluate(() => simulationInputs.filter(mask => mask & 64).length), 1, 'a new guest gesture permits another jump');
     await guest.release();
+    for (const [controller, side] of [[host, 0], [guest, 1]]) {
+      const selector = `[data-side="${side}"] .precision-jump`;
+      assert.equal(await controller.page.locator(selector).isVisible(), true);
+      await h.evaluate(() => { simulationInputs.length = 0; });
+      await controller.hold([[side, 'precise-jump']]); await waitTicks(h, 65);
+      assert.equal(await h.evaluate(side => simulationInputs.filter(mask => mask & (4 << (side * 4))).length, side), 1, 'precise jump reaches the host once even while held');
+      assert.equal(await h.evaluate(() => simulationInputs.some(mask => mask & 51)), false, 'precise jump never adds horizontal movement');
+      await controller.release();
+      assert.equal(await controller.page.locator(selector).getAttribute('aria-pressed'), 'false');
+      await h.evaluate(() => { simulationInputs.length = 0; });
+      await controller.hold([[side, 'precise-jump']]); await waitTicks(h, 8);
+      assert.equal(await h.evaluate(side => simulationInputs.filter(mask => mask & (4 << (side * 4))).length, side), 1, 'another tap triggers another precise jump');
+      await controller.release();
+    }
     await h.screenshot({ path: 'evidence/mobile-online-portrait.png' });
     await guest.hold([[1, 1]]); await g.close(); await h.waitForFunction(() => !sportheads.snapshot().connected);
     assert.equal((await state(h)).paused, true); assert.equal(await h.locator('.touch-pad button:enabled').count(), 0);

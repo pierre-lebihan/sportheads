@@ -26,7 +26,7 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       page.on('pageerror', error => errors.push(error.stack || error.message));
       let cdp, active = [];
       if (type === chromium) { cdp = await context.newCDPSession(page); await cdp.send('Emulation.setFocusEmulationEnabled', { enabled: true }); }
-      const movement = '[data-side="0"] [data-movement]', jump = '[data-side="0"] [data-action="4"]', kick = '[data-side="0"] [data-action="8"]';
+      const movement = '[data-side="0"] [data-movement]', jump = '[data-side="0"] .index-jump', precise = '[data-side="0"] .precision-jump', kick = '[data-side="0"] [data-action="8"]';
       const point = (id, selector, x = .5, y = .5) => ({ id, selector, x, y });
       async function gesture(spec) {
         await page.evaluate(() => { inputLog.length = 0; });
@@ -67,6 +67,13 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
             const r = button.getBoundingClientRect(); return r.width >= 44 && r.height >= 44 && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight;
           });
         }), 'every visible control remains finger-sized and on screen');
+        assert.ok(await page.evaluate(() => {
+          const jump = document.querySelector('.touch-pad.blue .precision-jump').getBoundingClientRect();
+          const kick = document.querySelector('.touch-pad.blue [data-action="8"]').getBoundingClientRect();
+          const field = document.querySelector('#field').getBoundingClientRect();
+          const outside = r => r.right <= field.left || r.left >= field.right || r.bottom <= field.top || r.top >= field.bottom;
+          return jump.bottom <= kick.top && jump.width < kick.width && jump.height < kick.height && outside(jump) && outside(kick);
+        }), 'the smaller jump stays above kick, outside the field');
         if (await page.locator('#touch-layout').inputValue() === 'three-fingers') assert.ok(await page.evaluate(() => {
           const j = document.querySelector('.touch-pad.blue .index-jump').getBoundingClientRect(), f = document.querySelector('#field').getBoundingClientRect();
           return j.right <= f.left || j.left >= f.right || j.bottom <= f.top || j.top >= f.bottom;
@@ -78,6 +85,17 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       await page.click('#play-ai'); for (let i = 0; i < 3; i++) await page.click('#setup-next');
       await setTarget(page, 9); await page.selectOption('#bonuses', '0'); await page.click('#start');
       await page.waitForFunction(() => sportheads.snapshot().phase === 1);
+      assert.equal(await page.locator(precise).isVisible(), true);
+      await gesture([point(2, precise)]); await expectJump(0);
+      assert.equal(await page.locator(precise).getAttribute('aria-pressed'), 'true');
+      await page.waitForFunction(tick => sportheads.snapshot().tick > tick + 35, await page.evaluate(() => sportheads.snapshot().tick));
+      assert.equal(await page.evaluate(() => inputLog.filter(mask => mask & 4).length), 1, 'holding the precise jump never repeats');
+      await gesture([]); await expectInput(0);
+      assert.equal(await page.locator(precise).getAttribute('aria-pressed'), 'false');
+      await gesture([point(2, precise), point(3, kick)]); await expectJump(8);
+      await gesture([]); await expectInput(0);
+      await gesture([point(1, movement, .85, .8), point(2, precise), point(3, kick)]); await expectJump(10);
+      await gesture([]); await expectInput(0);
       await gesture([point(1, movement, .15, .8), point(2, kick)]); await expectInput(9);
       await gesture([point(1, movement, .15, .2), point(2, kick)]); await expectJump(9);
       await gesture([point(1, movement, .85, .2), point(2, kick)]); await expectInput(10);

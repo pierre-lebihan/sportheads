@@ -42,6 +42,8 @@ et voit les changements de l’adversaire en direct avant la validation du créa
 - Sur mobile : disposition **2 pouces** (joystick pour le déplacement et le saut)
   ou **3 doigts** (Saut séparé en haut). Choix personnel mémorisé dans
   **Commandes tactiles**, modifiable via les réglages pendant le match. Tir reste manuel.
+  Contre l’IA et en ligne, un petit bouton **Saut** au-dessus de Tir permet aussi
+  un saut sur place par appui, sans répéter le saut si le doigt reste posé.
 - Gauche au clavier : A/Q, D, W/Z et espace.
 - Droite au clavier : flèches et P.
 - Échap : pause. Le match se met aussi en pause à la perte de focus.

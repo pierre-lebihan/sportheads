@@ -12,7 +12,7 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
   const contacts = () => [...touches.values(), ...pointers.values()];
   function masks(kind) {
     const result = [0, 0];
-    for (const contact of contacts()) result[contact.side] |= kind === 'legacy' && contact.gesture ? contact.gesture.mask : contact.action;
+    for (const contact of contacts()) result[contact.side] |= kind === 'legacy' ? (contact.gesture?.mask ?? (contact.pulse ? 4 : contact.action)) : contact.action;
     if (kind === 'pulse') { result[0] |= pendingJumps & 4; result[1] |= (pendingJumps >> 4) & 4; }
     return result;
   }
@@ -23,7 +23,7 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
     for (const button of buttons) {
       const index = +button.closest('[data-side]').dataset.side, action = +button.dataset.action;
       const pressed = (layout === 'three-fingers' || !button.closest('[data-movement]'))
-        && held.some(contact => contact.side === index && contact.action === action);
+        && held.some(contact => contact.side === index && (button.hasAttribute('data-jump-pulse') ? contact.button === button : contact.action === action));
       button.classList.toggle('pressed', pressed); button.setAttribute('aria-pressed', String(pressed));
     }
     for (const [position, stick] of sticks.entries()) {
@@ -53,6 +53,12 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
     if (!enabled) return;
     const pad = target.closest?.('[data-side]'), button = target.closest?.('[data-action]');
     if (!pad || !root.contains(pad) || pad.hidden || button?.disabled) return;
+    if (button?.hasAttribute('data-jump-pulse')) {
+      if (mode === 'local') return;
+      const index = +pad.dataset.side;
+      pendingJumps |= 4 << (index * 4); jumpSequence++;
+      return { button, side: index, action: 0, pulse: true };
+    }
     const movement = target.closest('[data-movement]');
     // In the three-finger layout the same Jump button is placed above the pad.
     if (button && (!movement || (layout === 'three-fingers' && +button.dataset.action === 4))) {

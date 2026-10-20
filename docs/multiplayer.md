@@ -12,7 +12,8 @@ distance. Les deux utilisent le même cœur Rust/WASM, sans IA. Le premier à at
 4. Le créateur prépare les écrans Joueurs, Terrain, puis Paramètres et lance
    la partie. Il joue Bleu ; l'invité joue Rouge.
 
-Le menu principal propose « 2 joueurs », « En ligne », « Matchmaking » et « Contre l’IA ». En local,
+Le menu principal propose « 2 joueurs », « En ligne » et « Contre l’IA ».
+L'écran « En ligne » offre le matchmaking, puis la salle privée. En local,
 la préparation passe par Joueurs → Terrain → Paramètres. En ligne, le créateur
 suit ce même parcours après la création de la salle.
 
@@ -50,7 +51,9 @@ salles, aucun compte ni historique. Il faut partager le code avec son adversaire
 
 ## Matchmaking
 
-Le mode « Matchmaking » du menu trouve un adversaire sans code à partager.
+Le bouton « Lancer le matchmaking », en haut de l'écran « En ligne », trouve
+un adversaire sans code à partager. Le même bouton devient « Arrêter le
+matchmaking » pendant la recherche.
 Le site étant statique, la file d'attente est tenue par le PeerServer public
 déjà utilisé pour les salles, sans serveur à déployer :
 
@@ -70,8 +73,8 @@ Cas particuliers :
   les 1 à 2 secondes. Si l'invité promis n'arrive pas en 20 secondes, ou si sa
   liaison échoue, la salle est proposée au suivant. Un invité qui échoue deux
   fois à rejoindre la même salle ne la redemande plus.
-- « Annuler la recherche » quitte la file immédiatement. Sans adversaire au
-  bout de 3 minutes, la recherche s'arrête et propose de la relancer.
+- « Arrêter le matchmaking » quitte la file immédiatement. Sans adversaire au
+  bout de 3 minutes, la recherche s'arrête et le bouton permet de la relancer.
 - Une page masquée (téléphone verrouillé, autre application) quitte la file et
   la reprend à son retour, car elle ne pourrait pas répondre.
 - Si l'adversaire se déconnecte, la reconnexion automatique des salles s'applique ;

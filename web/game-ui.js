@@ -68,7 +68,6 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   $('#restart').hidden = app.value.mode === 'online';$('#restart').disabled = !app.value.started;
   $('#again').disabled = !canStart();$('#again').textContent = app.value.mode === 'online' && app.value.role === 'guest' ? 'Le créateur peut relancer' :
   'Rejouer';
-  $('#matchmaking-retry').disabled = !coreReady();$('#play-matchmaking').disabled = !coreReady();
   $('#create-room').disabled = !coreReady() || app.value.busy;$('#join-room').disabled = !coreReady() || app.value.busy;
   const settingsLocked = app.value.started && phase !== PHASE.finished || app.value.mode === 'online' && app.value.role === 'guest';
   $('#bonuses').disabled = !!settingsLocked;

@@ -22,23 +22,28 @@ const lobby = 'sportheads-lobby-check-' + require('node:crypto').randomBytes(6).
   }
   const state = page => page.evaluate(() => sportheads.state);
   const waitConnected = page => page.waitForFunction(() => sportheads.state.connected, { timeout: 40000 });
+  const search = async page => { await page.click('#play-online'); await page.click('#matchmaking-toggle'); };
   const waitWaiting = page => page.waitForFunction(() => /premier en attente/.test(document.querySelector('#room-status').textContent), { timeout: 25000 });
   try {
     const first = await pageAt();
-    await first.click('#play-matchmaking');
+    assert.equal(await first.locator('.play-modes button').count(), 3);
+    await search(first);
     assert.equal(await first.locator('.matchmaking-search').isVisible(), true);
-    assert.equal(await first.locator('#setup-back').innerText(), 'Annuler la recherche');
+    assert.equal(await first.locator('#matchmaking-toggle').innerText(), 'Arrêter le matchmaking');
+    assert.equal(await first.locator('#create-room').isEnabled(), false);
     await waitWaiting(first);
-    assert.deepEqual(await first.evaluate(() => [sportheads.state.mode, sportheads.state.matchmaking, sportheads.state.setupStep]), ['online', true, 'matchmaking']);
+    assert.deepEqual(await first.evaluate(() => [sportheads.state.mode, sportheads.state.matchmaking, sportheads.state.setupStep]), ['online', true, 'room']);
     await first.screenshot({ path: 'evidence/matchmaking-waiting.png' });
-    // Cancelling leaves the line at once and returns to the mode choice.
-    await first.click('#setup-back');
-    assert.equal((await state(first)).setupStep, 'home');
-    await first.click('#play-matchmaking'); await waitWaiting(first);
+    // The same button stops the search and leaves the line at once.
+    await first.click('#matchmaking-toggle');
+    assert.deepEqual(await first.evaluate(() => [sportheads.state.setupStep, sportheads.state.matchmaking, sportheads.state.busy]), ['room', false, false]);
+    assert.equal(await first.locator('#matchmaking-toggle').innerText(), 'Lancer le matchmaking');
+    assert.equal(await first.locator('#create-room').isEnabled(), true);
+    await first.click('#matchmaking-toggle'); await waitWaiting(first);
 
     // The second player unlocked the family caricatures; the first did not.
     const second = await pageAt(url + (url.includes('?') ? '&' : '?') + 'groupe=famille');
-    await second.click('#play-matchmaking');
+    await search(second);
     await Promise.all([waitConnected(first), waitConnected(second)]);
     assert.equal((await state(first)).role, 'host'); assert.equal((await state(second)).role, 'guest');
     for (const page of [first, second]) {
@@ -53,8 +58,8 @@ const lobby = 'sportheads-lobby-check-' + require('node:crypto').randomBytes(6).
     await first.screenshot({ path: 'evidence/matchmaking-paired.png' });
 
     // A paired room is no longer in the line: the next two players meet each other.
-    const third = await pageAt(); await third.click('#play-matchmaking'); await waitWaiting(third);
-    const fourth = await pageAt(); await fourth.click('#play-matchmaking');
+    const third = await pageAt(); await search(third); await waitWaiting(third);
+    const fourth = await pageAt(); await search(fourth);
     try { await Promise.all([waitConnected(third), waitConnected(fourth)]); }
     catch (e) { for (const p of [third, fourth]) console.log(await p.evaluate(() => JSON.stringify([sportheads.state.role, sportheads.state.busy, document.querySelector('#room-status').textContent, document.querySelector('#network-report').textContent.slice(0, 3000)]))); throw e; }
     assert.equal((await state(first)).connected, true); assert.equal((await state(second)).connected, true);
@@ -70,23 +75,23 @@ const lobby = 'sportheads-lobby-check-' + require('node:crypto').randomBytes(6).
     await third.waitForFunction(() => !sportheads.state.connected, { timeout: 30000 });
     await third.waitForFunction(() => !document.querySelector('#matchmaking-again').hidden);
     await third.click('#matchmaking-again'); await waitWaiting(third);
-    const fifth = await pageAt(); await fifth.click('#play-matchmaking');
+    const fifth = await pageAt(); await search(fifth);
     await Promise.all([waitConnected(third), waitConnected(fifth)]);
 
     // Nobody else in the line: the search stops after its limit with a retry button.
     const lonely = await pageAt();
     await lonely.evaluate(() => { const original = window.setTimeout; window.setTimeout = (fn, ms, ...rest) => original(fn, ms === 180000 ? 3000 : ms, ...rest); });
-    await lonely.click('#play-matchmaking');
-    await lonely.waitForFunction(() => !document.querySelector('#matchmaking-retry').hidden, { timeout: 30000 });
+    await search(lonely);
+    await lonely.waitForFunction(() => document.querySelector('#matchmaking-toggle').textContent === 'Lancer le matchmaking', { timeout: 30000 });
     assert.match(await lonely.locator('#room-status').innerText(), /Personne n’est en attente/);
     assert.equal(await lonely.locator('.matchmaking-search').isVisible(), false);
     await lonely.screenshot({ path: 'evidence/matchmaking-timeout.png' });
 
-    // Mobile: the four modes fit on a phone.
+    // Mobile: the search button fits on a phone.
     const phone = await browser.newPage({ viewport: { width: 390, height: 844 } });
-    await phone.goto(url); await phone.waitForFunction(() => window.ready);
+    await phone.goto(url); await phone.waitForFunction(() => window.ready); await phone.click('#play-online');
     assert.equal(await phone.evaluate(() => document.documentElement.scrollWidth <= 390), true);
-    await phone.screenshot({ path: 'evidence/matchmaking-modes-phone.png', fullPage: true });
+    await phone.screenshot({ path: 'evidence/matchmaking-phone.png', fullPage: true });
     assert.deepEqual(errors, []);
     console.log(JSON.stringify({ passed: true, url, transport: 'real PeerServer + WebRTC', checks: ['waiting screen', 'cancel', 'pairing', 'friend caricatures', 'two concurrent pairs', 'match start', 'opponent lost then new search', 'search limit', 'phone layout'] }));
   } finally { await browser.close(); }

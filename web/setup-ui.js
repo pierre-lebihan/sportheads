@@ -10,14 +10,16 @@ export function renderSetup({ screen, mode, matchmaking = false, role, started, 
   const steps = mode === 'ai' ? ['difficulty', ...PREPARATION_STEPS] : PREPARATION_STEPS;
   $('#online-panel').hidden = started || mode !== 'online' || screen === 'home';
   const guest = mode === 'online' && role === 'guest' && connected;
-  const searching = screen === 'matchmaking' && busy;
+  // One button starts and stops the search; a private room in progress locks it.
+  const searching = matchmaking && busy;
   $('#online-panel').setAttribute('aria-label', matchmaking ? 'Matchmaking' : 'Salle privée');
   $('.room-help').hidden = matchmaking;
-  $('.matchmaking-help').hidden = !searching;
   $('.matchmaking-search').hidden = !searching;
-  $('#matchmaking-retry').hidden = screen !== 'matchmaking' || busy;
+  $('#matchmaking-toggle').textContent = searching ? 'Arrêter le matchmaking' : 'Lancer le matchmaking';
+  $('#matchmaking-toggle').setAttribute('aria-pressed', String(searching));
+  $('#matchmaking-toggle').disabled = !ready || busy && !matchmaking;
   // A lost pairing can be replaced at once instead of waiting for the same player.
-  $('#matchmaking-again').hidden = !matchmaking || screen === 'matchmaking' || connected || role === null;
+  $('#matchmaking-again').hidden = !matchmaking || screen === 'room' || connected || role === null;
   for (const panel of document.querySelectorAll('[data-setup-screen]')) panel.hidden = panel.dataset.setupScreen !== visibleScreen;
   const index = steps.indexOf(visibleScreen);
   $('#setup-panel').dataset.screen = visibleScreen;
@@ -41,8 +43,8 @@ export function renderSetup({ screen, mode, matchmaking = false, role, started, 
     : screen === 'pitch' ? 'Vous suivez le créateur : choix du terrain en lecture seule.'
       : 'Vous suivez le créateur : paramètres en lecture seule.';
   $('#setup-back').hidden = started || screen === 'home' || guest;
-  $('#setup-back').disabled = busy && screen !== 'matchmaking';
-  $('#setup-back').textContent = screen === 'matchmaking' ? busy ? 'Annuler la recherche' : 'Choix du mode' : screen === 'players' && matchmaking ? 'Quitter la partie' : screen === 'room' || screen === 'difficulty' ? 'Choix du mode' : screen === 'players' ? mode === 'online' ? 'Quitter la salle' : mode === 'ai' ? 'Difficulté' : 'Choix du mode' : 'Précédent';
+  $('#setup-back').disabled = busy;
+  $('#setup-back').textContent = screen === 'players' && matchmaking ? 'Quitter la partie' : screen === 'room' || screen === 'difficulty' ? 'Choix du mode' : screen === 'players' ? mode === 'online' ? 'Quitter la salle' : mode === 'ai' ? 'Difficulté' : 'Choix du mode' : 'Précédent';
   $('#setup-next').hidden = started || guest || !['difficulty', 'players', 'pitch'].includes(screen);
   $('#setup-next').disabled = !ready || busy;
   $('#setup-next').textContent = screen === 'difficulty' ? 'Choisir les joueurs' : screen === 'players' ? 'Valider le duel' : 'Régler le match';

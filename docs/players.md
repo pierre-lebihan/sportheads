@@ -42,7 +42,7 @@ L’ancienne API `game_set_assistance` reste réservée aux comparaisons histori
 
 Douze caricatures de pros sous des noms parodiques (Kiwan Mbarré, Erling Hallogène,
 Lamine Y’a Mal, Ousmane Dans-le-Blé, Jude Bellinjambon, Colle Palmier, Pétrin, Vitaminha,
-Achraf Hakiwi, Nounours Mendès, Virgule van Digue et Gianluigi Donnarhume), plus Pierre, Vilma, Thibaud, Marie, Corentin, Pierre Nomad, Maël, Baptiste, Jerem, Arthur et Vilma Dreadlocks, dessinés à partir de leur photo. Le choix est cosmétique : mêmes
+Achraf Hakiwi, Nounours Mendès, Virgule van Digue et Gianluigi Donnarhume), plus des caricatures privées dessinées à partir de photos. Le choix est cosmétique : mêmes
 corps physiques et même hauteur de référence pour la condition de saut.
 Les différences de niveau proviennent uniquement des aides et des bonus.
 

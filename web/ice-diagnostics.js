@@ -32,5 +32,7 @@ export function iceServerLabel(url = '') {
   if (url.includes('eu-0.turn.peerjs.com')) return 'peerjs-eu';
   if (url.includes('us-0.turn.peerjs.com')) return 'peerjs-us';
   if (url.includes('stun.l.google.com')) return 'google-stun';
+  if (url.includes('turn.cloudflare.com')) return 'cloudflare-turn';
+  if (url.includes('stun.cloudflare.com')) return 'cloudflare-stun';
   return /^turns?:/.test(url) ? 'other-turn' : 'other-stun';
 }

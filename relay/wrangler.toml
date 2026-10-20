@@ -1,0 +1,9 @@
+# Optional: deploy with `npx wrangler deploy` from this folder.
+# Secrets are set with `npx wrangler secret put TURN_KEY_ID` and
+# `npx wrangler secret put TURN_KEY_API_TOKEN`, never committed.
+name = "sportheads-turn"
+main = "turn-worker.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://pierre-lebihan.github.io"

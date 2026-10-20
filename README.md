@@ -102,9 +102,9 @@ l'invité ; après fermeture de sa page, les joueurs reviennent au salon pour
 un nouveau match. Si les deux pages sont fermées, il faut recréer une salle.
 
 Les salles utilisent le service de mise en relation PeerServer et WebRTC.
-La connexion directe a été vérifiée ; le test forcé des relais TURN publics
-échoue dans l'environnement de validation. Certains réseaux restrictifs peuvent
-donc empêcher la connexion et nécessiteront un relais dédié.
+La connexion directe a été vérifiée. Pour les réseaux restrictifs (4G/5G,
+Wi-Fi filtrés), un relais TURN gratuit peut servir de secours :
+voir [relay/README.md](relay/README.md).
 
 [État du match](docs/match-progress.md) · [État de la physique](docs/physics-progress.md) ·
 [Multijoueur distant](docs/multiplayer.md) · [Joueurs et aides](docs/players.md) ·

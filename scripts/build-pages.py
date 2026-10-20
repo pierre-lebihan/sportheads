@@ -1,5 +1,7 @@
 """Package the playable WASM match and the recorded comparison bench."""
 import json
+import os
+import re
 import hashlib
 from pathlib import Path
 import shutil
@@ -28,15 +30,27 @@ for old, new in replacements.items():
         raise SystemExit(f'Expected exactly one occurrence of {old}')
     html = html.replace(old, new)
 (site / 'physics.html').write_text(html)
-browser_files = ('index.html', 'game.js', 'game.css', 'render.js', 'rooms.js', 'ice-diagnostics.js', 'ice-signaling.js', 'net-state.js', 'net-render.js', 'selection.js', 'players.js', 'touch-controls.js', 'touch-layout.js', 'bonuses.js', 'balance.js', 'balance-ui.js', 'arena-ui.js', 'setup-ui.js', 'opponent.js', 'engine-contract.js', 'assets.js', 'app-state.js', 'game-ui.js', 'room-session.js', 'planner.js', 'planner-runtime.js', 'planner-worker.js', 'performance.js', 'fixed-step.js', 'tick-blend.js', 'performance-ui.js', 'engine-view.js', 'manifest.webmanifest', 'terrains.html', 'terrains.js', 'pitch-geometry.js')
+browser_files = ('index.html', 'game.js', 'game.css', 'render.js', 'rooms.js', 'ice-diagnostics.js', 'ice-signaling.js', 'ice-servers.js', 'net-state.js', 'net-render.js', 'selection.js', 'players.js', 'touch-controls.js', 'touch-layout.js', 'bonuses.js', 'balance.js', 'balance-ui.js', 'arena-ui.js', 'setup-ui.js', 'opponent.js', 'engine-contract.js', 'assets.js', 'app-state.js', 'game-ui.js', 'room-session.js', 'planner.js', 'planner-runtime.js', 'planner-worker.js', 'performance.js', 'fixed-step.js', 'tick-blend.js', 'performance-ui.js', 'engine-view.js', 'manifest.webmanifest', 'terrains.html', 'terrains.js', 'pitch-geometry.js')
+# Optional TURN credential service (see relay/). It is a public URL, not a secret.
+turn_url = os.environ.get('SPORTHEADS_TURN_URL', '').strip()
+if turn_url and not re.fullmatch(r'https://[A-Za-z0-9.-]+(?::\d+)?(?:/[A-Za-z0-9._~/-]*)?', turn_url):
+    raise SystemExit('SPORTHEADS_TURN_URL must be a plain https:// URL')
+def web_source(name):
+    data = (root / 'web' / name).read_bytes()
+    if name == 'ice-servers.js' and turn_url:
+        placeholder = b"export const TURN_CREDENTIALS_URL = '';"
+        if data.count(placeholder) != 1:
+            raise SystemExit('TURN placeholder not found in ice-servers.js')
+        data = data.replace(placeholder, f"export const TURN_CREDENTIALS_URL = '{turn_url}';".encode())
+    return data
 # Every app module uses the same revision, including its transitive imports.
 # A refreshed page must not mix a new UI with cached networking code.
-revision = hashlib.sha256(b''.join((root / 'web' / name).read_bytes() for name in browser_files)
+revision = hashlib.sha256(b''.join(web_source(name) for name in browser_files)
     + (root / 'probe/physics-core.wasm').read_bytes()
     + (root / 'web/assets/manifest.json').read_bytes() + (root / 'web/assets/runtime.json').read_bytes()
     + (root / 'web/assets/portraits.webp').read_bytes()).hexdigest()[:12]
 for filename in browser_files:
-    source = (root / 'web' / filename).read_text()
+    source = web_source(filename).decode()
     if filename.endswith(('.js', '.html')):
         for quote in ("'", '"'):
             source = source.replace(f'{quote}./physics-core.wasm{quote}', f'{quote}./physics-core.wasm?v={revision}{quote}')
@@ -68,4 +82,4 @@ shutil.copyfile(root / 'probe/physics-core.wasm', site / 'physics-core.wasm')
 public_report = {key: report[key] for key in ('scope', 'tolerance', 'cases', 'unexpectedErrors')}
 (site / 'data/physics-parity.json').write_text(json.dumps(public_report, separators=(',', ':'), allow_nan=False))
 (site / '.nojekyll').touch()
-print(f'Packaged {len(report["cases"])} validated replays in {site.name}/')
+print(f'Packaged {len(report["cases"])} validated replays in {site.name}/' + (' with TURN fallback' if turn_url else ''))

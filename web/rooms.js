@@ -1,5 +1,6 @@
 import { summarizeIce, iceServerLabel } from './ice-diagnostics.js';
 import { protectIceSignaling } from './ice-signaling.js';
+import { peerIceOptions } from './ice-servers.js';
 
 export const PROTOCOL = 'sportheads-rooms-7';
 const PREFIX = 'sportheads-room-v7-';
@@ -106,10 +107,13 @@ export class Room {
   }
 
   openPeer(id) {
+    // TURN credentials are fetched once, then reused synchronously.
+    const ice = peerIceOptions((event, details) => this.record(event, details));
+    if (ice instanceof Promise) return ice.then(() => this.openPeer(id));
     return new Promise((resolve, reject) => {
       if (this.closed) { reject(new Error('Connexion annulée.')); return; }
       this.iceSignaling?.close();
-      const peer = this.peer = new window.Peer(id, { debug: 0 });
+      const peer = this.peer = new window.Peer(id, { debug: 0, ...ice });
       this.iceSignaling = protectIceSignaling(peer, (event, details) => this.record(event, details));
       let settled = false;
       const finish = error => {

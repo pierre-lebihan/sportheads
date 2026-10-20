@@ -38,6 +38,9 @@ jobs:
           npm test
       - name: Build playable match and comparison bench
         run: python3 scripts/build-pages.py
+        env:
+          # Public URL of the optional TURN credential service (relay/README.md).
+          SPORTHEADS_TURN_URL: ${{ vars.SPORTHEADS_TURN_URL }}
       - name: Install Chromium and WebKit with system dependencies
         run: npx playwright install --with-deps chromium webkit
       - name: Validate the built game in real browser engines

@@ -108,7 +108,8 @@ par image et conserve la dette pour les images suivantes. Aucun pas en attente
 n'est supprimé et aucun delta variable n'est transmis au solveur. Le plafond
 de 250 ms sur le temps écoulé et la remise à zéro à la pause existaient déjà.
 
-Dans les paramètres, **Fluidité du jeu → Mesurer pendant 10 secondes** relance
+Depuis le menu **Pause → Mesurer la fluidité (10 s)** ou les réglages en match,
+**Fluidité du jeu → Mesurer pendant 10 secondes** relance
 la partie et mesure séparément les commandes, le contrôleur IA, l'anticipation
 du Worker, la physique, l'interface et le rendu. Le diagnostic contient les
 moyennes, médianes, 95es percentiles et maxima, le retard de simulation,

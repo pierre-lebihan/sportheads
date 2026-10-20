@@ -7,11 +7,14 @@ export function setupPerformancePanel({ report, reset, resume }) {
     $('#performance-report').hidden = false; $('#copy-performance').hidden = false;
     return data;
   };
-  $('#measure-performance').addEventListener('click', () => {
+  const measure = () => {
     clearTimeout(timer); resume(); reset();
     $('#performance-status').textContent = 'Mesure en cours pendant 10 secondes. Jouez normalement.';
     timer = setTimeout(() => { refresh(); $('#performance-status').textContent = 'Mesure terminée. Le diagnostic est disponible dans Fluidité du jeu.'; }, 10_000);
-  });
+  };
+  for (const id of ['measure-performance', 'measure-performance-paused']) {
+    $('#' + id).addEventListener('click', measure);
+  }
   $('#performance-diagnostic').addEventListener('toggle', () => { if ($('#performance-diagnostic').open) refresh(); });
   $('#copy-performance').addEventListener('click', async () => {
     refresh();

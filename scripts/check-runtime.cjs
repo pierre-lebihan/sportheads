@@ -59,8 +59,24 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-runtime.c
       await page.click('#play-local'); await goToSetup(page, 'rules'); await page.click('#start');
       assert.equal(await page.evaluate(() => sportheads.snapshot().mode), 'local');
       assert.equal(await page.evaluate(() => sportheads.performance().planner.status), 'inactive');
+      await page.waitForFunction(() => sportheads.snapshot().phase === 1);
+      await page.click('#pause');
+      assert.equal(await page.locator('#measure-performance-paused').isVisible(), true);
+      await page.click('#measure-performance-paused');
+      assert.equal(await page.evaluate(() => sportheads.snapshot().paused), false, 'measurement resumes the paused match');
+      await page.waitForFunction(() => document.querySelector('#performance-status').textContent.startsWith('Mesure terminée'), null, { timeout: 15000 });
+      const measured = JSON.parse(await page.locator('#performance-report').textContent());
+      assert.ok(measured.costs.physics.samples > 0, 'diagnostic measures actual running physics');
+      await page.click('#play-view');
+      assert.equal(await page.locator('#performance-diagnostic').isVisible(), true, 'match settings retain the diagnostic');
+      await page.click('#performance-diagnostic summary');
+      assert.equal(await page.locator('#copy-performance').isVisible(), true);
+      await page.click('#measure-performance');
+      assert.equal(await page.evaluate(() => sportheads.snapshot().paused || sportheads.state.settingsOpen), false, 'measurement from settings resumes and closes settings');
+      await page.click('#pause');
+      await page.locator('#paused [data-quit-match]').click();
       assert.deepEqual(errors, []);
-      console.log(JSON.stringify({ passed: true, browser: type.name(), boot: boot.assets, workerParity: true, mainPlannerCalls: 0, maxCatchUpSteps: 2, physicalDeviceTested: false }));
+      console.log(JSON.stringify({ passed: true, performanceFromPause: true, performanceFromSettings: true, browser: type.name(), boot: boot.assets, workerParity: true, mainPlannerCalls: 0, maxCatchUpSteps: 2, physicalDeviceTested: false }));
       await context.close();
 
       const fallback = await browser.newContext();

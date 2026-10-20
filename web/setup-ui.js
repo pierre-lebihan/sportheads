@@ -14,7 +14,6 @@ export function renderSetup({ screen, mode, role, started, ready, busy, connecte
   const index = steps.indexOf(visibleScreen);
   $('#setup-panel').dataset.screen = visibleScreen;
   $('#setup-panel').setAttribute('aria-label', started ? 'Réglages du match' : 'Préparation du match');
-  $('#performance-diagnostic').hidden = started;
   $('.rules-screen .launch').hidden = started;
   $('#setup-steps').hidden = started || index < 0;
   $('#difficulty-step').hidden = mode !== 'ai';

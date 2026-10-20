@@ -101,7 +101,18 @@ Des messages de présence laissent deux minutes à un navigateur distant suspend
 avant de libérer sa place. Le navigateur local suspendu ne déclenche pas son
 propre délai d'expiration et vérifie la présence de l'autre au retour.
 Une connexion en cours expire après 18 secondes. En cas de déconnexion, le
-match s'arrête ; il n'y a pas de reprise silencieuse avec des commandes anciennes.
+match se met en pause chez les deux joueurs ; il n'y a pas de reprise silencieuse
+avec des commandes anciennes.
+
+Une coupure brève (passage du wifi à la 4G, appel entrant) ne perd plus le
+match. Une liaison dont l'ICE reste `disconnected` plus de 6 secondes est
+abandonnée, puis l'invité rappelle le créateur depuis sa place toutes les
+2 secondes, pendant 2 minutes de page visible. Chaque page tire un identifiant
+de session : le créateur ne garde le match que si l'appel vient de la même page
+d'invité, qui peut alors remplacer une liaison périmée. Le match, le score et
+la simulation sont conservés, en pause, et chaque joueur le reprend avec
+Reprendre. Une page rechargée reste un nouveau venu et revient au salon. Après
+2 minutes sans succès, l'invité est invité à rejoindre la salle avec le même code.
 La salle reste ouverte tant qu'un des deux joueurs garde sa page. Deux identifiants
 PeerServer fixes réservent les places Bleu (créateur) et Rouge (invité). Rejoindre
 avec le code réserve Rouge si cette place est libre ; si Rouge est déjà occupé,
@@ -175,6 +186,7 @@ node --test tests/*.test.mjs
 node scripts/check-game.cjs http://127.0.0.1:8765/_site/
 node scripts/check-online.cjs http://127.0.0.1:8765/_site/
 node scripts/check-rejoin.cjs http://127.0.0.1:8765/_site/
+node scripts/check-reconnect.cjs http://127.0.0.1:8765/_site/
 node scripts/check-network-smoothness.cjs http://127.0.0.1:8765/_site/
 node scripts/check-setup.cjs http://127.0.0.1:8765/_site/
 node scripts/check-mobile.cjs http://127.0.0.1:8765/_site/

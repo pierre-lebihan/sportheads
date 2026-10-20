@@ -77,9 +77,9 @@ assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
     await Promise.all([host, guest].map(page => page.waitForFunction(() => sportheads.snapshot().phase === 1 && !sportheads.snapshot().paused)));
     for (const page of [host,guest]) {
       await page.click('#play-view');
-      for (const selector of ['#setup-steps','#setup-navigation','#online-panel','#player-choice','#performance-diagnostic','.rules-screen .launch'])
+      for (const selector of ['#setup-steps','#setup-navigation','#online-panel','#player-choice','.rules-screen .launch'])
         assert.equal(await page.locator(selector).isVisible(),false,`online match settings hide ${selector}`);
-      for (const selector of ['[data-setup-screen=rules]','#quit-match-settings','#close-settings','#fullscreen-settings'])
+      for (const selector of ['[data-setup-screen=rules]','#quit-match-settings','#close-settings','#fullscreen-settings','#performance-diagnostic'])
         assert.equal(await page.locator(selector).isVisible(),true,`online match settings keep ${selector}`);
       await page.click('#close-settings'); await page.click('#resume');
       await Promise.all([host,guest].map(p=>p.waitForFunction(()=>!sportheads.snapshot().paused)));

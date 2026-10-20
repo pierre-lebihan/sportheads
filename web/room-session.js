@@ -146,6 +146,11 @@ async function connectRoom(create) {
         recoveryTimer = setTimeout(() => {
           if (room === candidate && app.value.restoringSettings) candidate.fail('Impossible de récupérer les réglages. Rejoignez à nouveau avec le même code.');
         }, 10000);
+      } else if (candidate.resumed) {
+        // Same pages on both ends: keep the match, paused by the drop, and let each player resume it.
+        if (app.value.started) app.dispatch({ type: 'settings.closed' });
+        roomStatus(app.value.started ? 'Connexion rétablie. Reprenez le match quand vous êtes prêts.' : 'Connexion rétablie.');
+        if (app.value.role === 'host') broadcast(); else sendInput();
       } else if (app.value.role === 'host') {
         const wasPlaying = app.value.started;clearMatch();if (wasPlaying) app.dispatch({ type: "preparation.changed", setupStep: 'players' });broadcast();
       } else {
@@ -159,11 +164,13 @@ async function connectRoom(create) {
       update();
     },
     onMessage: (message) => {if (room === candidate) onMessage(message);},
+    onRedialFailed: () => {if (room === candidate) roomStatus('La connexion n’a pas pu être rétablie. Rejoignez la salle avec le même code.', true);},
     onDisconnect: () => {
       if (room !== candidate) return;
       clearTimeout(recoveryTimer); app.dispatch({ type: 'room.disconnected' });
       clearInput(); remoteInput = 0; if (app.value.started) audio.stopAll();
-      roomStatus('Votre adversaire est déconnecté. La salle reste ouverte : il peut revenir avec le même code.', true);
+      roomStatus(candidate.role === 'guest' ? 'Vous êtes déconnecté du créateur. Reconnexion automatique… La salle reste ouverte avec le même code.'
+        : 'Votre adversaire est déconnecté. Le match reprendra à son retour ; la salle reste ouverte avec le même code.', true);
       $('#room-details').hidden = false;$('#room-actions').hidden = true;
       update();
     },

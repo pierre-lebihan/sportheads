@@ -40,7 +40,7 @@ function setup(t, plans = []) {
       const plan = plans.shift() || 'open';
       queueMicrotask(() => {
         if (this.destroyed || plan === 'pending') return;
-        if (plan === 'open') this.emit('open', id);
+        if (plan === 'open') { this.open = true; this.emit('open', id); }
         else this.emit('error', Object.assign(new Error(plan), { type: plan }));
       });
     }
@@ -103,7 +103,8 @@ test('room codes normalize spaces, hyphens and case, and accept one unambiguous 
   assert.equal(room.code, 'ABCD2345');
   assert.equal(peers[0].id, 'sportheads-room-v7-ABCD2345-guest');
   assert.equal(peers[0].target, 'sportheads-room-v7-ABCD2345');
-  assert.deepEqual(peers[0].connectOptions.metadata, { protocol: PROTOCOL, role: 'guest' });
+  assert.deepEqual(peers[0].connectOptions.metadata, { protocol: PROTOCOL, role: 'guest', session: room.session });
+  assert.match(room.session, /^[0-9a-f]{16}$/);
 });
 
 test('joining an occupied guest seat reserves the vacant creator seat and connects back to the guest', async t => {
@@ -307,7 +308,7 @@ test('the host reserves its slot before open and rejects a third player without 
   third.openChannel();
   assert.deepEqual(third.sent, [{ type: 'reject', reason: 'full' }]);
   opponent.openChannel();
-  assert.deepEqual(opponent.sent, [{ type: 'welcome', protocol: PROTOCOL, code: room.code, realtime: 1 }]);
+  assert.deepEqual(opponent.sent, [{ type: 'welcome', protocol: PROTOCOL, code: room.code, realtime: 1, session: room.session }]);
   assert.deepEqual(events.ready, ['host']);
   t.mock.timers.tick(250);
   assert.equal(third.closed, true);
@@ -517,3 +518,66 @@ test('a room waits for TURN credentials and passes them to PeerJS', async t => {
   assert.ok(room.diagnostic().events.some(event => event.event === 'turn-config' && event.source === 'relay'));
   resetIceServers();
 });
+
+test('a guest whose link drops calls the creator again and both sides resume the same session', async t => {
+  const { peers, createRoom } = setup(t);
+  const host = createRoom(), guest = createRoom();
+  await host.room.create(); await guest.room.join(host.room.code);
+  const link = (connection) => {
+    const incoming = new FakeConnection(connection.connectOptions?.metadata ?? connection.metadata);
+    peers[0].incoming(incoming); incoming.openChannel(); connection.openChannel();
+    connection.emit('data', incoming.sent.at(-1));
+    incoming.emit('data', connection.sent.at(-1));
+    return incoming;
+  };
+  const guestPeer = peers.at(-1);
+  let hostSide = link(guest.room.connection);
+  assert.deepEqual([host.room.resumed, guest.room.resumed], [false, false]);
+  assert.equal(host.room.peerSession, guest.room.session); assert.equal(guest.room.peerSession, host.room.session);
+
+  // Wi-Fi to mobile data: the guest's channel fails; the creator still holds a stale one.
+  guest.room.connection.emit('error', { type: 'negotiation-failed' });
+  assert.equal(guest.events.disconnects.length, 1);
+  assert.equal(guestPeer.channels.length, 1);
+  t.mock.timers.tick(2000);
+  assert.equal(guestPeer.channels.length, 2, 'the guest dials again from its seat');
+  hostSide = link(guest.room.connection);
+  assert.equal(host.room.connection, hostSide, 'the same guest page replaces its stale link');
+  assert.deepEqual([host.room.resumed, guest.room.resumed], [true, true]);
+  assert.deepEqual(host.events.disconnects, []);
+  assert.deepEqual(guest.events.errors, []);
+});
+
+test('a reloaded guest page is a new session, not a resumed match', async t => {
+  const { peers, createRoom } = setup(t);
+  const host = createRoom();
+  await host.room.create();
+  const first = new FakeConnection({ protocol: PROTOCOL, role: 'guest', session: 'aaaaaaaaaaaaaaaa' });
+  peers[0].incoming(first); first.openChannel();
+  first.close();
+  const reloaded = new FakeConnection({ protocol: PROTOCOL, role: 'guest', session: 'bbbbbbbbbbbbbbbb' });
+  peers[0].incoming(reloaded); reloaded.openChannel();
+  assert.equal(host.room.connected, true); assert.equal(host.room.resumed, false);
+  // A different page cannot push out the current one.
+  const intruder = new FakeConnection({ protocol: PROTOCOL, role: 'guest', session: 'cccccccccccccccc' });
+  peers[0].incoming(intruder); intruder.openChannel();
+  assert.deepEqual(intruder.sent, [{ type: 'reject', reason: 'full' }]);
+  assert.equal(host.room.connection, reloaded);
+});
+
+test('a guest stops calling back after two minutes and says so', async t => {
+  const { peers, createRoom } = setup(t);
+  let failed = 0, clock = 0;
+  const realNow = performance.now; performance.now = () => clock; t.after(() => { performance.now = realNow; });
+  const { room } = createRoom({ onRedialFailed: () => failed++ });
+  await room.join('ABCD2345');
+  room.connection.openChannel(); room.connection.emit('data', { type: 'welcome', protocol: PROTOCOL, code: room.code, session: 'host' });
+  room.connection.close();
+  for (let elapsed = 0; elapsed < 130000 && !failed; elapsed += 2000) {
+    clock += 2000; t.mock.timers.tick(2000);
+    // The creator's seat is gone: every call is refused by PeerServer.
+    if (room.connection) peers[0].emit('error', Object.assign(new Error('peer-unavailable'), { type: 'peer-unavailable' }));
+  }
+  assert.equal(failed, 1); assert.equal(room.closed, false, 'the seat stays for a manual return');
+});
+

@@ -62,7 +62,7 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   $('#pause').setAttribute('aria-label', pauseLabel);$('#pause').title = pauseLabel;
   const mayResume = app.value.mode !== 'online' || app.value.connected && app.value.pauseFlags[ownSide()];
   $('#resume').disabled = !mayResume;$('#resume').textContent = mayResume ? 'Reprendre' : 'Adversaire en pause';
-  $('#pause-detail').textContent = app.value.mode !== 'online' ? 'Le temps vous attend.' : !app.value.connected ? 'Votre adversaire est déconnecté. Il peut revenir avec le même code.' :
+  $('#pause-detail').textContent = app.value.mode !== 'online' ? 'Le temps vous attend.' : !app.value.connected ? 'Connexion interrompue. Le match reprendra dès que la liaison sera rétablie.' :
   app.value.pauseFlags[ownSide()] ? 'Vous avez mis le match en pause. Chaque joueur doit reprendre pour continuer.' : 'Votre adversaire a mis le match en pause.';
   $('#restart').hidden = app.value.mode === 'online';$('#restart').disabled = !app.value.started;
   $('#again').disabled = !canStart();$('#again').textContent = app.value.mode === 'online' && app.value.role === 'guest' ? 'Le créateur peut relancer' :

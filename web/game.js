@@ -25,6 +25,7 @@ import { layoutArena, setupFullscreen } from './arena-ui.js';
 import { createTouchControls } from './touch-controls.js';
 import { AI_LEVELS, createOpponent } from './opponent.js';
 import { BONUS_NAMES, NEW_BONUSES } from "./bonuses.js";
+import { createAnalytics, createMatchTracker } from './analytics.js';
 
 const app = createAppStore(), monitor = createPerformanceMonitor(), clock = createFixedStepper(), pacer = createFramePacer();
 const $ = (selector) => document.querySelector(selector);
@@ -43,6 +44,10 @@ let planner;
 let core, network, blend;
 
 let opponent = null;
+// Started once the game has loaded, so statistics never delay the first match.
+let analytics = { track() {} };
+const track = (event, properties) => analytics.track(event, properties);
+const observeMatch = createMatchTracker(track);
 
 const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
 const touch = createTouchControls($('#touch-controls'), sendInput, monitor.measure);
@@ -143,7 +148,7 @@ function quitMatch() {
   update(); $('#play-' + app.value.mode).focus({ preventScroll: true });
 }
 function selectMode(next) {
-  leaveRoom(); app.dispatch({ type: 'mode.selected', mode: next });
+  leaveRoom(); app.dispatch({ type: 'mode.selected', mode: next }); track('mode_selected', { mode: next });
   $('#online-panel').hidden = next !== 'online'; $('#online-controls').hidden = next === 'local';
   for (const name of ['local', 'online', 'ai']) $('#play-' + name).setAttribute('aria-pressed', String(next === name));
   update();
@@ -241,7 +246,7 @@ document.addEventListener('visibilitychange', () => {if (document.hidden) suspen
 setInterval(sendInput, 50);
 
 function renderState() { return readRenderState(engine(), app.value); }
-network = createRoomSession({ app, getCore: () => core, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio });
+network = createRoomSession({ app, getCore: () => core, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio, track });
 function sendInput() { network?.sendInput(); }
 function broadcast() { network?.broadcast(); }
 function connectRoom(create) { return network.connect(create); }
@@ -260,6 +265,7 @@ function update() {
   }
 
   monitor.measure('ui', renderUI);
+  observeMatch({ ...snapshot(), skins: skins() });
 }
 function animate(time) {
   if (!pacer.due(time)) { requestAnimationFrame(animate); return; }
@@ -299,6 +305,7 @@ try {
   const [wasm] = await Promise.all([WebAssembly.instantiateStreaming(response), loadAssets()]);
   planner = createPlannerService(wasm.instance.exports, wasm.module, monitor);
   core = planner.engine; blend = createTickBlend(core); core.game_reset(1);window.ready = true;
+  try { analytics = createAnalytics(); } catch { /* Statistics are optional. */ }
   const code = normalizeCode(new URL(location.href).searchParams.get('room') || '');
   if (validCode(code)) {selectMode('online'); app.dispatch({ type: 'room.code-edited', value: code }); roomStatus('Code reçu. Cliquez sur Rejoindre pour entrer dans la salle.');}
   update();

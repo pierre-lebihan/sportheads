@@ -196,6 +196,15 @@ des contrôles séparés ; ces navigateurs ne remplacent pas un essai sur iPhone
 physique ni une mesure de performances sur téléphone.
 
 Le site contient le match, son moteur WASM et les replays numériques.
+
+Mesure d'audience : `web/analytics.js` envoie des événements anonymes à PostHog
+(serveurs UE) dès que la clé publique `POSTHOG_KEY` y est renseignée : visites,
+mode choisi, matchs lancés, terminés ou quittés, salles créées, connexions en
+ligne (relais TURN ou direct) et installations. Aucun SDK n'est chargé et
+aucune donnée personnelle n'est envoyée ; l'identifiant aléatoire du visiteur
+expire après 13 mois. Do Not Track, Global Privacy Control ou `?stats=off`
+désactivent la mesure (`?stats=on` la réactive). Rien n'est envoyé en local ni
+pendant les tests automatisés.
 Pour revenir à une version précédente, rétablir le commit souhaité sur `main` et
 laisser le workflow Pages republier cette version.
 

@@ -8,9 +8,10 @@ import { PLAYER_COUNT } from './players.js';
 import { createBalance, validBalance } from './balance.js';
 import { validSetupStep } from './setup-ui.js';
 import { bonusModeFromMessage, BONUS_V2_VERSION } from './bonuses.js';
+import { connectionPath } from './analytics.js';
 
 // Connection ownership, ordering, recovery and legacy compatibility live here.
-export function createRoomSession({ app, getCore, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio }) {
+export function createRoomSession({ app, getCore, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio, track = () => {} }) {
  const $ = selector => document.querySelector(selector);
  const prediction = createOwnPrediction();
  let room = null, remote = createRemoteEngine(), remoteView = createRemoteView(remote.engine, undefined, prediction);
@@ -143,6 +144,8 @@ async function connectRoom(create) {
       if (room !== candidate) return;
       app.dispatch({ type: 'connection.changed', role: candidate.role, connected: candidate.connected, code: candidate.code });
       remoteInput = 0;receivedInput = -1;receivedJump = null;sentJump = null;app.dispatch({ type: "connection.changed", busy: false });
+      // The selected ICE pair is known a moment after the channel opens.
+      setTimeout(() => { if (room === candidate) track('online_connected', { role: candidate.role, resumed: !!candidate.resumed, path: connectionPath(candidate.diagnostic()) }); }, 3000);
       roomStatus(app.value.role === 'host' ? 'Votre adversaire est là. Vous êtes Bleu : lancez le match quand vous êtes prêts.' : 'Vous êtes Rouge. Le créateur de la salle va lancer le match.');
       $('#room-details').hidden = false;$('#room-actions').hidden = true;$('#room-code').textContent = candidate.code;
       if (app.value.role === 'host' && candidate.returningHost) {
@@ -183,6 +186,7 @@ async function connectRoom(create) {
       if (room !== candidate) return;
       app.dispatch({ type: "connection.changed", restoringSettings: false });clearTimeout(recoveryTimer);
       app.dispatch({ type: 'connection.changed', busy: false, connected: candidate.connected }); roomStatus(message, true);
+      track('online_failed', { role: candidate.role, connected_before: candidate.hasConnected, reason: message, path: connectionPath(candidate.diagnostic()) });
       const failedJoin = !candidate.hasConnected && (candidate.role === 'guest' || candidate.returningHost);
       if (failedJoin || !candidate.code || candidate.closed) {$('#room-details').hidden = true;$('#room-actions').hidden = false;if (!app.value.started) app.dispatch({ type: "preparation.changed", setupStep: 'room' });}
       update();
@@ -195,6 +199,7 @@ async function connectRoom(create) {
     if (room !== candidate || candidate.closed) return;
     app.dispatch({ type: 'connection.changed', role: candidate.role, connected: candidate.connected, code: candidate.code });
     if (create) {
+      track('room_created');
       app.dispatch({ type: "connection.changed", busy: false });$('#room-code').textContent = candidate.code;$('#room-details').hidden = false;$('#room-actions').hidden = true;
       if (!candidate.connected) roomStatus('Salle créée. Partagez le code ou le lien avec votre adversaire.');
     }
@@ -202,6 +207,7 @@ async function connectRoom(create) {
     if (room !== candidate) return;
     candidate.close();app.dispatch({ type: "connection.changed", busy: false });app.dispatch({ type: "connection.changed", role: null });app.dispatch({ type: "preparation.changed", setupStep: 'room' });
     roomStatus(error.message || 'Impossible de créer la connexion. Réessayez.', true);
+    track('online_failed', { role: create ? 'host' : 'guest', connected_before: false, reason: error.message || 'unknown', path: 'unknown' });
     $('#room-actions').hidden = false;$('#room-details').hidden = true;
   }
   if (room === candidate) update();

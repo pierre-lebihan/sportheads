@@ -12,7 +12,7 @@ import { bonusModeFromMessage, BONUS_V2_VERSION } from './bonuses.js';
 import { connectionPath } from './analytics.js';
 
 // Connection ownership, ordering, recovery and legacy compatibility live here.
-export function createRoomSession({ app, getCore, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio, track = () => {} }) {
+export function createRoomSession({ app, getCore, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio, track = () => {}, checkPeerBuild = () => {} }) {
  const $ = selector => document.querySelector(selector);
  const prediction = createOwnPrediction();
  let room = null, remote = createRemoteEngine(), remoteView = createRemoteView(remote.engine, undefined, prediction);
@@ -211,6 +211,7 @@ async function connectRoom(create, { search = null, code: found = '' } = {}) {
       update();
     },
     onMessage: (message) => {if (room === candidate) onMessage(message);},
+    onBuild: build => { if (room === candidate) checkPeerBuild(build); },
     onRedialFailed: () => {if (room === candidate) roomStatus(search ? 'La connexion n’a pas pu être rétablie. Cherchez un autre adversaire.' : 'La connexion n’a pas pu être rétablie. Rejoignez la salle avec le même code.', true);},
     onDisconnect: () => {
       if (room !== candidate) return;

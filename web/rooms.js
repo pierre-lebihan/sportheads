@@ -1,6 +1,7 @@
 import { summarizeIce, iceServerLabel } from './ice-diagnostics.js';
 import { protectIceSignaling } from './ice-signaling.js';
 import { peerIceOptions } from './ice-servers.js';
+import { BUILD } from './version.js';
 
 export const PROTOCOL = 'sportheads-rooms-7';
 const PREFIX = 'sportheads-room-v7-';
@@ -18,8 +19,8 @@ export const CODE_HELP = 'Entrez le caractère du code de la salle.';
 // Only matchmaking passes through PeerServer. Match snapshots and inputs use
 // encrypted WebRTC data channels; the creator is the sole simulation owner.
 export class Room {
-  constructor({ onReady, onMessage, onDisconnect, onError, onRedialFailed }) {
-    Object.assign(this, { onReady, onMessage, onDisconnect, onError, onRedialFailed });
+  constructor({ onReady, onMessage, onDisconnect, onError, onRedialFailed, onBuild }) {
+    Object.assign(this, { onReady, onMessage, onDisconnect, onError, onRedialFailed, onBuild });
     this.closed = false; this.connected = false; this.peer = null; this.connection = null;
     this.timer = null; this.heartbeat = null; this.code = ''; this.role = null;
     this.suspended = false; this.lastSeen = 0;
@@ -279,7 +280,7 @@ export class Room {
         this.send({ type: 'ping', time: Date.now() });
       }, 1000);
       if (this.role === 'host') {
-        if (!this.send({ type: 'welcome', protocol: PROTOCOL, code: this.code, realtime: 1, session: this.session }) || this.connection !== connection) return;
+        if (!this.send({ type: 'welcome', protocol: PROTOCOL, code: this.code, realtime: 1, session: this.session, build: BUILD.revision }) || this.connection !== connection) return;
         welcomed = true; this.markReady();
       }
     });
@@ -299,13 +300,16 @@ export class Room {
         welcomed = true;
         const session = typeof message.session === 'string' ? message.session : null;
         this.resumedLink = this.hasConnected && session !== null && session === this.peerSession; this.peerSession = session;
-        this.send({ type: 'capabilities', realtime: message.realtime === 1 ? 1 : 0, session: this.session });
-        this.markReady(); return;
+        this.peerBuild = typeof message.build === 'string' ? message.build : null;
+        this.send({ type: 'capabilities', realtime: message.realtime === 1 ? 1 : 0, session: this.session, build: BUILD.revision });
+        this.markReady(); this.onBuild?.(this.peerBuild); return;
       }
       if (!welcomed) return;
       if (message.type === 'capabilities') {
         // A returning creator dialled this guest, so it learns the guest's page here.
         if (this.role === 'host' && typeof message.session === 'string') this.peerSession = message.session;
+        // Releases share the protocol, so a different build only earns a reload notice.
+        if (this.role === 'host') { this.peerBuild = typeof message.build === 'string' ? message.build : null; this.onBuild?.(this.peerBuild); }
         if (message.realtime === 1) enableRealtime();
         return;
       }

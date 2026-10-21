@@ -5,6 +5,7 @@ import re
 import hashlib
 from pathlib import Path
 import shutil
+import subprocess
 
 root = Path(__file__).resolve().parents[1]
 report = json.loads((root / 'evidence/physics-parity.json').read_text())
@@ -30,7 +31,7 @@ for old, new in replacements.items():
         raise SystemExit(f'Expected exactly one occurrence of {old}')
     html = html.replace(old, new)
 (site / 'physics.html').write_text(html)
-browser_files = ('index.html', 'compat.js', 'game.js', 'game.css', 'render.js', 'rooms.js', 'ice-diagnostics.js', 'ice-signaling.js', 'ice-servers.js', 'net-state.js', 'net-render.js', 'net-predict.js', 'selection.js', 'players.js', 'roster-access.js', 'touch-controls.js', 'touch-layout.js', 'bonuses.js', 'balance.js', 'balance-ui.js', 'arena-ui.js', 'setup-ui.js', 'opponent.js', 'engine-contract.js', 'assets.js', 'app-state.js', 'game-ui.js', 'room-session.js', 'matchmaking.js', 'planner.js', 'planner-runtime.js', 'planner-worker.js', 'performance.js', 'fixed-step.js', 'tick-blend.js', 'frame-pacing.js', 'performance-ui.js', 'engine-view.js', 'analytics.js', 'manifest.webmanifest', 'terrains.html', 'terrains.js', 'pitch-geometry.js')
+browser_files = ('index.html', 'compat.js', 'game.js', 'game.css', 'render.js', 'rooms.js', 'ice-diagnostics.js', 'ice-signaling.js', 'ice-servers.js', 'net-state.js', 'net-render.js', 'net-predict.js', 'selection.js', 'players.js', 'roster-access.js', 'touch-controls.js', 'touch-layout.js', 'bonuses.js', 'balance.js', 'balance-ui.js', 'arena-ui.js', 'setup-ui.js', 'opponent.js', 'engine-contract.js', 'assets.js', 'app-state.js', 'game-ui.js', 'room-session.js', 'matchmaking.js', 'planner.js', 'planner-runtime.js', 'planner-worker.js', 'performance.js', 'fixed-step.js', 'tick-blend.js', 'frame-pacing.js', 'performance-ui.js', 'engine-view.js', 'analytics.js', 'version.js', 'manifest.webmanifest', 'terrains.html', 'terrains.js', 'pitch-geometry.js')
 # Optional TURN credential service (see relay/). It is a public URL, not a secret.
 turn_url = os.environ.get('SPORTHEADS_TURN_URL', '').strip()
 if turn_url and not re.fullmatch(r'https://[A-Za-z0-9.-]+(?::\d+)?(?:/[A-Za-z0-9._~/-]*)?', turn_url):
@@ -49,8 +50,18 @@ revision = hashlib.sha256(b''.join(web_source(name) for name in browser_files)
     + (root / 'probe/physics-core.wasm').read_bytes()
     + (root / 'web/assets/manifest.json').read_bytes() + (root / 'web/assets/runtime.json').read_bytes()
     + (root / 'web/assets/portraits.webp').read_bytes()).hexdigest()[:12]
+# The commit is shown to players; the revision lets an open page spot a newer release.
+commit = os.environ.get('GITHUB_SHA') or subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root,
+    capture_output=True, text=True).stdout.strip() or 'unknown'
+if not re.fullmatch(r'[0-9a-f]{7,40}|unknown', commit):
+    raise SystemExit('Unexpected commit id for the build stamp')
 for filename in browser_files:
     source = web_source(filename).decode()
+    if filename == 'version.js':
+        stamp = "revision: 'dev', commit: 'dev'"
+        if source.count(stamp) != 1:
+            raise SystemExit('Build stamp not found in version.js')
+        source = source.replace(stamp, f"revision: '{revision}', commit: '{commit}'")
     if filename.endswith(('.js', '.html')):
         for quote in ("'", '"'):
             source = source.replace(f'{quote}./physics-core.wasm{quote}', f'{quote}./physics-core.wasm?v={revision}{quote}')
@@ -95,6 +106,7 @@ for old, new in (("REVISION = 'dev'", f"REVISION = '{revision}'"), ('FILES = []'
         raise SystemExit(f'Expected exactly one occurrence of {old} in sw.js')
     worker = worker.replace(old, new)
 (site / 'sw.js').write_text(worker)
+(site / 'version.json').write_text(json.dumps({'revision': revision, 'commit': commit}))
 shutil.copyfile(root / 'probe/physics-core.wasm', site / 'physics-core.wasm')
 # Omit runtime diagnostics; publish only numeric scenes and measured results.
 public_report = {key: report[key] for key in ('scope', 'tolerance', 'cases', 'unexpectedErrors')}

@@ -8,12 +8,12 @@ const readline = require('node:readline');
 
 const root = path.resolve(__dirname, '..');
 const reports = path.join(root, 'browser-report');
-const checks = ['game', 'setup', 'character-selection', 'ai', 'buffs', 'touch-layouts', 'touch-release', 'display', 'balanced-pitches', 'bonus-pitches', 'bonuses', 'runtime', 'offline', 'hd'];
+const checks = ['game', 'setup', 'character-selection', 'ai', 'buffs', 'touch-layouts', 'touch-release', 'display', 'balanced-pitches', 'bonus-pitches', 'bonuses', 'runtime', 'offline', 'hd', 'updates'];
 // CI runs these groups as parallel jobs (`--shard 2`), each under 2 minutes.
 // Every check belongs to exactly one group, so the jobs together run them all.
 const shards = [
   ['ai', 'buffs', 'game', 'setup', 'display'],
-  ['character-selection', 'runtime', 'hd'],
+  ['character-selection', 'runtime', 'hd', 'updates'],
   ['touch-layouts', 'bonuses', 'bonus-pitches', 'touch-release', 'balanced-pitches', 'offline'],
 ];
 const grouped = shards.flat();

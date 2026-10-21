@@ -1,6 +1,7 @@
 // Offline cache for the installed game. build-pages.py fills in the revision and
 // the files a match needs; app URLs carry ?v=REVISION, so cached copies never mix
-// releases. The page itself is fetched from the network first so updates arrive.
+// releases. The page itself is fetched from the network first so updates arrive;
+// offline, the cached page of the last release opens instead.
 const REVISION = 'dev', FILES = [];
 const CACHE = 'sportheads-' + REVISION;
 
@@ -18,8 +19,12 @@ self.addEventListener('fetch', event => {
   const request = event.request, url = new URL(request.url);
   // Room signalling, TURN credentials and other hosts always use the network.
   if (request.method !== 'GET' || url.origin !== location.origin) return;
+  // The page asks the server which release is live; never answer from a cache.
+  if (url.pathname.endsWith('/version.json')) return;
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match('./', { ignoreSearch: true })
+    // Revalidate past the HTTP cache (GitHub Pages allows 10 minutes), so a
+    // reopened app gets the release that was just deployed.
+    event.respondWith(fetch(new Request(request, { cache: 'no-cache' })).catch(() => caches.match('./', { ignoreSearch: true })
       .then(page => page || Response.error())));
     return;
   }

@@ -208,6 +208,29 @@ reste compatible : l’absence d’option vaut `false`.
   marchent sans réseau. Les musiques sont mises en cache à leur première écoute.
   La page est toujours demandée au réseau d'abord, pour recevoir les mises à jour.
 
+## Nouvelles versions
+
+- `build-pages.py` tamponne `version.js` (révision des fichiers publiés et
+  commit) et publie `version.json`. Le numéro court du commit s'affiche dans
+  « Commandes et projet ».
+- Le service worker redemande la page au serveur en contournant le cache HTTP
+  de GitHub Pages (10 minutes) : rouvrir le site ou l'app charge la version qui
+  vient d'être déployée. Sans réseau, la dernière version en cache s'ouvre.
+- `version.js` compare la page à `version.json` au démarrage, au retour sur
+  l'onglet ou l'app, au retour du réseau et toutes les 10 minutes. Une page
+  ancienne se recharge seule si rien ne peut être perdu : au démarrage, ou au
+  retour après plus d'une minute ailleurs (une app installée reste souvent en
+  mémoire au lieu de redémarrer), hors match, salle et matchmaking. Sinon un
+  bandeau propose « Mettre à jour » ; il n'apparaît jamais pendant un match.
+  Un seul rechargement automatique par version et par onglet, contre les
+  boucles si le CDN sert encore l'ancienne page.
+- En ligne, l'hôte et l'invité échangent leur révision (`build` dans `welcome`
+  et `capabilities`). Une différence n'interdit pas le match (le protocole
+  `PROTOCOL` garde ce rôle) : le joueur à jour lit que son adversaire doit
+  recharger, l'autre reçoit le bandeau.
+- `scripts/check-updates.cjs` simule un déploiement par-dessus une première
+  version, avec le cache HTTP de GitHub Pages.
+
 
 ## Cadence d'affichage et batterie
 

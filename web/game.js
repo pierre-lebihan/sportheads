@@ -26,8 +26,10 @@ import { createTouchControls } from './touch-controls.js';
 import { AI_LEVELS, createOpponent } from './opponent.js';
 import { BONUS_NAMES, NEW_BONUSES } from "./bonuses.js";
 import { createAnalytics, createMatchTracker } from './analytics.js';
+import { BUILD, createUpdateWatcher } from './version.js';
 
 const app = createAppStore(), monitor = createPerformanceMonitor(), clock = createFixedStepper(), pacer = createFramePacer();
+let updateReady = false;
 const $ = (selector) => document.querySelector(selector);
 const randomChoices = [['random-player-0', 'skin-left'], ['random-player-1', 'skin-right'], ['random-pitch', 'pitch']];
 const canvas = $('#field'),ctx = canvas.getContext('2d'),keys = new Set(),audio = createAudio();
@@ -167,13 +169,28 @@ $('#join-code').addEventListener('input', () => { app.dispatch({ type: 'room.cod
 $('#create-room').addEventListener('click', () => connectRoom(true));
 $('#join-form').addEventListener('submit', event => { event.preventDefault(); app.dispatch({ type: 'room.code-edited', value: $('#join-code').value }); connectRoom(false); });
 $('#leave-room').addEventListener('click', leaveRoom);
-$('#reload-page').addEventListener('click', () => {
+function reloadLatest() {
   const url = new URL(location.href);
   // A fresh document URL retrieves the latest HTML; its modules are revisioned.
   url.searchParams.set('_refresh', String(Date.now()));
   if (app.value.mode === 'online' && app.value.code) url.searchParams.set('room', app.value.code);
   location.replace(url.href);
-});
+}
+$('#reload-page').addEventListener('click', reloadLatest);
+// New releases: an idle page reloads itself when reopened, a busy one shows a
+// note that stays out of the way of a running match.
+const updates = createUpdateWatcher({ reload: reloadLatest, notify() { updateReady = true; update(); },
+  idle: () => !app.value.started && !app.value.matchmaking && !app.value.busy && app.value.role === null });
+$('#update-reload').addEventListener('click', reloadLatest);
+$('#update-dismiss').addEventListener('click', () => { updateReady = false; update(); });
+$('#build-version').textContent = 'Version ' + BUILD.commit.slice(0, 7);
+async function checkPeerBuild(build) {
+  if (build === BUILD.revision) return;
+  const state = await updates.check('peer'), status = $('#room-status').textContent;
+  const note = state === 'current' ? 'Votre adversaire n’a pas la dernière version du jeu : il doit recharger sa page.'
+    : state === 'outdated' ? 'Une nouvelle version du jeu est sortie : rechargez la page après ce match.' : '';
+  if (note && !status.includes(note)) roomStatus(status + ' ' + note);
+}
 for (const button of document.querySelectorAll('[data-quit-match]')) button.addEventListener('click', quitMatch);
 $('#copy-code').addEventListener('click', () => copyRoom(false));$('#copy-link').addEventListener('click', () => copyRoom(true));
 $('#network-diagnostic').addEventListener('toggle', () => {if ($('#network-diagnostic').open) refreshDiagnostic();});
@@ -251,7 +268,7 @@ document.addEventListener('visibilitychange', () => {if (document.hidden) suspen
 setInterval(sendInput, 50);
 
 function renderState() { return readRenderState(engine(), app.value); }
-network = createRoomSession({ app, getCore: () => core, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio, track });
+network = createRoomSession({ app, getCore: () => core, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio, track, checkPeerBuild });
 function sendInput() { network?.sendInput(); }
 function broadcast() { network?.broadcast(); }
 function connectRoom(create) { return network.connect(create); }
@@ -270,6 +287,7 @@ function update() {
   }
 
   monitor.measure('ui', renderUI);
+  $('#update-notice').hidden = !updateReady || app.value.started;
   observeMatch({ ...snapshot(), skins: skins() });
 }
 function animate(time) {
@@ -304,7 +322,7 @@ function performanceReport() {
     planner: planner?.stats(), scheduler: { tickMs: 1000 / 30, maxStepsPerFrame: 2, debtMs: clock.debtMs, batterySaver: pacer.saver } };
 }
 setupPerformancePanel({ report: performanceReport, reset: () => monitor.reset(), resume() { closeSettings(); pause(false); } });
-window.sportheads = { resetPerformance: () => monitor.reset(), performance: performanceReport, inspectPlanner: () => planner.inspect(), get state() { return app.value; }, snapshot, renderState, get engine() {return engine();}, get renderEngine() {return renderEngine();}, render() {update();network.advance();ctx.setTransform(canvas.width / 800, 0, 0, canvas.width / 800, 0, 0);drawGame(ctx, renderEngine(), renderState());} };
+window.sportheads = { resetPerformance: () => monitor.reset(), checkUpdate: reason => updates.check(reason), performance: performanceReport, inspectPlanner: () => planner.inspect(), get state() { return app.value; }, snapshot, renderState, get engine() {return engine();}, get renderEngine() {return renderEngine();}, render() {update();network.advance();ctx.setTransform(canvas.width / 800, 0, 0, canvas.width / 800, 0, 0);drawGame(ctx, renderEngine(), renderState());} };
 try {
   const response = await fetch('./physics-core.wasm');if (!response.ok) throw new Error('Chargement du moteur impossible.');
   const [wasm] = await Promise.all([WebAssembly.instantiateStreaming(response), loadAssets()]);
@@ -316,6 +334,7 @@ try {
   update();
   // Installable, and playable offline vs the AI or 2P once loaded. A refusal only costs the cache.
   if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('./sw.js').catch(() => {});
+  updates.start();
 } catch (error) {
   $('#start').textContent = 'Recharger la page';$('#start').disabled = false;$('#start').addEventListener('click', () => location.reload());
   $('#status').textContent = 'Le jeu n’a pas pu se charger. Rechargez la page pour réessayer.';window.loadError = error.message;

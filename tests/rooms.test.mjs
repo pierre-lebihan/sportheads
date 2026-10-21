@@ -308,7 +308,7 @@ test('the host reserves its slot before open and rejects a third player without 
   third.openChannel();
   assert.deepEqual(third.sent, [{ type: 'reject', reason: 'full' }]);
   opponent.openChannel();
-  assert.deepEqual(opponent.sent, [{ type: 'welcome', protocol: PROTOCOL, code: room.code, realtime: 1, session: room.session }]);
+  assert.deepEqual(opponent.sent, [{ type: 'welcome', protocol: PROTOCOL, code: room.code, realtime: 1, session: room.session, build: 'dev' }]);
   assert.deepEqual(events.ready, ['host']);
   t.mock.timers.tick(250);
   assert.equal(third.closed, true);
@@ -581,3 +581,20 @@ test('a guest stops calling back after two minutes and says so', async t => {
   assert.equal(failed, 1); assert.equal(room.closed, false, 'the seat stays for a manual return');
 });
 
+
+test('each side learns the other page\'s release, and older pages report none', async t => {
+  const { peers, createRoom } = setup(t);
+  const hostBuilds = [], guestBuilds = [];
+  const { room: host } = createRoom({ onBuild: build => hostBuilds.push(build) }); await host.create();
+  const connection = new FakeConnection();
+  peers[0].incoming(connection); connection.openChannel();
+  assert.equal(connection.sent[0].build, 'dev');
+  connection.emit('data', { type: 'capabilities', realtime: 0, build: 'b'.repeat(12) });
+  assert.deepEqual(hostBuilds, ['b'.repeat(12)]);
+  const { room: guest } = createRoom({ onBuild: build => guestBuilds.push(build) }); await guest.join('ABCD2345');
+  guest.connection.openChannel();
+  guest.connection.emit('data', { type: 'welcome', protocol: PROTOCOL, code: guest.code });
+  assert.equal(guest.connected, true);
+  assert.deepEqual(guestBuilds, [null]);
+  assert.equal(guest.connection.sent.find(message => message.type === 'capabilities').build, 'dev');
+});

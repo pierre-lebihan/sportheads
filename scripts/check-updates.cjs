@@ -87,7 +87,9 @@ const server = http.createServer((request, response) => {
     // Offline, the cached release still opens, without reloading in a loop.
     await page.waitForFunction(() => navigator.serviceWorker.controller?.scriptURL.endsWith('/sw.js'));
     await page.evaluate(() => navigator.serviceWorker.ready.then(registration => registration.update()));
-    await page.waitForFunction(async () => (await caches.keys()).includes('sportheads-bbbbbbbbbbbb'));
+    // Wait for the activation too (it drops the old cache): until then the old
+    // worker can still answer the offline reload from release A.
+    await page.waitForFunction(async old => { const keys = await caches.keys(); return keys.includes('sportheads-bbbbbbbbbbbb') && !keys.includes(old); }, 'sportheads-' + revision);
     await context.setOffline(true);
     await page.reload(); await booted(page);
     assert.equal(await shown(page), 'Version ' + next.commit.slice(0, 7));

@@ -17,6 +17,9 @@ export function layoutArena(slot, surface, touch) {
     // Different left/right control widths shift the field while preserving both
     // gutters: a single-player kick button needs less room than a second pad.
     surface.style.marginLeft = landscape && tactile && !zones && !local ? '40px' : '0';
+    // In portrait, invisible zones lift the field into the upper part of the
+    // screen, as the visible pads did, so the pause panel leaves its tools free.
+    slot.style.paddingBottom = zones && !landscape && !touch.hidden ? `${Math.max(0, (height - 480 * scale) / 2)}px` : '0';
     surface.style.width = `${800 * scale}px`;
     surface.style.height = `${480 * scale}px`;
   }

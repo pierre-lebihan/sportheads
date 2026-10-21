@@ -33,8 +33,8 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   $('#touch-settings').hidden = !hasTouch();
   document.body.classList.toggle('touch-zones', app.value.touchLayout === 'zones');
   $('#touch-layout-help').textContent = app.value.touchLayout === 'zones' ? app.value.mode === 'local' ?
-  'Aucun bouton affiché, le terrain prend toute la place. Bleu joue sur la moitié gauche, Rouge sur la moitié droite. Bande extérieure : posez le pouce et glissez pour marcher, vers le haut pour sauter. Bande intérieure : touchez pour tirer.' :
-  'Aucun bouton affiché, le terrain prend toute la place. Moitié gauche de l’écran : posez le pouce n’importe où et glissez pour marcher, vers le haut pour sauter. Moitié droite : touchez pour tirer. Choisissez une autre disposition pour revoir les boutons.' :
+  'Commandes transparentes par-dessus le terrain, qui prend toute la place. Bleu joue sur la moitié gauche, Rouge sur la moitié droite. Bande extérieure : posez le pouce et glissez pour marcher, vers le haut pour sauter. Bande intérieure : touchez pour tirer.' :
+  'Commandes transparentes par-dessus le terrain, qui prend toute la place. Moitié gauche de l’écran : posez le pouce n’importe où, le joystick vient sous le pouce ; glissez pour marcher, vers le haut pour sauter. Moitié droite : Tir, avec un bouton Saut au-dessus.' :
   app.value.touchLayout === 'thumbs' ?
   'Pouce gauche : orientez le joystick pour marcher. Une remontée déclenche un seul saut, même en diagonale. Revenez au centre ou dans la moitié basse, puis remontez pour resauter. Pouce droit : Tir.' :
   'Pouce gauche : déplacement. Index gauche : Saut, en haut à gauche. Pouce droit : Tir. En local, Rouge a son bouton Saut en haut à droite.';
@@ -46,6 +46,7 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   $('#close-settings').hidden = !app.value.started;
   $('#quit-match-settings').hidden = !app.value.started;
   $('#touch-controls').hidden = !app.value.started;
+  $('.zone-ghosts').hidden = !app.value.started;
   // Safari before 15.4 has no :has(), so the dock follows the controls by class.
   $('.ground-bar').classList.toggle('with-controls', app.value.started);
   touch.update({ mode: app.value.mode, side: ownSide(), names, enabled: app.value.started && !app.value.paused && phase !== PHASE.finished && (app.value.mode !== 'online' || app.value.connected) });

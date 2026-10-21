@@ -102,12 +102,19 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
             tools: [...document.querySelectorAll('.match-bar button')].filter(b => b.getClientRects().length).every(b => { const r = b.getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('button') === b; }),
             overflow: document.documentElement.scrollWidth <= innerWidth };
         });
+        assert.ok(await page.evaluate(() => ['stick', 'kick', 'jump'].every(name => {
+          const ghost = document.querySelector(`[data-ghost-${name}="0"]`), r = ghost.getBoundingClientRect();
+          return ghost.getClientRects().length && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight && +getComputedStyle(ghost.parentElement.parentElement).zIndex > 2;
+        }) && !document.querySelector('[data-ghost-jump="1"]').getClientRects().length), 'transparent stick, Tir and Saut are drawn above the field');
+        assert.ok(await page.evaluate(() => { const g = document.querySelector('[data-ghost-jump="0"]').getBoundingClientRect(), t = document.querySelector('[data-side="0"] [data-zone-jump]').getBoundingClientRect();
+          return t.left <= g.left && t.right >= g.right && t.top <= g.top && t.bottom >= g.bottom && g.bottom <= document.querySelector('[data-ghost-kick="0"]').getBoundingClientRect().top; }), 'the Saut touch area covers its drawing, above Tir');
         assert.deepEqual(layout, { visible: 0, filled: true, zones: true, tools: true, overflow: true }, `zones at ${viewport.width}x${viewport.height}: ${JSON.stringify(await page.evaluate(() => [innerWidth, innerHeight, document.querySelector("[data-side=\"0\"] [data-zone-move]").getBoundingClientRect(), document.querySelector("[data-side=\"0\"] [data-zone-kick]").getBoundingClientRect()]))}`);
         await page.screenshot({ path: `evidence/touch-zones-${type.name()}-${viewport.width}.png` });
       }
       await gesture([point(1, zoneMove, .4, .7)]); await expectInput(0);
       await gesture([point(1, zoneMove, .6, .7)]); await expectInput(2);
-      assert.equal(await page.locator(`${zoneMove} .zone-stick`).isVisible(), true, 'a faint stick appears under the thumb');
+      assert.ok(await page.evaluate(() => { const stick = document.querySelector('[data-ghost-stick="0"]'), r = stick.getBoundingClientRect(), z = document.querySelector('[data-side="0"] [data-zone-move]').getBoundingClientRect();
+        return stick.classList.contains('pressed') && Math.abs(r.left + r.width / 2 - (z.left + z.width * .6 - 30)) < 2; }), 'the transparent stick moves under the thumb');
       await gesture([point(1, zoneMove, .6, .7), point(2, zoneKick, .5, .5)]); await expectInput(10);
       assert.equal(await page.locator(zoneKick).evaluate(zone => zone.classList.contains('pressed')), true);
       // The stick follows the thumb, so turning back takes only a short slide.
@@ -116,6 +123,13 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       await gesture([point(1, zoneMove, .97, .7), point(2, zoneKick, .5, .5)]); await expectInput(10);
       await gesture([point(1, zoneMove, .97, .64), point(2, zoneKick, .5, .5)]); await expectJump(10);
       await gesture([point(1, zoneMove, .97, .64)]); await expectInput(2);
+      await gesture([]); await expectInput(0);
+      // The transparent Jump above Tir jumps once per press, with or without a kick.
+      const zoneJump = '[data-side="0"] [data-zone-jump]';
+      await gesture([point(2, zoneJump)]); await expectJump(0);
+      assert.equal(await page.locator('[data-ghost-jump="0"]').evaluate(ghost => ghost.classList.contains('pressed')), true);
+      await gesture([]); await expectInput(0);
+      await gesture([point(2, zoneJump), point(3, zoneKick, .5, .9)]); await expectJump(8);
       await gesture([]); await expectInput(0);
       await page.click('#pause'); assert.equal(await page.evaluate(() => sportheads.snapshot().paused), true, 'tools stay reachable above the zones');
       await page.click('#resume');

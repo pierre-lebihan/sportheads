@@ -12,17 +12,19 @@ autorisation de plein écran n'est nécessaire.
   et ne modifie que son propre personnage.
 - Dans les réglages, **Commandes tactiles → Disposition sur cet appareil**
   propose trois choix, mémorisés sur le téléphone :
-  - **Invisible** (par défaut) : aucun bouton, le terrain prend toute la hauteur
-    en paysage. L’écran entier sert de commandes, sous les outils du match
-    (réglages, son, pause restent touchables). Moitié gauche : un joystick
-    flottant naît sous le pouce et le suit à 30 px au plus, donc faire demi-tour
+  - **Transparent** (par défaut) : le terrain prend toute la hauteur en
+    paysage et les commandes sont dessinées en transparence par-dessus, dans
+    un calque qui ne capte aucun toucher. L’écran entier sert de commandes,
+    sous les outils du match (réglages, son, pause restent touchables).
+    Moitié gauche : le joystick, au repos en bas à gauche, vient se placer sous
+    le pouce posé n’importe où et le suit à 30 px au plus, donc faire demi-tour
     demande un glissement court ; mêmes règles d’angle et de saut que 2 pouces.
-    Moitié droite : Tir tant que le doigt est posé. En local, Bleu a la moitié
-    gauche et Rouge la droite : bande extérieure pour marcher et sauter, bande
-    intérieure pour tirer. Au coup d’envoi et après chaque reprise, les zones
-    s’affichent 3,5 s (ou jusqu’au premier toucher) ; un cercle discret suit le
-    pouce et la zone Tir s’éclaircit pendant l’appui. Les anciens réglages
-    « 3 doigts » sont conservés, l’ancien défaut passe en Invisible.
+    Moitié droite : Tir tant que le doigt est posé, avec le bouton Saut (un saut
+    par appui) au-dessus de Tir contre l’IA et en ligne. En local, Bleu a la
+    moitié gauche et Rouge la droite : bande extérieure pour marcher et sauter,
+    bande intérieure pour tirer. Au coup d’envoi et après chaque reprise, une
+    aide s’affiche 3,5 s (ou jusqu’au premier toucher). Les anciens réglages
+    « 3 doigts » sont conservés, l’ancien défaut passe en Transparent.
   - **2 pouces** : joystick circulaire de 136 px à gauche. L’angle
     choisit gauche/droite, les diagonales hautes ajoutent le saut et le haut
     saute sur place. La poignée suit le doigt ; la zone neutre au centre arrête

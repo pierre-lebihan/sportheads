@@ -11,6 +11,9 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
   // The zone hints sit above the field but never catch a touch, so the match
   // tools stay usable while they show.
   const hints = root.parentElement.querySelector('.zone-hints');
+  // Transparent controls are drawn in a layer above the field that ignores
+  // touches; the zones underneath receive them.
+  const ghosts = root.parentElement.querySelector('.zone-ghosts');
   const showHints = shown => { root.classList.toggle('zones-hint', shown); hints?.classList.toggle('shown', shown); };
   root.dataset.layout = layout;
   const contacts = () => [...touches.values(), ...pointers.values()];
@@ -41,18 +44,24 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
       stick.classList.toggle('pressed', layout === 'thumbs' && !!contact);
       stick.setAttribute('aria-pressed', String(layout === 'thumbs' && !!contact));
     }
-    // The floating stick appears faintly under the thumb while it is held.
-    for (const [position, zone] of zones.entries()) {
-      const index = +zone.closest('[data-side]').dataset.side, rect = zoneRects[position];
+    // The transparent stick moves under the thumb while it is held, then
+    // returns to its resting place.
+    for (const zone of zones) {
+      const index = +zone.closest('[data-side]').dataset.side, pad = zone.parentElement;
       const contact = held.find(contact => contact.side === index && contact.movement === zone);
-      zone.classList.toggle('pressed', !!contact);
-      const kick = zone.parentElement.querySelector('[data-zone-kick]');
-      kick.classList.toggle('pressed', held.some(contact => contact.side === index && contact.button === kick));
-      if (!contact) continue;
-      zone.style.setProperty('--origin-x', `${contact.center.x - rect.left}px`);
-      zone.style.setProperty('--origin-y', `${contact.center.y - rect.top}px`);
-      zone.style.setProperty('--stick-x', `${contact.vector.x * FLOATING_RADIUS}px`);
-      zone.style.setProperty('--stick-y', `${contact.vector.y * FLOATING_RADIUS}px`);
+      const kick = pad.querySelector('[data-zone-kick]'), jump = pad.querySelector('[data-zone-jump]');
+      const kicking = held.some(contact => contact.side === index && contact.button === kick);
+      const jumping = held.some(contact => contact.side === index && contact.button === jump);
+      zone.classList.toggle('pressed', !!contact); kick.classList.toggle('pressed', kicking);
+      if (!ghosts) continue;
+      ghosts.querySelector(`[data-ghost-kick="${index}"]`).classList.toggle('pressed', kicking);
+      ghosts.querySelector(`[data-ghost-jump="${index}"]`).classList.toggle('pressed', jumping);
+      const stick = ghosts.querySelector(`[data-ghost-stick="${index}"]`);
+      stick.classList.toggle('pressed', !!contact);
+      stick.style.left = contact ? `${contact.center.x}px` : '';
+      stick.style.top = contact ? `${contact.center.y}px` : '';
+      stick.style.setProperty('--stick-x', `${(contact?.vector.x || 0) * FLOATING_RADIUS}px`);
+      stick.style.setProperty('--stick-y', `${(contact?.vector.y || 0) * FLOATING_RADIUS}px`);
     }
     if (notify) onChange();
   }
@@ -73,19 +82,19 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
     if (!enabled) return;
     const pad = target.closest?.('[data-side]'), button = target.closest?.('[data-action]');
     if (!pad || !root.contains(pad) || pad.hidden || button?.disabled) return;
-    const zone = target.closest?.('[data-zone-move]');
-    if (zone || target.closest?.('[data-zone-kick]')) showHints(false);
+    const zone = target.closest?.('[data-zone-move]'), zoneJump = target.closest?.('[data-zone-jump]');
+    if (zone || zoneJump || target.closest?.('[data-zone-kick]')) showHints(false);
     if (zone) {
       const contact = { button: zone, movement: zone, side: +pad.dataset.side, action: 0, center: { x, y } };
       updateMovement(contact, x, y); return contact;
     }
     const kick = target.closest?.('[data-zone-kick]');
     if (kick) return { button: kick, side: +pad.dataset.side, action: 8 };
-    if (button?.hasAttribute('data-jump-pulse')) {
+    if (button?.hasAttribute('data-jump-pulse') || zoneJump) {
       if (mode === 'local') return;
       const index = +pad.dataset.side;
       pendingJumps |= 4 << (index * 4); jumpSequence++;
-      return { button, side: index, action: 0, pulse: true };
+      return { button: zoneJump || button, side: index, action: 0, pulse: true };
     }
     const movement = target.closest('[data-movement]');
     // In the three-finger layout the same Jump button is placed above the pad.
@@ -182,12 +191,16 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
     clear,
     update(state) {
       if (mode !== state.mode || side !== state.side || !state.enabled) clear();
-      // Invisible zones show where they are for a few seconds after each start.
+      // The zones show their hints for a few seconds after each start.
       if (state.enabled && !enabled && layout === 'zones') {
         showHints(true); clearTimeout(hintTimer);
         hintTimer = setTimeout(() => showHints(false), 3500);
       } else if (!state.enabled) { clearTimeout(hintTimer); showHints(false); }
       mode = state.mode; side = state.side; enabled = state.enabled; root.dataset.mode = mode;
+      if (ghosts) {
+        ghosts.dataset.mode = mode;
+        for (const ghost of ghosts.children) ghost.hidden = mode !== 'local' && +ghost.dataset.ghostSide !== side;
+      }
       if (hints) { hints.dataset.mode = mode; for (const hint of hints.children) hint.hidden = mode !== 'local' && +hint.dataset.hintSide !== side; }
       for (const pad of root.querySelectorAll('[data-side]')) {
         const index = +pad.dataset.side; pad.hidden = mode !== 'local' && index !== side;

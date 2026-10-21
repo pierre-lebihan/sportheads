@@ -176,7 +176,8 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
 
 @media(orientation:landscape) and (max-height:340px){.touch-controls:not([data-mode="local"])[data-layout="thumbs"] .touch-actions button{min-height:88px}}
 .update-notice{position:fixed;left:50%;top:max(8px,env(safe-area-inset-top));transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:8px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;padding:7px 8px 7px 12px;background:#fff4c7;border:1px solid #e0c46c;border-radius:6px;box-shadow:0 2px 8px #0003;color:#5e4c21;font-size:12px}.update-notice[hidden]{display:none}.update-notice p{margin:0;line-height:1.35}.update-notice button{font-size:12px;padding:5px 9px;white-space:nowrap}#update-dismiss{background:none;border:0;color:#5e4c21;font-size:18px;line-height:1;padding:2px 4px}.build-version{font-size:10px;color:#728396;margin:6px 0 0}
-/* Invisible zones: the controls cover the whole screen under the match tools. */
+/* Transparent controls: touch zones cover the whole screen under the match
+   tools, and their drawings sit above the field without catching touches. */
 .touch-zone{display:none}
 .touch-controls[data-layout="zones"] .touch-pad>:not(.touch-zone){display:none}
 .touch-device .touch-controls[data-layout="zones"]{position:fixed;inset:0;display:block;padding:0;z-index:1;pointer-events:none;background:transparent}
@@ -194,7 +195,19 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
 .zone-hints[data-mode="local"] [data-hint-side="1"][data-hint="kick"]{left:62.5%}.zone-hints[data-mode="local"] [data-hint-side="1"][data-hint="move"]{left:87.5%}
 .zones-hint .touch-zone{background:#ffffff14}.zones-hint .zone-kick,.zones-hint[data-mode="local"] .red .zone-move{box-shadow:inset 1px 0 #ffffff80}
 .zone-kick.pressed{background:#ffffff14}
-.zone-stick{display:none;position:absolute;left:var(--origin-x,0);top:var(--origin-y,0);width:120px;height:120px;margin:-60px;border:2px solid #ffffff66;border-radius:50%;color:#ffffffb3;pointer-events:none}
-.zone-move.pressed .zone-stick{display:block}.zone-stick .stick-knob{background:#ffffff33;box-shadow:none}
 .touch-device.touch-zones .game-surface{z-index:2;pointer-events:none}
-@media(orientation:landscape){.touch-device.touch-zones .bar-tools{top:50%;transform:translateY(-50%);flex-direction:column}}
+@media(orientation:landscape){.touch-device.touch-zones .bar-tools{top:calc(env(safe-area-inset-top) + 8px);transform:none;flex-direction:column}}
+.touch-controls[data-layout="zones"] .zone-jump,.ghost-jump{right:calc(env(safe-area-inset-right) + 34px);bottom:calc(env(safe-area-inset-bottom) + 128px);left:auto;top:auto;width:76px;height:76px;border-radius:50%}
+.touch-controls[data-layout="zones"][data-mode="local"] .zone-jump,.zone-ghosts[data-mode="local"] .ghost-jump{display:none}
+.zone-ghosts{display:none;position:fixed;inset:0;z-index:3;pointer-events:none}.touch-device.touch-zones .zone-ghosts{display:block}
+.ghost-side{display:contents}
+.ghost-stick,.ghost-button{position:fixed;border:2px solid #ffffffa6;border-radius:50%;background:#ffffff2e;box-shadow:0 0 0 1px #2448754d,0 2px 10px #15232d33;color:#fff;transform:translate(-50%,-50%)}
+.ghost-stick{left:calc(env(safe-area-inset-left) + 92px);top:calc(100% - env(safe-area-inset-bottom) - 92px);width:120px;height:120px}
+.ghost-stick .stick-knob{border-color:#fff;background:#ffffff59;box-shadow:none}
+.zone-ghosts[data-mode="local"] [data-ghost-side="1"] .ghost-stick{left:calc(100% - env(safe-area-inset-right) - 92px)}
+.ghost-button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:28px;line-height:1;text-shadow:0 1px 3px #15232dcc;transform:none}
+.ghost-button small{font-size:11px;font-weight:bold}
+.ghost-kick{right:calc(env(safe-area-inset-right) + 28px);bottom:calc(env(safe-area-inset-bottom) + 28px);width:88px;height:88px}
+.ghost-jump{width:64px;height:64px;right:calc(env(safe-area-inset-right) + 40px);bottom:calc(env(safe-area-inset-bottom) + 134px);font-size:22px}
+.zone-ghosts[data-mode="local"] .ghost-kick{right:auto;left:37.5%;transform:translateX(-50%)}.zone-ghosts[data-mode="local"] [data-ghost-side="1"] .ghost-kick{left:62.5%}
+.ghost-stick.pressed,.ghost-button.pressed{background:#ffffff66;border-color:#fff}

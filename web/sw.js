@@ -6,7 +6,10 @@ const REVISION = 'dev', FILES = [];
 const CACHE = 'sportheads-' + REVISION;
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
+  // Bypass the HTTP cache: the page URL has no revision, and a copy still fresh
+  // there would store the previous release's page under the new cache.
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES.map(file => new Request(file, { cache: 'reload' }))))
+    .then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {

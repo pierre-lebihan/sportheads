@@ -8,6 +8,10 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
   const pointers = new Map(), touches = new Map(), buttons = [...root.querySelectorAll('[data-action]')];
   let mode = 'local', side = 0, enabled = false, touchEvents = 'ontouchstart' in window, layout = readTouchLayout();
   let pendingJumps = 0, jumpSequence = 0, hintTimer = 0;
+  // The zone hints sit above the field but never catch a touch, so the match
+  // tools stay usable while they show.
+  const hints = root.parentElement.querySelector('.zone-hints');
+  const showHints = shown => { root.classList.toggle('zones-hint', shown); hints?.classList.toggle('shown', shown); };
   root.dataset.layout = layout;
   const contacts = () => [...touches.values(), ...pointers.values()];
   function masks(kind) {
@@ -70,7 +74,7 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
     const pad = target.closest?.('[data-side]'), button = target.closest?.('[data-action]');
     if (!pad || !root.contains(pad) || pad.hidden || button?.disabled) return;
     const zone = target.closest?.('[data-zone-move]');
-    if (zone || target.closest?.('[data-zone-kick]')) root.classList.remove('zones-hint');
+    if (zone || target.closest?.('[data-zone-kick]')) showHints(false);
     if (zone) {
       const contact = { button: zone, movement: zone, side: +pad.dataset.side, action: 0, center: { x, y } };
       updateMovement(contact, x, y); return contact;
@@ -180,10 +184,11 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
       if (mode !== state.mode || side !== state.side || !state.enabled) clear();
       // Invisible zones show where they are for a few seconds after each start.
       if (state.enabled && !enabled && layout === 'zones') {
-        root.classList.add('zones-hint'); clearTimeout(hintTimer);
-        hintTimer = setTimeout(() => root.classList.remove('zones-hint'), 3500);
-      } else if (!state.enabled) { clearTimeout(hintTimer); root.classList.remove('zones-hint'); }
+        showHints(true); clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => showHints(false), 3500);
+      } else if (!state.enabled) { clearTimeout(hintTimer); showHints(false); }
       mode = state.mode; side = state.side; enabled = state.enabled; root.dataset.mode = mode;
+      if (hints) { hints.dataset.mode = mode; for (const hint of hints.children) hint.hidden = mode !== 'local' && +hint.dataset.hintSide !== side; }
       for (const pad of root.querySelectorAll('[data-side]')) {
         const index = +pad.dataset.side; pad.hidden = mode !== 'local' && index !== side;
         pad.querySelector('.touch-name').textContent = state.names[index];

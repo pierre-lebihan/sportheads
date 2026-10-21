@@ -186,10 +186,13 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
 .touch-controls[data-layout="zones"][data-mode="local"] .touch-zone{width:25%}
 .touch-controls[data-layout="zones"][data-mode="local"] .blue .zone-kick{left:25%}
 .touch-controls[data-layout="zones"][data-mode="local"] .red .zone-move{left:75%}
-.zone-hint{position:absolute;left:50%;top:72%;transform:translate(-50%,-50%);width:max-content;max-width:90%;padding:6px 10px;border-radius:8px;background:#15232d99;color:#fff;font-size:13px;line-height:1.35;text-align:center;opacity:0;transition:opacity .6s;pointer-events:none}
-/* While the hint shows, the zones rise above the field to stay readable. */
-.touch-device .touch-controls.zones-hint[data-layout="zones"]{z-index:3}.zones-hint .zone-hint{opacity:1}.zones-hint .touch-zone{background:#ffffff14}.zones-hint .zone-kick,.zones-hint[data-mode="local"] .red .zone-move{box-shadow:inset 1px 0 #ffffff80}
-.touch-controls[data-mode="local"] .zone-hint{font-size:11px}
+.zone-hints{display:none;position:fixed;inset:0;z-index:3;pointer-events:none}.touch-device.touch-zones .zone-hints.shown{display:block}
+.zone-hint{position:absolute;left:25%;top:72%;transform:translate(-50%,-50%);width:max-content;max-width:45%;padding:6px 10px;border-radius:8px;background:#15232d99;color:#fff;font-size:13px;line-height:1.35;text-align:center}
+.zone-hint[data-hint="kick"]{left:75%}
+.zone-hints[data-mode="local"] .zone-hint{max-width:23%;font-size:11px}
+.zone-hints[data-mode="local"] [data-hint-side="0"][data-hint="move"]{left:12.5%}.zone-hints[data-mode="local"] [data-hint-side="0"][data-hint="kick"]{left:37.5%}
+.zone-hints[data-mode="local"] [data-hint-side="1"][data-hint="kick"]{left:62.5%}.zone-hints[data-mode="local"] [data-hint-side="1"][data-hint="move"]{left:87.5%}
+.zones-hint .touch-zone{background:#ffffff14}.zones-hint .zone-kick,.zones-hint[data-mode="local"] .red .zone-move{box-shadow:inset 1px 0 #ffffff80}
 .zone-kick.pressed{background:#ffffff14}
 .zone-stick{display:none;position:absolute;left:var(--origin-x,0);top:var(--origin-y,0);width:120px;height:120px;margin:-60px;border:2px solid #ffffff66;border-radius:50%;color:#ffffffb3;pointer-events:none}
 .zone-move.pressed .zone-stick{display:block}.zone-stick .stick-knob{background:#ffffff33;box-shadow:none}

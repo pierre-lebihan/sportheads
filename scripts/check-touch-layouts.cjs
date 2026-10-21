@@ -88,8 +88,7 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       // Invisible zones: left half is a floating stick, right half kicks.
       const zoneMove = '[data-side="0"] [data-zone-move]', zoneKick = '[data-side="0"] [data-zone-kick]';
       assert.ok(await page.evaluate(() => document.querySelector('#touch-controls').classList.contains('zones-hint')), 'a hint shows the zones at the start');
-      // The hint covers the tools briefly, then fades by itself.
-      await page.waitForFunction(() => !document.querySelector('#touch-controls').classList.contains('zones-hint'), null, { timeout: 5000 });
+      assert.equal(await page.locator('.zone-hints .zone-hint').filter({ visible: true }).count(), 2, 'one move and one kick hint for the single player');
       for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 740, height: 320 }, { width: 390, height: 844 }]) {
         await page.setViewportSize(viewport);
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -121,7 +120,7 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       await page.click('#pause'); assert.equal(await page.evaluate(() => sportheads.snapshot().paused), true, 'tools stay reachable above the zones');
       await page.click('#resume');
       await page.evaluate(() => { const select = document.querySelector('#touch-layout'); select.value = 'thumbs'; select.dispatchEvent(new Event('change')); });
-      await page.waitForFunction(() => !document.querySelector('#touch-controls').classList.contains('zones-hint') && document.querySelector('[data-zone-move]').getClientRects().length === 0);
+      await page.waitForFunction(() => document.querySelector('[data-zone-move]').getClientRects().length === 0 && !document.querySelector('.zone-hints .zone-hint').getClientRects().length);
       assert.equal(await page.locator(precise).isVisible(), true);
       await gesture([point(2, precise)]); await expectJump(0);
       assert.equal(await page.locator(precise).getAttribute('aria-pressed'), 'true');

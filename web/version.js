@@ -25,7 +25,7 @@ async function liveRevision() {
 // unbuilt page, every check simply answers 'unknown'.
 export function createUpdateWatcher({ idle, notify, reload = () => location.reload(), fetchRevision = liveRevision,
   revision = BUILD.revision, storage = sessionStore(), now = Date.now } = {}) {
-  let latest = null, hiddenAt = null, pending = null;
+  let latest = null, hiddenAt = null;
   const triedFor = () => { try { return storage?.getItem(TRIED); } catch { return null; } };
   const markTried = value => { try { storage?.setItem(TRIED, value); } catch { /* Then it may reload once more. */ } };
 
@@ -35,27 +35,32 @@ export function createUpdateWatcher({ idle, notify, reload = () => location.relo
     try { live = await fetchRevision(); } catch { return 'unknown'; }
     if (live === revision) return 'current';
     const fresh = latest !== live; latest = live;
-    // Fetch the new service worker now, so the offline copy follows the release.
-    globalThis.navigator?.serviceWorker?.getRegistration?.().then(registration => registration?.update()).catch(() => {});
     // A stale CDN copy could answer with the old page again: reload only once per release.
-    if ((reason === 'boot' || reason === 'return') && idle() && triedFor() !== live) { markTried(live); reload(); return 'reloading'; }
+    if ((reason === 'boot' || reason === 'return') && idle() && triedFor() !== live) {
+      markTried(live); reload();
+      // A navigation can be cancelled (for example while the new service worker
+      // takes over): if this page is still here, fall back to the note.
+      setTimeout(() => notify(live), 10_000).unref?.();
+      return 'reloading';
+    }
+    // Fetch the new service worker now, so the offline copy follows the release.
+    // (A reload checks it by itself; updating during it can cancel the navigation.)
+    globalThis.navigator?.serviceWorker?.getRegistration?.().then(registration => registration?.update()).catch(() => {});
     if (fresh) notify(live);
     return 'outdated';
   }
-  function checkSoon(reason) { return pending ??= check(reason).finally(() => { pending = null; }); }
-
   return {
-    check: checkSoon,
+    check,
     get latest() { return latest; },
     start() {
-      checkSoon('boot');
+      check('boot');
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) { hiddenAt = now(); return; }
         const away = hiddenAt !== null && now() - hiddenAt >= AWAY; hiddenAt = null;
-        checkSoon(away ? 'return' : 'visible');
+        check(away ? 'return' : 'visible');
       });
-      window.addEventListener('online', () => checkSoon('online'));
-      setInterval(() => { if (!document.hidden) checkSoon('poll'); }, CHECK_EVERY);
+      window.addEventListener('online', () => check('online'));
+      setInterval(() => { if (!document.hidden) check('poll'); }, CHECK_EVERY);
     },
   };
 }

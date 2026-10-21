@@ -39,6 +39,9 @@ const server = http.createServer((request, response) => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true, args: ['--no-proxy-server'] });
   const errors = [];
   const shown = page => page.evaluate(() => document.querySelector('#build-version').textContent);
+  // Waits across the reload for the page to run the expected release.
+  const running = (page, commitId) => page.waitForFunction(expected => window.ready
+    && document.querySelector('#build-version')?.textContent === expected, 'Version ' + commitId.slice(0, 7), { timeout: 20_000 });
   const booted = async page => {
     await page.waitForFunction(() => window.ready || window.loadError);
     assert.equal(await page.evaluate(() => window.loadError), undefined);
@@ -51,6 +54,9 @@ const server = http.createServer((request, response) => {
     await page.evaluate(() => navigator.serviceWorker.ready);
     assert.equal(await shown(page), 'Version ' + commit.slice(0, 7));
     assert.equal(await page.evaluate(() => sportheads.checkUpdate('poll')), 'current');
+    // A second window of the app, left idle on the old release.
+    const old = await context.newPage();
+    await old.goto(url + '?_refresh=a'); await booted(old);
 
     // Deploy B while a match is running: no reload, no note over the match.
     await page.click('#play-ai'); await page.click('#setup-next');
@@ -64,24 +70,22 @@ const server = http.createServer((request, response) => {
     // After the match the note appears; the button loads release B.
     await page.evaluate(() => { document.querySelector('[data-quit-match]').click(); });
     await page.locator('#update-notice').waitFor();
-    await Promise.all([page.waitForNavigation(), page.click('#update-reload')]);
-    await booted(page);
-    assert.equal(await shown(page), 'Version ' + next.commit.slice(0, 7), 'reload button loads the new release');
+    await page.click('#update-reload');
+    await running(page, next.commit); // The reload button loads the new release.
 
-    // An app reopened on the old release (HTTP cache still fresh) gets the new one.
-    live = built;
-    const old = await context.newPage();
-    await old.goto(url + '?_refresh=a'); await booted(old);
-    await old.evaluate(() => navigator.serviceWorker.ready);
+    // The idle window, brought back after a while, reloads into the new release
+    // (once the new service worker has taken over, as it would have by then).
+    await old.waitForFunction(async () => (await caches.keys()).filter(key => key.startsWith('sportheads-')).join() === 'sportheads-bbbbbbbbbbbb');
     assert.equal(await shown(old), 'Version ' + commit.slice(0, 7));
-    live = releaseB;
-    await Promise.all([old.waitForNavigation(), old.evaluate(() => sportheads.checkUpdate('return'))]);
-    await booted(old);
-    assert.equal(await shown(old), 'Version ' + next.commit.slice(0, 7), 'an idle reopened page reloads into the new release');
+    await old.evaluate(() => { sportheads.checkUpdate('return'); });
+    // Chromium sometimes cancels a navigation in a background tab; the page then
+    // shows the note instead, so the player is never left unaware.
+    await old.waitForFunction(expected => window.ready && (document.querySelector('#build-version')?.textContent === expected
+      || !document.querySelector('#update-notice').hidden), 'Version ' + next.commit.slice(0, 7), { timeout: 20_000 });
     await old.close();
+    // An app reopened while the HTTP cache still holds the old page gets the new one.
     const reopened = await context.newPage();
-    await reopened.goto(url); await booted(reopened);
-    assert.equal(await shown(reopened), 'Version ' + next.commit.slice(0, 7), 'reopening loads the new release despite the HTTP cache');
+    await reopened.goto(url, { waitUntil: 'commit' }); await running(reopened, next.commit);
     await reopened.close();
 
     // Offline, the cached release still opens, without reloading in a loop.

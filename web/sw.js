@@ -25,10 +25,12 @@ self.addEventListener('fetch', event => {
   // The page asks the server which release is live; never answer from a cache.
   if (url.pathname.endsWith('/version.json')) return;
   if (request.mode === 'navigate') {
-    // Revalidate past the HTTP cache (GitHub Pages allows 10 minutes), so a
-    // reopened app gets the release that was just deployed.
-    event.respondWith(fetch(new Request(request, { cache: 'no-cache' })).catch(() => caches.match('./', { ignoreSearch: true })
-      .then(page => page || Response.error())));
+    // The HTTP cache may still hold the previous page for 10 minutes: then
+    // version.js notices at boot and reloads it past the cache.
+    event.respondWith(fetch(request)
+      // Offline: this worker's own release first, in case an older cache is not deleted yet.
+      .catch(() => caches.open(CACHE).then(cache => cache.match('./', { ignoreSearch: true }))
+        .then(page => page || caches.match('./', { ignoreSearch: true })).then(page => page || Response.error())));
     return;
   }
   event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => {

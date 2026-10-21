@@ -39,8 +39,9 @@ La sélection affiche les deux portraits face à face et une grille de personnag
 Choisissez les deux camps en local ou contre l’IA ; en ligne, chacun choisit le sien
 et voit les changements de l’adversaire en direct avant la validation du créateur.
 
-- Sur mobile : disposition **2 pouces** (joystick pour le déplacement et le saut)
-  ou **3 doigts** (Saut séparé en haut). Choix personnel mémorisé dans
+- Sur mobile : disposition **Invisible** par défaut (terrain en grand, moitié
+  gauche de l’écran pour marcher et sauter, moitié droite pour tirer), **2 pouces**
+  (joystick pour le déplacement et le saut) ou **3 doigts** (Saut séparé en haut). Choix personnel mémorisé dans
   **Commandes tactiles**, modifiable via les réglages pendant le match. Tir reste manuel.
   Contre l’IA et en ligne, le bouton **Saut** au-dessus de Tir a la même taille.
   Il déclenche un saut sur place par appui, sans répétition si le doigt reste posé.

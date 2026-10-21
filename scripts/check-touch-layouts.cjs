@@ -81,10 +81,47 @@ const url = process.argv[2]; if (!url) throw Error('Usage: node scripts/check-to
       }
       await page.goto(url); await page.waitForFunction(() => window.ready || window.loadError);
       assert.equal(await page.evaluate(() => window.loadError), undefined);
-      assert.equal(await page.locator('#touch-layout').inputValue(), 'thumbs');
+      assert.equal(await page.locator('#touch-layout').inputValue(), 'zones', 'invisible zones are the default');
       await page.click('#play-ai'); for (let i = 0; i < 3; i++) await page.click('#setup-next');
       await setTarget(page, 9); await page.selectOption('#bonuses', '0'); await page.click('#start');
       await page.waitForFunction(() => sportheads.snapshot().phase === 1);
+      // Invisible zones: left half is a floating stick, right half kicks.
+      const zoneMove = '[data-side="0"] [data-zone-move]', zoneKick = '[data-side="0"] [data-zone-kick]';
+      assert.ok(await page.evaluate(() => document.querySelector('#touch-controls').classList.contains('zones-hint')), 'a hint shows the zones at the start');
+      // The hint covers the tools briefly, then fades by itself.
+      await page.waitForFunction(() => !document.querySelector('#touch-controls').classList.contains('zones-hint'), null, { timeout: 5000 });
+      for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 740, height: 320 }, { width: 390, height: 844 }]) {
+        await page.setViewportSize(viewport);
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        const layout = await page.evaluate(() => {
+          const field = document.querySelector('#field').getBoundingClientRect(), rect = s => document.querySelector(s).getBoundingClientRect();
+          const move = rect('[data-side="0"] [data-zone-move]'), kick = rect('[data-side="0"] [data-zone-kick]');
+          const visible = [...document.querySelectorAll('.touch-pad button')].filter(b => b.getClientRects().length).length;
+          const near = (a, b) => Math.abs(a - b) < 1;
+          return { visible, filled: innerWidth > innerHeight ? near(field.height, innerHeight) : near(field.width, innerWidth),
+            zones: near(move.left, 0) && near(move.width, innerWidth / 2) && near(move.height, innerHeight) && near(kick.left, innerWidth / 2) && near(kick.right, innerWidth) && near(kick.height, innerHeight),
+            tools: [...document.querySelectorAll('.match-bar button')].filter(b => b.getClientRects().length).every(b => { const r = b.getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('button') === b; }),
+            overflow: document.documentElement.scrollWidth <= innerWidth };
+        });
+        assert.deepEqual(layout, { visible: 0, filled: true, zones: true, tools: true, overflow: true }, `zones at ${viewport.width}x${viewport.height}: ${JSON.stringify(await page.evaluate(() => [innerWidth, innerHeight, document.querySelector("[data-side=\"0\"] [data-zone-move]").getBoundingClientRect(), document.querySelector("[data-side=\"0\"] [data-zone-kick]").getBoundingClientRect()]))}`);
+        await page.screenshot({ path: `evidence/touch-zones-${type.name()}-${viewport.width}.png` });
+      }
+      await gesture([point(1, zoneMove, .4, .7)]); await expectInput(0);
+      await gesture([point(1, zoneMove, .6, .7)]); await expectInput(2);
+      assert.equal(await page.locator(`${zoneMove} .zone-stick`).isVisible(), true, 'a faint stick appears under the thumb');
+      await gesture([point(1, zoneMove, .6, .7), point(2, zoneKick, .5, .5)]); await expectInput(10);
+      assert.equal(await page.locator(zoneKick).evaluate(zone => zone.classList.contains('pressed')), true);
+      // The stick follows the thumb, so turning back takes only a short slide.
+      await gesture([point(1, zoneMove, .97, .7), point(2, zoneKick, .5, .5)]); await expectInput(10);
+      await gesture([point(1, zoneMove, .97 - 45 / 195, .7), point(2, zoneKick, .5, .5)]); await expectInput(9);
+      await gesture([point(1, zoneMove, .97, .7), point(2, zoneKick, .5, .5)]); await expectInput(10);
+      await gesture([point(1, zoneMove, .97, .64), point(2, zoneKick, .5, .5)]); await expectJump(10);
+      await gesture([point(1, zoneMove, .97, .64)]); await expectInput(2);
+      await gesture([]); await expectInput(0);
+      await page.click('#pause'); assert.equal(await page.evaluate(() => sportheads.snapshot().paused), true, 'tools stay reachable above the zones');
+      await page.click('#resume');
+      await page.evaluate(() => { const select = document.querySelector('#touch-layout'); select.value = 'thumbs'; select.dispatchEvent(new Event('change')); });
+      await page.waitForFunction(() => !document.querySelector('#touch-controls').classList.contains('zones-hint') && document.querySelector('[data-zone-move]').getClientRects().length === 0);
       assert.equal(await page.locator(precise).isVisible(), true);
       await gesture([point(2, precise)]); await expectJump(0);
       assert.equal(await page.locator(precise).getAttribute('aria-pressed'), 'true');

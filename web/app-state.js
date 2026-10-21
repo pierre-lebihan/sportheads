@@ -15,7 +15,7 @@ const cleared = { started: false, paused: false, pauseFlags: [false, false], set
   guestBalancedPitches: false, remoteBalancedPitches: false, guestStatBuffs: false, guestBonusV2: false, guestBonusPitches: false };
 function initialAppState() {
   return freeze({ ...cleared, mode: 'local', matchmaking: false, role: null, connected: false, code: '', joinCode: '', busy: false, restoringSettings: false,
-    soundEnabled: true, touchLayout: 'thumbs', setupStep: 'home', lastValidTarget: 7, matchId: 0, roomNotice: { message: '', error: false },
+    soundEnabled: true, touchLayout: 'zones', setupStep: 'home', lastValidTarget: 7, matchId: 0, roomNotice: { message: '', error: false },
     config: { skins: [1, 2], pitch: 8, bonusPitches: false, targetScore: 7, bonusMode: 1, difficulty: 'normal', balance: createBalance() } });
 }
 const fields = {

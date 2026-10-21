@@ -1,20 +1,22 @@
-// Display only the playable 800 x 480 scene. Touch controls reserve space only
-// where they are actually used; landscape tools share the controller gutters.
+// Display only the playable 800 x 480 scene. Visible touch controls reserve space
+// only where they are used; landscape tools share the controller gutters.
 export function layoutArena(slot, surface, touch) {
   function fit() {
     const tactile = document.body.classList.contains('touch-device');
     const landscape = innerWidth > innerHeight;
     const local = touch.dataset.mode === 'local';
-    const gutters = landscape ? tactile ? 152 + (local ? 152 : 112) : 120 : 0;
+    // Invisible zones lie over the field: only the side tools keep a gutter.
+    const zones = tactile && touch.dataset.layout === 'zones';
+    const gutters = landscape ? tactile && !zones ? 152 + (local ? 152 : 112) : 120 : 0;
     const width = Math.max(80, slot.clientWidth - gutters);
     const indexHeight = tactile && !landscape && !touch.hidden && touch.dataset.layout === 'three-fingers' ? 64 : 0;
     slot.style.paddingTop = `${indexHeight}px`;
-    const controllerHeight = tactile && !landscape && !touch.hidden ? touch.offsetHeight : 0;
+    const controllerHeight = tactile && !zones && !landscape && !touch.hidden ? touch.offsetHeight : 0;
     const height = slot.clientHeight - indexHeight;
     const scale = Math.max(.1, Math.min(width / 800, (height - controllerHeight) / 480));
     // Different left/right control widths shift the field while preserving both
     // gutters: a single-player kick button needs less room than a second pad.
-    surface.style.marginLeft = landscape && tactile && !local ? '40px' : '0';
+    surface.style.marginLeft = landscape && tactile && !zones && !local ? '40px' : '0';
     surface.style.width = `${800 * scale}px`;
     surface.style.height = `${480 * scale}px`;
   }

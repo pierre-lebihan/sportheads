@@ -61,7 +61,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
           assert.equal(await page.locator('#reload-page').isVisible(),false,step + ' hides reload');
         }
         await page.selectOption('#bonuses', '0'); await page.click('#start');
-        for (const layout of ['thumbs', 'three-fingers']) {
+        for (const layout of ['zones', 'thumbs', 'three-fingers']) {
           await page.click('#play-view');
           for (const selector of ['#setup-steps','#setup-navigation','#online-panel','#player-choice','#reload-page','.rules-screen .launch','[data-setup-screen=home]','[data-setup-screen=difficulty]','[data-setup-screen=pitch]']) {
             assert.equal(await page.locator(selector).isVisible(),false,`match settings hide ${selector}`);
@@ -76,6 +76,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
           for (const [width, height] of [[320, 568], [390, 844], [844, 390], [740, 320]]) {
             await page.setViewportSize({ width, height }); const result = await fit(page);
             if (mode === 'ai' && width === 844) assert.ok(result.field.width >= 579, 'single player uses the narrower kick gutter');
+            if (layout === 'zones' && width > height) assert.ok(Math.abs(result.field.height - height) < 1, 'invisible zones leave the full height to the field');
             await page.screenshot({ path: `evidence/display-${browser === chrome ? 'chrome' : 'webkit'}-${mode}-${layout}-${width}.png` });
           }
         }

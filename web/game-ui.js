@@ -31,10 +31,14 @@ export function createGameUI({ app, engine, snapshot, coreReady, canStart, peerU
   const names = app.value.mode === 'ai' ? ['Vous · Bleu', 'IA · Rouge'] : ['Bleu', 'Rouge'];
   document.body.classList.toggle('touch-device', hasTouch());
   $('#touch-settings').hidden = !hasTouch();
-  $('#touch-layout-help').textContent = app.value.touchLayout === 'thumbs' ?
+  document.body.classList.toggle('touch-zones', app.value.touchLayout === 'zones');
+  $('#touch-layout-help').textContent = app.value.touchLayout === 'zones' ? app.value.mode === 'local' ?
+  'Aucun bouton affiché, le terrain prend toute la place. Bleu joue sur la moitié gauche, Rouge sur la moitié droite. Bande extérieure : posez le pouce et glissez pour marcher, vers le haut pour sauter. Bande intérieure : touchez pour tirer.' :
+  'Aucun bouton affiché, le terrain prend toute la place. Moitié gauche de l’écran : posez le pouce n’importe où et glissez pour marcher, vers le haut pour sauter. Moitié droite : touchez pour tirer. Choisissez une autre disposition pour revoir les boutons.' :
+  app.value.touchLayout === 'thumbs' ?
   'Pouce gauche : orientez le joystick pour marcher. Une remontée déclenche un seul saut, même en diagonale. Revenez au centre ou dans la moitié basse, puis remontez pour resauter. Pouce droit : Tir.' :
   'Pouce gauche : déplacement. Index gauche : Saut, en haut à gauche. Pouce droit : Tir. En local, Rouge a son bouton Saut en haut à droite.';
-  if (app.value.mode !== 'local') $('#touch-layout-help').textContent += ' Le bouton Saut au-dessus de Tir déclenche aussi un saut par appui, sans déplacement.';
+  if (app.value.mode !== 'local' && app.value.touchLayout !== 'zones') $('#touch-layout-help').textContent += ' Le bouton Saut au-dessus de Tir déclenche aussi un saut par appui, sans déplacement.';
   $('#measure-performance').disabled = !app.value.started;
   $('#measure-performance-paused').disabled = !app.value.started;
   $('#play-view').disabled = !app.value.started;

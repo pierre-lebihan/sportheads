@@ -176,3 +176,22 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
 
 @media(orientation:landscape) and (max-height:340px){.touch-controls:not([data-mode="local"])[data-layout="thumbs"] .touch-actions button{min-height:88px}}
 .update-notice{position:fixed;left:50%;top:max(8px,env(safe-area-inset-top));transform:translateX(-50%);z-index:30;display:flex;align-items:center;gap:8px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;padding:7px 8px 7px 12px;background:#fff4c7;border:1px solid #e0c46c;border-radius:6px;box-shadow:0 2px 8px #0003;color:#5e4c21;font-size:12px}.update-notice[hidden]{display:none}.update-notice p{margin:0;line-height:1.35}.update-notice button{font-size:12px;padding:5px 9px;white-space:nowrap}#update-dismiss{background:none;border:0;color:#5e4c21;font-size:18px;line-height:1;padding:2px 4px}.build-version{font-size:10px;color:#728396;margin:6px 0 0}
+/* Invisible zones: the controls cover the whole screen under the match tools. */
+.touch-zone{display:none}
+.touch-controls[data-layout="zones"] .touch-pad>:not(.touch-zone){display:none}
+.touch-device .touch-controls[data-layout="zones"]{position:fixed;inset:0;display:block;padding:0;z-index:1;pointer-events:none;background:transparent}
+.touch-controls[data-layout="zones"] .touch-pad{display:contents}
+.touch-controls[data-layout="zones"] .touch-zone{display:block;position:fixed;top:0;bottom:0;left:0;width:50%;pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;transition:background-color .5s,box-shadow .5s}
+.touch-controls[data-layout="zones"] .zone-kick{left:50%}
+.touch-controls[data-layout="zones"][data-mode="local"] .touch-zone{width:25%}
+.touch-controls[data-layout="zones"][data-mode="local"] .blue .zone-kick{left:25%}
+.touch-controls[data-layout="zones"][data-mode="local"] .red .zone-move{left:75%}
+.zone-hint{position:absolute;left:50%;top:72%;transform:translate(-50%,-50%);width:max-content;max-width:90%;padding:6px 10px;border-radius:8px;background:#15232d99;color:#fff;font-size:13px;line-height:1.35;text-align:center;opacity:0;transition:opacity .6s;pointer-events:none}
+/* While the hint shows, the zones rise above the field to stay readable. */
+.touch-device .touch-controls.zones-hint[data-layout="zones"]{z-index:3}.zones-hint .zone-hint{opacity:1}.zones-hint .touch-zone{background:#ffffff14}.zones-hint .zone-kick,.zones-hint[data-mode="local"] .red .zone-move{box-shadow:inset 1px 0 #ffffff80}
+.touch-controls[data-mode="local"] .zone-hint{font-size:11px}
+.zone-kick.pressed{background:#ffffff14}
+.zone-stick{display:none;position:absolute;left:var(--origin-x,0);top:var(--origin-y,0);width:120px;height:120px;margin:-60px;border:2px solid #ffffff66;border-radius:50%;color:#ffffffb3;pointer-events:none}
+.zone-move.pressed .zone-stick{display:block}.zone-stick .stick-knob{background:#ffffff33;box-shadow:none}
+.touch-device.touch-zones .game-surface{z-index:2;pointer-events:none}
+@media(orientation:landscape){.touch-device.touch-zones .bar-tools{top:50%;transform:translateY(-50%);flex-direction:column}}

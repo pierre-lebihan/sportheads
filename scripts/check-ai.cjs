@@ -59,9 +59,11 @@ if (!url) throw new Error('Usage: node scripts/check-ai.cjs URL');
           assert.ok(await page.locator('.touch-pad.blue').isVisible());
           assert.equal(await page.locator('.touch-pad.red').isVisible(), false);
           if (cdp) {
-            const box = await page.locator('.touch-pad.blue [data-joystick]').boundingBox();
+            // Default invisible zones: land on the left half, then slide right.
+            const box = await page.locator('.touch-pad.blue [data-zone-move]').boundingBox();
             await page.evaluate(() => { inputLog.length = 0; });
-            await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width * .85, y: box.y + box.height / 2, id: 77 }] });
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: box.x + box.width * .3, y: box.y + box.height * .7, id: 77 }] });
+            await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: box.x + box.width * .3 + 40, y: box.y + box.height * .7, id: 77 }] });
             await page.waitForFunction(() => inputLog.some(mask => (mask & 15) === 2));
             await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
             await page.waitForFunction(() => !document.querySelector('.touch-pad.blue .pressed'));

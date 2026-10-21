@@ -1,4 +1,4 @@
-import { TOUCH_LAYOUTS, movementMask, joystickVector, joystickGesture, readTouchLayout, saveTouchLayout } from './touch-layout.js';
+import { TOUCH_LAYOUTS, FLOATING_RADIUS, movementMask, joystickVector, joystickGesture, floatingStick, readTouchLayout, saveTouchLayout } from './touch-layout.js';
 
 // Native contact snapshots repair missed releases. Every finger owns its own
 // action; sliding changes only the movement contact, never the kick/index.
@@ -7,7 +7,7 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
     event => measure('touchInput', () => handler(event)), options);
   const pointers = new Map(), touches = new Map(), buttons = [...root.querySelectorAll('[data-action]')];
   let mode = 'local', side = 0, enabled = false, touchEvents = 'ontouchstart' in window, layout = readTouchLayout();
-  let pendingJumps = 0, jumpSequence = 0;
+  let pendingJumps = 0, jumpSequence = 0, hintTimer = 0;
   root.dataset.layout = layout;
   const contacts = () => [...touches.values(), ...pointers.values()];
   function masks(kind) {
@@ -20,6 +20,7 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
     const held = contacts(), sticks = [...root.querySelectorAll('[data-joystick]')];
     // Read the layout before writing classes and styles, once per paint.
     const travels = sticks.map(stick => Math.max(0, stick.clientWidth / 2 - 29));
+    const zones = [...root.querySelectorAll('[data-zone-move]')], zoneRects = zones.map(zone => zone.getBoundingClientRect());
     for (const button of buttons) {
       const index = +button.closest('[data-side]').dataset.side, action = +button.dataset.action;
       const pressed = (layout === 'three-fingers' || !button.closest('[data-movement]'))
@@ -36,11 +37,26 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
       stick.classList.toggle('pressed', layout === 'thumbs' && !!contact);
       stick.setAttribute('aria-pressed', String(layout === 'thumbs' && !!contact));
     }
+    // The floating stick appears faintly under the thumb while it is held.
+    for (const [position, zone] of zones.entries()) {
+      const index = +zone.closest('[data-side]').dataset.side, rect = zoneRects[position];
+      const contact = held.find(contact => contact.side === index && contact.movement === zone);
+      zone.classList.toggle('pressed', !!contact);
+      const kick = zone.parentElement.querySelector('[data-zone-kick]');
+      kick.classList.toggle('pressed', held.some(contact => contact.side === index && contact.button === kick));
+      if (!contact) continue;
+      zone.style.setProperty('--origin-x', `${contact.center.x - rect.left}px`);
+      zone.style.setProperty('--origin-y', `${contact.center.y - rect.top}px`);
+      zone.style.setProperty('--stick-x', `${contact.vector.x * FLOATING_RADIUS}px`);
+      zone.style.setProperty('--stick-y', `${contact.vector.y * FLOATING_RADIUS}px`);
+    }
     if (notify) onChange();
   }
   function updateMovement(contact, x, y) {
-    const rect = contact.movement.getBoundingClientRect();
-    if (layout === 'thumbs') {
+    let rect;
+    if (contact.center) { const stick = floatingStick(contact.center, x, y); contact.center = stick.center; rect = stick.rect; }
+    else rect = contact.movement.getBoundingClientRect();
+    if (layout === 'thumbs' || contact.center) {
       contact.gesture = joystickGesture(rect, x, y, contact.gesture);
       contact.vector = contact.gesture.vector; contact.action = contact.gesture.mask & ~4;
       if (contact.gesture.jump) { pendingJumps |= 4 << (contact.side * 4); jumpSequence++; }
@@ -53,6 +69,14 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
     if (!enabled) return;
     const pad = target.closest?.('[data-side]'), button = target.closest?.('[data-action]');
     if (!pad || !root.contains(pad) || pad.hidden || button?.disabled) return;
+    const zone = target.closest?.('[data-zone-move]');
+    if (zone || target.closest?.('[data-zone-kick]')) root.classList.remove('zones-hint');
+    if (zone) {
+      const contact = { button: zone, movement: zone, side: +pad.dataset.side, action: 0, center: { x, y } };
+      updateMovement(contact, x, y); return contact;
+    }
+    const kick = target.closest?.('[data-zone-kick]');
+    if (kick) return { button: kick, side: +pad.dataset.side, action: 8 };
     if (button?.hasAttribute('data-jump-pulse')) {
       if (mode === 'local') return;
       const index = +pad.dataset.side;
@@ -73,7 +97,7 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
     if (!contact.movement) return false;
     const action = contact.action, vector = contact.vector, sequence = jumpSequence;
     updateMovement(contact, x, y);
-    return action !== contact.action || sequence !== jumpSequence || (layout === 'thumbs' && (vector.x !== contact.vector.x || vector.y !== contact.vector.y));
+    return action !== contact.action || sequence !== jumpSequence || ((layout === 'thumbs' || contact.center) && (vector.x !== contact.vector.x || vector.y !== contact.vector.y));
   }
   function removePointer(id) {
     const contact = pointers.get(id);
@@ -154,6 +178,11 @@ export function createTouchControls(root, onChange, measure = (_name, action) =>
     clear,
     update(state) {
       if (mode !== state.mode || side !== state.side || !state.enabled) clear();
+      // Invisible zones show where they are for a few seconds after each start.
+      if (state.enabled && !enabled && layout === 'zones') {
+        root.classList.add('zones-hint'); clearTimeout(hintTimer);
+        hintTimer = setTimeout(() => root.classList.remove('zones-hint'), 3500);
+      } else if (!state.enabled) { clearTimeout(hintTimer); root.classList.remove('zones-hint'); }
       mode = state.mode; side = state.side; enabled = state.enabled; root.dataset.mode = mode;
       for (const pad of root.querySelectorAll('[data-side]')) {
         const index = +pad.dataset.side; pad.hidden = mode !== 'local' && index !== side;

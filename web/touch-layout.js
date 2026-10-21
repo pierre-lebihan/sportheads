@@ -1,8 +1,13 @@
-export const TOUCH_LAYOUTS = ['thumbs', 'three-fingers'];
-const KEY = 'sportheads-touch-layout-v1';
+export const TOUCH_LAYOUTS = ['zones', 'thumbs', 'three-fingers'];
+// Invisible zones became the default in v2. Only an explicit three-finger
+// choice is carried over; the old default (thumbs) moves to the zones.
+const KEY = 'sportheads-touch-layout-v2', LEGACY_KEY = 'sportheads-touch-layout-v1';
 export function readTouchLayout() {
-  try { const value = localStorage.getItem(KEY); if (TOUCH_LAYOUTS.includes(value)) return value; } catch { /* Storage can be disabled. */ }
-  return 'thumbs';
+  try {
+    const value = localStorage.getItem(KEY); if (TOUCH_LAYOUTS.includes(value)) return value;
+    if (localStorage.getItem(LEGACY_KEY) === 'three-fingers') return 'three-fingers';
+  } catch { /* Storage can be disabled. */ }
+  return 'zones';
 }
 export function saveTouchLayout(value) {
   if (!TOUCH_LAYOUTS.includes(value)) return;
@@ -37,6 +42,16 @@ export function movementMask(layout, rect, clientX, clientY, previous = 0) {
   const gap = 1 / rect.width;
   const direction = x < .5 - gap ? 1 : x > .5 + gap ? 2 : 0;
   return direction;
+}
+
+// Invisible zones use a floating stick: its center is where the thumb landed
+// and it trails the thumb by at most half its radius, so turning back takes a
+// short slide. Returns the square that joystickVector expects.
+export const FLOATING_RADIUS = 60;
+export function floatingStick(origin, clientX, clientY, radius = FLOATING_RADIUS) {
+  const dx = clientX - origin.x, dy = clientY - origin.y, distance = Math.hypot(dx, dy), leash = radius / 2;
+  const center = distance > leash ? { x: clientX - dx / distance * leash, y: clientY - dy / distance * leash } : origin;
+  return { center, rect: { left: center.x - radius, top: center.y - radius, width: radius * 2, height: radius * 2 } };
 }
 
 // Leaving the jump sector sideways is not enough to rearm it. A new upward

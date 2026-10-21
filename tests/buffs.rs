@@ -38,7 +38,7 @@ fn jump_by_itself_does_not_strengthen_speed_or_kick() {
     }
 }
 #[test]
-fn head_and_goal_buffs_apply_to_both_camps_without_enlarging_the_feet() {
+fn head_and_goal_buffs_apply_to_both_camps_and_enlarge_the_feet() {
     let mut game = ready();
     let original_feet = game.foot.map(|index| game.world.bodies[index].clone());
     game.set_buffs(0, 0, 50, 50, 0, 0);
@@ -47,10 +47,10 @@ fn head_and_goal_buffs_apply_to_both_camps_without_enlarging_the_feet() {
     for (side, expected) in [30.0, 26.0].into_iter().enumerate() {
         assert_eq!(radius(&game, side), expected);
         assert!(game.world.bodies[game.player[side]].position.y + expected <= 460.0);
-        assert_eq!(
-            game.world.bodies[game.foot[side]].mass,
-            original_feet[side].mass
-        );
+        // The foot grows by the same factor as the head, so its mass by its square.
+        let factor = expected / 20.0;
+        let foot = &game.world.bodies[game.foot[side]];
+        assert!((foot.mass - original_feet[side].mass * factor * factor).abs() < 1e-9);
         assert_eq!(game.world.joints[game.joints[side]].motor_speed, 0.0);
         assert_eq!(
             game.world.bodies[9 + side].position.y,
@@ -61,6 +61,7 @@ fn head_and_goal_buffs_apply_to_both_camps_without_enlarging_the_feet() {
     assert_eq!(game.goal_height(1), 85);
     game.set_buffs(0, 0, 0, 0, 0, 0);
     assert_eq!(radius(&game, 0), 20.0);
+    assert_eq!(game.world.bodies[game.foot[0]].mass, original_feet[0].mass);
     assert_eq!(game.goal_height(0), 100);
     assert_eq!(game.buffs[1], [0, 30, 30, 0, 0]);
 }

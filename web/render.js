@@ -68,6 +68,11 @@ export function drawBonusPickup(ctx, kind, x, y, scale = 1) {
 // The pickup's blurred halo is costly to repaint on each frame. Shadow blur
 // ignores transforms, so the cache keeps the in-game scale of 1.
 const PICKUP_EXTENT = 44, pickups = new Map();
+// The foot sprite follows the head size, including the head handicap.
+function footScale(bodies, side, state) {
+  const head = bodies.find(body => body.role === BODY_ROLE.blue + side);
+  return head?.r > 0 ? head.r / 20 : state.players?.[side]?.scale || 1;
+}
 function drawCachedPickup(ctx, kind, x, y) {
   let raster = pickups.get(kind);
   if (!raster) {
@@ -321,7 +326,7 @@ export function drawGame(ctx, engine, state = {}) {
     if (body.role === BODY_ROLE.blueFoot || body.role === BODY_ROLE.redFoot) {
       const side = body.role - BODY_ROLE.blueFoot;
       const frame = state.players?.[side]?.broken ? 2 : 1;
-      drawSprite(ctx, side === 0 ? 'foot-left' : 'foot-right', frame, body.x, body.y, undefined, undefined, body.angle + Math.PI, { scale: state.players?.[side]?.scale || 1 });
+      drawSprite(ctx, side === 0 ? 'foot-left' : 'foot-right', frame, body.x, body.y, undefined, undefined, body.angle + Math.PI, { scale: footScale(bodies, side, state) });
     }
   }
   for (const bomb of state.bombs || []) drawSprite(ctx, 'bomb', 1, bomb.x, bomb.y);

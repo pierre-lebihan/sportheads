@@ -602,10 +602,19 @@ impl Game {
                         .add_body(Body::circle(p, radius, 100.0, 0.0, 0.01, true));
                     self.world.remove_body(self.foot[side]);
                     let sign = if side == 1 { 1.0 } else { -1.0 };
-                    let fp = p + Vec2::new(sign * 4.0 * scale, 15.6 * scale);
-                    let spawn = p + Vec2::new(-sign * 20.0 * scale, 0.0);
-                    let mut foot =
-                        Body::rectangle(spawn, 20.0 * scale, 5.0 * scale, 2.0, 0.5, 1.0, false);
+                    // Unlike Flash, the foot follows the head handicap too.
+                    let foot_scale = scale * (1.0 + self.buffs[side][1] as f64 / 100.0);
+                    let fp = p + Vec2::new(sign * 4.0 * foot_scale, 15.6 * foot_scale);
+                    let spawn = p + Vec2::new(-sign * 20.0 * foot_scale, 0.0);
+                    let mut foot = Body::rectangle(
+                        spawn,
+                        20.0 * foot_scale,
+                        5.0 * foot_scale,
+                        2.0,
+                        0.5,
+                        1.0,
+                        false,
+                    );
                     foot.group = -1;
                     self.foot[side] = self.world.add_body(foot);
                     self.world

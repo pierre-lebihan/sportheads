@@ -25,7 +25,8 @@ du but, la vitesse de course et le mouvement de frappe. Le saut multiplie l’im
 La protection réduit la hauteur du but de la moitié de sa valeur : +10 / +30 / +50 %
 réduisent sa hauteur de 5 / 15 / 25 %. Les arrondis se font sur la hauteur finale.
 Le dessin, la barre physique et la détection des buts utilisent la même hauteur.
-Le bonus de tête agrandit sa collision et son portrait, en conservant la taille du pied.
+Le bonus de tête agrandit sa collision et son portrait, et le pied grandit du même facteur
+(collision, portée de frappe et dessin), contrairement au Flash d’origine.
 La vitesse multiplie l’accélération et la course ; la frappe multiplie la vitesse
 du mouvement du pied, uniquement lorsqu’on frappe.
 Les nouvelles dimensions peuvent naturellement changer les contacts avec le ballon.

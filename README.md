@@ -21,7 +21,7 @@ par pas de 1 %, la puissance de saut, la taille de tête, la protection de son b
 la vitesse et la frappe.
 La protection réduit la hauteur du but avec un effet de moitié : +50 % donne une réduction de 25 %.
 La vitesse renforce l’accélération et la course ; la frappe accélère le mouvement
-du pied. Le bonus de tête conserve la taille du pied. Les réglages sont verrouillés pendant le match.
+du pied. Le bonus de tête agrandit aussi le pied du même facteur. Les réglages sont verrouillés pendant le match.
 À distance, le créateur les règle pour les deux camps et l’invité les voit en lecture seule.
 Les bonus à ramasser ont trois réglages : **Aucun bonus**, **Bonus historiques**
 (les 18 d’origine, par défaut), ou **Bonus V2** (les 18 historiques et 5 ajouts).

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PLAYER_COUNT, PLAYER_NAMES } from '../web/players.js';
-import { GROUPS, PUBLIC_IDS, applyGroupLink, readGroups, unlockedIds } from '../web/roster-access.js';
+import { GROUPS, PUBLIC_IDS, applyGroupLink, readGroups, unlockedIds, initialSkins } from '../web/roster-access.js';
 
 const memory = () => { const data = new Map(); return { getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, String(value)) }; };
 const place = search => ({ search, pathname: '/sportheads/', hash: '' });
@@ -36,7 +36,7 @@ test('groups match the friend circles', () => {
   assert.deepEqual(names('rennes'), [13, 14, 15, 16, 17, 18, 19, 22, 23]);
   assert.deepEqual(names('insa'), [13, 14, 18, 20, 21, 23]);
   assert.deepEqual(names('famille'), [13, 14, 18, 23]);
-  assert.equal(unlockedIds(['tout']).size, PLAYER_COUNT);
+  assert.equal(unlockedIds(['tout']).size, PLAYER_COUNT - PUBLIC_IDS.length);
 });
 
 test('Macedonia unlocks its three portraits alongside the shared family characters', () => {
@@ -49,5 +49,26 @@ test('Macedonia unlocks its three portraits alongside the shared family characte
     assert.equal(visible.has(id), true);
     for (const group of ['rennes', 'insa', 'famille']) assert.equal(unlockedIds([group]).has(id), false);
   }
-  assert.equal(visible.size, 19);
+  assert.equal(visible.size, 7);
+});
+
+test('group rosters replace the public footballers and start with Pierre and Vilma', () => {
+  assert.deepEqual(initialSkins([]), [1, 2]);
+  for (const code of Object.keys(GROUPS)) {
+    const allowed = unlockedIds([code]);
+    assert.equal([...allowed].some(id => PUBLIC_IDS.includes(id)), false, code);
+    assert.deepEqual(initialSkins([code]), [13, 14], code);
+    assert.ok(initialSkins([code]).every(id => allowed.has(id)));
+  }
+});
+test('opening another group replaces the remembered roster, including legacy accumulated links', () => {
+  const storage = memory();
+  applyGroupLink(place('?groupe=tout'), storage);
+  assert.deepEqual(applyGroupLink(place('?groupe=macedonia'), storage), ['macedonia']);
+  assert.deepEqual(readGroups(storage), ['macedonia']);
+  storage.setItem('sportheads-groupes-v1', '["tout","rennes","macedonia"]');
+  assert.deepEqual(readGroups(storage), ['macedonia']);
+  assert.equal(unlockedIds(readGroups(storage)).size, 7);
+  applyGroupLink(place('?groupe=aucun'), storage);
+  assert.deepEqual(initialSkins(readGroups(storage)), [1, 2]);
 });

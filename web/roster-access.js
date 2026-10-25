@@ -13,8 +13,8 @@ export const GROUPS = Object.freeze({
   insa: [...PIERRE_VILMA, ...ids('Baptiste', 'Jerem')],
   famille: PIERRE_VILMA,
   macedonia: [...PIERRE_VILMA, ...ids('Dragan', 'Budimka', 'Alex')],
-  // Unlocks every character (also used by the browser checks).
-  tout: ALL_IDS,
+  // All private characters, without the public football roster.
+  tout: ALL_IDS.filter(character => !PUBLIC_IDS.includes(character)),
 });
 const KEY = 'sportheads-groupes-v1';
 const FORGET = 'aucun';
@@ -22,7 +22,8 @@ const FORGET = 'aucun';
 export function readGroups(storage = globalThis.localStorage) {
   try {
     const codes = JSON.parse(storage.getItem(KEY) || '[]');
-    return Array.isArray(codes) ? codes.filter(code => Object.hasOwn(GROUPS, code)) : [];
+    // Older releases accumulated links; keep the most recently opened group.
+    return Array.isArray(codes) ? codes.filter(code => Object.hasOwn(GROUPS, code)).slice(-1) : [];
   } catch { return []; }
 }
 function saveGroups(codes, storage) {
@@ -35,7 +36,7 @@ export function applyGroupLink(location = globalThis.location, storage = globalT
   if (!params.has('groupe')) return codes;
   const code = params.get('groupe').trim().toLowerCase();
   if (code === FORGET) codes = [];
-  else if (Object.hasOwn(GROUPS, code) && !codes.includes(code)) codes = [...codes, code];
+  else if (Object.hasOwn(GROUPS, code)) codes = [code];
   saveGroups(codes, storage);
   params.delete('groupe');
   // Keep the code out of the address bar so a shared screenshot does not leak it.
@@ -43,14 +44,24 @@ export function applyGroupLink(location = globalThis.location, storage = globalT
   return codes;
 }
 export function unlockedIds(codes) {
-  return new Set([...PUBLIC_IDS, ...codes.flatMap(code => GROUPS[code] || [])]);
+  const members = codes.flatMap(code => GROUPS[code] || []);
+  return new Set(members.length ? members : PUBLIC_IDS);
 }
 
 let active = null;
+const activeIds = () => active ??= unlockedIds(applyGroupLink());
+
+// Choose within the active roster before rendering, so the public defaults do
+// not become exceptions that keep footballers visible in a private group.
+export function initialSkins(codes) {
+  const allowed = codes === undefined ? activeIds() : unlockedIds(codes);
+  const available = [...allowed], preferred = ids('Pierre', 'Vilma');
+  return [1, 2].map((skin, side) => allowed.has(skin) ? skin
+    : allowed.has(preferred[side]) ? preferred[side] : available[side] ?? available[0]);
+}
 // Locked characters picked by the other side (online room, saved choice) stay shown.
 export function isVisible(character, skins = []) {
-  active ??= unlockedIds(applyGroupLink());
-  return active.has(character) || skins.includes(character);
+  return activeIds().has(character) || skins.includes(character);
 }
 // Keeps a <select> limited to the visible characters plus the current picks.
 export function syncSkinOptions(select, skins) {

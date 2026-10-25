@@ -49,10 +49,11 @@ corps physiques et même hauteur de référence pour la condition de saut.
 Les différences de niveau proviennent uniquement des aides et des bonus.
 
 La sélection présente les deux portraits face à face et une grille de personnages.
-En public, seuls les 12 joueurs pros apparaissent. Les caricatures de potes
-s’affichent avec un lien de groupe, retenu ensuite sur l’appareil :
-`?groupe=rennes`, `?groupe=insa`, `?groupe=famille`, `?groupe=macedonia` ou `?groupe=tout` (tout
-afficher), et `?groupe=aucun` pour revenir à la vue publique. Les groupes sont
+En public, seuls les 12 joueurs pros apparaissent. Avec un lien de groupe, seuls
+les membres de ce groupe apparaissent : les footballeurs sont masqués et Pierre
+et Vilma sont présélectionnés. Le dernier groupe ouvert est retenu sur l’appareil :
+`?groupe=rennes`, `?groupe=insa`, `?groupe=famille`, `?groupe=macedonia` ou `?groupe=tout` (toutes
+les caricatures privées), et `?groupe=aucun` pour revenir à la vue publique. Les groupes sont
 définis dans `web/roster-access.js`. C’est un simple masquage : les images restent
 dans `portraits.webp` et dans le dépôt public. En ligne, un personnage caché choisi
 par l’adversaire reste affiché et jouable.

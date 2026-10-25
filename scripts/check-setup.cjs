@@ -51,10 +51,10 @@ const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 
     await local.click('#play-local'); assert.equal((await state(local)).setupStep, 'players');
     assert.equal(await local.locator('#player-choice').isVisible(), true);
     assert.equal(await local.locator('#pitch').isVisible(), false);
-    assert.equal(await local.locator('#skin-left option').count(), 26);
+    assert.equal(await local.locator('#skin-left option').count(), 14);
     assert.deepEqual((await state(local)).buffs, [[0,0,0,0,0],[0,0,0,0,0]]);
     const hashes = [];
-    for (let skin = 1; skin <= 26; skin++) {
+    for (let skin = 13; skin <= 26; skin++) {
       await local.selectOption('#skin-left', String(skin));
       hashes.push(await local.evaluate(() => {
         const canvas = document.querySelector('#player-preview-0');
@@ -65,10 +65,10 @@ const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 
         return hash;
       }));
     }
-    assert.equal(new Set(hashes).size, 26);
+    assert.equal(new Set(hashes).size, 14);
     await spamRandom(local, '#random-player-0', '#skin-left', '#player-preview-0');
     await spamRandom(local, '#random-player-1', '#skin-right', '#player-preview-1');
-    await local.selectOption('#skin-left', '1'); await local.selectOption('#skin-right', '2');
+    await local.selectOption('#skin-left', '13'); await local.selectOption('#skin-right', '14');
     await local.screenshot({ path: 'evidence/setup-players.png' });
     await local.click('#setup-next'); assert.equal((await state(local)).setupStep, 'pitch');
     assert.equal(await local.locator('#player-choice').isVisible(), false);
@@ -116,7 +116,7 @@ const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 
 
     if (process.argv.includes('--local-only')) {
       assert.deepEqual(errors, []);
-      console.log(JSON.stringify({ passed: true, localOnly: true, checks: ['home and preparation navigation', '26 distinct portraits', 'random characters and pitches', 'goal bounds 1..9', 'balance presets', 'configuration survives navigation and replay'] }));
+      console.log(JSON.stringify({ passed: true, localOnly: true, checks: ['home and preparation navigation', '14 distinct group portraits', 'random characters and pitches', 'goal bounds 1..9', 'balance presets', 'configuration survives navigation and replay'] }));
       return;
     }
     const host = await pageAt(); await host.click('#play-online');
@@ -144,14 +144,14 @@ const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 
     await host.waitForFunction(value => document.querySelector('#skin-right').value === value, randomRed);
     const randomPitch = await spamRandom(host, '#random-pitch', '#pitch', '#pitch-preview');
     await guest.waitForFunction(value => document.querySelector('#pitch').value === value && document.querySelector('#pitch-caption').textContent === document.querySelector('#pitch').selectedOptions[0].textContent, randomPitch);
-    await guest.selectOption('#skin-right', '12');
-    await host.waitForFunction(() => document.querySelector('#skin-right').value === '12');
+    await guest.selectOption('#skin-right', '26');
+    await host.waitForFunction(() => document.querySelector('#skin-right').value === '26');
     await host.selectOption('#pitch', '6'); await guest.waitForFunction(() => document.querySelector('#pitch').value === '6');
     await guest.screenshot({ path: 'evidence/setup-online-guest-pitch.png' });
     await goToSetup(host, 'players'); await waitStep(guest, 'players');
     assert.equal(await guest.locator('#skin-left').isEnabled(), false);
     assert.equal(await guest.locator('#random-player-0').isEnabled(), false);
-    assert.equal(await guest.locator('#skin-right').inputValue(), '12');
+    assert.equal(await guest.locator('#skin-right').inputValue(), '26');
     await goToSetup(host, 'rules'); await waitStep(guest, 'rules');
     await setBalance(host,'red',50); await setTarget(host, 1); await host.locator('#bonuses').selectOption('0');
     await guest.waitForFunction(() => sportheads.snapshot().balance.preset === 'red' && sportheads.snapshot().balance.amount === 50 && document.querySelector('#target-score').value === '1' && document.querySelector('#bonuses').value === '0');
@@ -233,7 +233,7 @@ const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 
     assert.deepEqual((await state(host)).buffs, [[30,30,30,30,30],[0,0,0,0,0]]);
     await host.click('#play-view'); await host.click('#quit-match-settings'); await guest.waitForFunction(() => !sportheads.snapshot().connected);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '26 distinct portraits', '14 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'independent per-stat buffs and preset buttons', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'older guest must refresh before corrected pitch', 'four opt-in pitches sync read-only, old guests refresh, disabling falls back to open pitch', 'older host retains original rendering', 'replay', 'mobile layout'] }));
+    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '14 distinct group portraits', '14 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'independent per-stat buffs and preset buttons', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'older guest must refresh before corrected pitch', 'four opt-in pitches sync read-only, old guests refresh, disabling falls back to open pitch', 'older host retains original rendering', 'replay', 'mobile layout'] }));
   } catch (error) {
     for (const [index, page] of pages.entries()) if (!page.isClosed()) {
       console.error(index, await state(page).catch(() => null));

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { PLAYER_COUNT } from '../web/players.js';
 import { captureState, isValidState, createRemoteEngine } from '../web/net-state.js';
 
 async function wasm() {
@@ -83,7 +84,7 @@ test('malformed and oversized packets cannot mutate the last accepted state', as
     packet => { packet.values.push(1); },
     packet => { delete packet.values[0]; },
     packet => { packet.skins[0] = 0; },
-    packet => { packet.skins[1] = 24; },
+    packet => { packet.skins[1] = PLAYER_COUNT + 1; },
     packet => { packet.bodies[0][0] = NaN; },
     packet => { packet.bodies[0][1] = 1e12 + 1; },
     packet => { packet.bodies[0][8] = 31; },
@@ -210,5 +211,16 @@ test('V2 and every historical pickup compose with maximum buffs on both camps',a
     if(tick%30===0)host.game_collect(Math.floor(tick/30)%23+1,Math.floor(tick/30)%2);
     host.game_tick(tick%60<30?2|16|8|128:4|64);
     if(tick%10===0)assert.ok(isValidState(captureState(host,[13,23])),`tick ${tick}`);
+  }
+});
+
+test('new group portraits retain their IDs in authoritative snapshots', async () => {
+  const host = await wasm(); host.game_start_match(17, 7, 0);
+  const remote = createRemoteEngine();
+  for (const skin of [24, 25, 26]) {
+    host.game_set_skin(0, skin);
+    const packet = captureState(host, [skin, 26]);
+    assert.equal(remote.update(packet), true);
+    assert.deepEqual(remote.readFrame().skins, [skin, 26]);
   }
 });

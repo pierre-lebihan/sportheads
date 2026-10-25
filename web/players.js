@@ -1,5 +1,5 @@
 // Cosmetic roster: all avatars share the same physical/jump parameters.
-export const PLAYER_NAMES = ['Kiwan Mbarré', 'Erling Hallogène', 'Lamine Y’a Mal', 'Ousmane Dans-le-Blé', 'Jude Bellinjambon', 'Colle Palmier', 'Pétrin', 'Vitaminha', 'Achraf Hakiwi', 'Nounours Mendès', 'Virgule van Digue', 'Gianluigi Donnarhume', 'Pierre', 'Vilma', 'Thibaud', 'Marie', 'Corentin', 'Pierre Nomad', 'Maël', 'Baptiste', 'Jerem', 'Arthur', 'Vilma Dreadlocks'];
+export const PLAYER_NAMES = ['Kiwan Mbarré', 'Erling Hallogène', 'Lamine Y’a Mal', 'Ousmane Dans-le-Blé', 'Jude Bellinjambon', 'Colle Palmier', 'Pétrin', 'Vitaminha', 'Achraf Hakiwi', 'Nounours Mendès', 'Virgule van Digue', 'Gianluigi Donnarhume', 'Pierre', 'Vilma', 'Thibaud', 'Marie', 'Corentin', 'Pierre Nomad', 'Maël', 'Baptiste', 'Jerem', 'Arthur', 'Vilma Dreadlocks', 'Dragan', 'Budimka', 'Alex'];
 export const PLAYER_COUNT = PLAYER_NAMES.length;
 // Keep the original atlas intact; new portraits use their own transparent sheet.
 export const AVATAR_SOURCE_FRAMES = [
@@ -20,6 +20,9 @@ export const AVATAR_SOURCE_FRAMES = [
   })),
   { file: 'arthur.png', sourceRect: [0, 0, 1, 1], flipX: true },
   { file: 'vilma-dreadlocks.png', sourceRect: [0, 0, 1, 1] },
+  { file: 'dragan.png', sourceRect: [0, 0, 1, 1], flipX: true },
+  { file: 'budimka.png', sourceRect: [0, 0, 1, 1], flipX: true },
+  { file: 'alex.png', sourceRect: [0, 0, 1, 1] },
 ];
 
 export const PORTRAIT_TILE_SIZE = 192, PORTRAIT_COLUMNS = 5;

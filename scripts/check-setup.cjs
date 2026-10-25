@@ -51,10 +51,10 @@ const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 
     await local.click('#play-local'); assert.equal((await state(local)).setupStep, 'players');
     assert.equal(await local.locator('#player-choice').isVisible(), true);
     assert.equal(await local.locator('#pitch').isVisible(), false);
-    assert.equal(await local.locator('#skin-left option').count(), 23);
+    assert.equal(await local.locator('#skin-left option').count(), 26);
     assert.deepEqual((await state(local)).buffs, [[0,0,0,0,0],[0,0,0,0,0]]);
     const hashes = [];
-    for (let skin = 1; skin <= 23; skin++) {
+    for (let skin = 1; skin <= 26; skin++) {
       await local.selectOption('#skin-left', String(skin));
       hashes.push(await local.evaluate(() => {
         const canvas = document.querySelector('#player-preview-0');
@@ -65,7 +65,7 @@ const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 
         return hash;
       }));
     }
-    assert.equal(new Set(hashes).size, 23);
+    assert.equal(new Set(hashes).size, 26);
     await spamRandom(local, '#random-player-0', '#skin-left', '#player-preview-0');
     await spamRandom(local, '#random-player-1', '#skin-right', '#player-preview-1');
     await local.selectOption('#skin-left', '1'); await local.selectOption('#skin-right', '2');
@@ -116,7 +116,7 @@ const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 
 
     if (process.argv.includes('--local-only')) {
       assert.deepEqual(errors, []);
-      console.log(JSON.stringify({ passed: true, localOnly: true, checks: ['home and preparation navigation', '23 distinct portraits', 'random characters and pitches', 'goal bounds 1..9', 'balance presets', 'configuration survives navigation and replay'] }));
+      console.log(JSON.stringify({ passed: true, localOnly: true, checks: ['home and preparation navigation', '26 distinct portraits', 'random characters and pitches', 'goal bounds 1..9', 'balance presets', 'configuration survives navigation and replay'] }));
       return;
     }
     const host = await pageAt(); await host.click('#play-online');
@@ -233,7 +233,7 @@ const url = process.argv[2] && process.argv[2] + '?groupe=tout'; assert.ok(url, 
     assert.deepEqual((await state(host)).buffs, [[30,30,30,30,30],[0,0,0,0,0]]);
     await host.click('#play-view'); await host.click('#quit-match-settings'); await guest.waitForFunction(() => !sportheads.snapshot().connected);
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '23 distinct portraits', '14 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'independent per-stat buffs and preset buttons', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'older guest must refresh before corrected pitch', 'four opt-in pitches sync read-only, old guests refresh, disabling falls back to open pitch', 'older host retains original rendering', 'replay', 'mobile layout'] }));
+    console.log(JSON.stringify({ passed: true, url, checks: ['mode menu', 'players then pitch then rules', 'back navigation preserves choices', '26 distinct portraits', '14 symmetric terrains', 'repeatable random choices with immediate previews', 'random selections sync with room permissions', 'independent per-stat buffs and preset buttons', 'in-game toolbar', 'late guest follows host screen', 'live terrain and rules in read-only mode', 'guest alone owns red avatar', 'guest cannot navigate host steps', 'invalid input does not block screen sync', 'older guest must refresh before corrected pitch', 'four opt-in pitches sync read-only, old guests refresh, disabling falls back to open pitch', 'older host retains original rendering', 'replay', 'mobile layout'] }));
   } catch (error) {
     for (const [index, page] of pages.entries()) if (!page.isClosed()) {
       console.error(index, await state(page).catch(() => null));

@@ -13,6 +13,13 @@ const url = publicUrl + '?groupe=tout';
     if (browser === chrome) await (await context.newCDPSession(page)).send('Emulation.setFocusEmulationEnabled', { enabled: true });
     await page.goto(target); await page.waitForFunction(() => window.ready || window.loadError);
     assert.equal(await page.evaluate(() => window.loadError), undefined);
+    if (['127.0.0.1','localhost'].includes(new URL(target).hostname)) await page.evaluate(async () => {
+      // The production TURN endpoint only accepts the published origin. Local
+      // checks use real direct WebRTC, without a credential request or relay.
+      const module=new URL(document.querySelector('script[type="module"]').src);
+      module.pathname=module.pathname.replace('game.js','ice-servers.js');
+      const {resetIceServers}=await import(module.href);resetIceServers({});
+    });
     return page;
   }
   const tile = (page, id) => page.locator(`[data-character="${id}"]`);
@@ -28,16 +35,43 @@ const url = publicUrl + '?groupe=tout';
       assert.equal(new URL(page.url()).search, '', 'group code leaves the address bar');
       await page.goto(publicUrl); await page.waitForFunction(() => window.ready || window.loadError);
       await page.click('#play-local');
-      assert.equal(await page.locator('.character-tile:visible').count(), 23);
+      assert.equal(await page.locator('.character-tile:visible').count(), 26);
       await page.goto(publicUrl + '?groupe=aucun'); await page.waitForFunction(() => window.ready || window.loadError);
       await page.click('#play-local');
       assert.equal(await page.locator('.character-tile:visible').count(), 12);
       await page.context().close();
     }
     for (const browser of [chrome, safari]) {
+      const family = await pageAt(browser, publicUrl + '?groupe=Macedonia');
+      await family.click('#play-local');
+      assert.equal(await family.locator('.character-tile:visible').count(), 19);
+      for (const [id,name] of [[24,'Dragan'],[25,'Budimka'],[26,'Alex']]) {
+        assert.equal(await tile(family,id).isVisible(), true);
+        assert.equal(await tile(family,id).locator('.character-name').innerText(), name);
+      }
+      assert.equal(await tile(family,15).isVisible(), false, 'other friend circles stay hidden');
+      await tile(family,24).click();await family.click('#choose-side-1');await tile(family,25).click();
+      await family.setViewportSize({width:844,height:390});
+      await family.screenshot({path:`evidence/macedonia-selection-${browser===chrome?'chrome':'webkit'}.png`});
+      await family.click('#setup-next');await family.click('#setup-next');await family.selectOption('#bonuses','0');await family.click('#start');
+      assert.deepEqual(await skins(family),[24,25]);
+      assert.equal(await family.evaluate(()=>sportheads.snapshot().started),true);
+      await family.screenshot({path:`evidence/macedonia-local-${browser===chrome?'chrome':'webkit'}.png`});
+      await family.click('#pause');await family.locator('#paused [data-quit-match]').click();
+      await family.click('#play-ai');await family.click('#setup-next');await tile(family,26).click();
+      await family.click('#choose-side-1');await tile(family,24).click();
+      await family.click('#setup-next');await family.click('#setup-next');await family.click('#start');
+      assert.deepEqual(await skins(family),[26,24]);
+      await family.waitForFunction(()=>sportheads.snapshot().phase===1);
+      await family.click('#pause');await family.locator('#paused [data-quit-match]').click();
+      await family.reload();await family.waitForFunction(()=>window.ready||window.loadError);await family.click('#play-local');
+      assert.equal(await family.locator('.character-tile:visible').count(),19,'Macedonia remains unlocked after reload');
+      await family.goto(publicUrl+'?groupe=aucun');await family.waitForFunction(()=>window.ready||window.loadError);await family.click('#play-local');
+      for(const id of [24,25,26])assert.equal(await tile(family,id).isVisible(),false);
+      await family.context().close();
       const page = await pageAt(browser);
       await page.click('#play-local');
-      assert.equal(await page.locator('.character-tile').count(), 23);
+      assert.equal(await page.locator('.character-tile').count(), 26);
       await tile(page, 3).click(); await page.click('#choose-side-1'); await tile(page, 5).click();
       assert.deepEqual(await skins(page), [3, 5]);
       assert.equal(await page.locator('#fighter-name-0').innerText(), 'Lamine Y’a Mal');
@@ -82,7 +116,7 @@ const url = publicUrl + '?groupe=tout';
     }
     if (process.argv.includes('--local-only')) {
       assert.deepEqual(errors, []);
-      console.log(JSON.stringify({ passed: true, localOnly: true, checks: ['12 public portraits', 'group link unlocks and forgets', '23 visible portraits', 'local and AI choices', 'random and keyboard selection', 'both camp markers', 'mobile layouts in Chromium and WebKit', 'characters preserved into the match'] }));
+      console.log(JSON.stringify({ passed: true, localOnly: true, checks: ['12 public portraits', 'group link unlocks and forgets', 'Macedonia: three new portraits, local and AI, remembered and forgotten', '26 visible portraits', 'local and AI choices', 'random and keyboard selection', 'both camp markers', 'mobile layouts in Chromium and WebKit', 'characters preserved into the match'] }));
       return;
     }
     // The guest has no group link: the host's hidden pick must still show and play.
@@ -107,28 +141,28 @@ const url = publicUrl + '?groupe=tout';
     assert.equal(await tile(host, 6).getAttribute('data-red'), 'true');
     await host.screenshot({ path: 'evidence/character-selection-online-host.png' });
     await guest.screenshot({ path: 'evidence/character-selection-online-guest.png' });
-    await tile(host, 23).click(); await tile(guest, 9).click();
-    await Promise.all([host, guest].map(page => page.waitForFunction(() => document.querySelector('#fighter-name-0').textContent === 'Vilma Dreadlocks' && document.querySelector('#fighter-name-1').textContent === 'Achraf Hakimi')));
-    assert.deepEqual(await skins(host), [23, 9]); assert.deepEqual(await skins(guest), [23, 9]);
-    assert.equal(await tile(guest, 23).isVisible(), true); assert.equal(await tile(guest, 14).isVisible(), false);
+    await tile(host, 26).click(); await tile(guest, 9).click();
+    await Promise.all([host, guest].map(page => page.waitForFunction(() => document.querySelector('#fighter-name-0').textContent === 'Alex' && document.querySelector('#fighter-name-1').textContent === 'Achraf Hakiwi')));
+    assert.deepEqual(await skins(host), [26, 9]); assert.deepEqual(await skins(guest), [26, 9]);
+    assert.equal(await tile(guest, 26).isVisible(), true); assert.equal(await tile(guest, 14).isVisible(), false);
     assert.equal(await guest.locator('#setup-next').isVisible(), false);
     await host.click('#setup-next');
     await guest.waitForFunction(() => sportheads.snapshot().setupStep === 'pitch');
     assert.equal(await guest.locator('#character-roster').isVisible(), false);
     assert.equal(await guest.locator('#skin-right').isVisible(), true);
-    await guest.selectOption('#skin-right', '23');
-    await host.waitForFunction(() => document.querySelector('#skin-right').value === '23');
+    await guest.selectOption('#skin-right', '26');
+    await host.waitForFunction(() => document.querySelector('#skin-right').value === '26');
     await host.click('#setup-back');
     await guest.waitForFunction(() => sportheads.snapshot().setupStep === 'players');
-    assert.equal(await guest.locator('#fighter-name-1').innerText(), 'Vilma Dreadlocks');
-    assert.equal(await tile(guest, 23).getAttribute('aria-pressed'), 'true');
+    assert.equal(await guest.locator('#fighter-name-1').innerText(), 'Alex');
+    assert.equal(await tile(guest, 26).getAttribute('aria-pressed'), 'true');
     await tile(guest, 9).click();
     await host.waitForFunction(() => document.querySelector('#skin-right').value === '9');
     await host.click('#setup-next'); await host.click('#setup-next'); await host.click('#start');
     await guest.waitForFunction(() => sportheads.snapshot().started);
-    assert.deepEqual(await skins(host), [23, 9]); assert.deepEqual(await skins(guest), [23, 9]);
+    assert.deepEqual(await skins(host), [26, 9]); assert.deepEqual(await skins(guest), [26, 9]);
     await guest.screenshot({ path: 'evidence/vilma-dreadlocks-original-online-match.png' });
     assert.deepEqual(errors, []);
-    console.log(JSON.stringify({ passed: true, checks: ['23 visible portraits', 'choose either camp in local and AI', 'shared character markers', 'random targets the correct camp', 'keyboard', '320/390/844/1280 layout in Chrome and WebKit', 'live bidirectional choices before validation', 'online ownership', 'host validation and guest compact choice', 'hidden host pick shown to a public guest'] }));
+    console.log(JSON.stringify({ passed: true, checks: ['26 visible portraits', 'choose either camp in local and AI', 'shared character markers', 'random targets the correct camp', 'keyboard', '320/390/844/1280 layout in Chrome and WebKit', 'live bidirectional choices before validation', 'online ownership', 'host validation and guest compact choice', 'hidden host pick shown to a public guest'] }));
   } finally { await Promise.all([chrome.close(), safari.close()]); }
 })().catch(e => { console.error(e); process.exitCode = 1; });

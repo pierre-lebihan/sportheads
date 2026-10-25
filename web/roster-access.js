@@ -12,6 +12,7 @@ export const GROUPS = Object.freeze({
   rennes: ids('Pierre', 'Vilma', 'Thibaud', 'Marie', 'Corentin', 'Pierre Nomad', 'Maël', 'Arthur', 'Vilma Dreadlocks'),
   insa: [...PIERRE_VILMA, ...ids('Baptiste', 'Jerem')],
   famille: PIERRE_VILMA,
+  macedonia: [...PIERRE_VILMA, ...ids('Dragan', 'Budimka', 'Alex')],
   // Unlocks every character (also used by the browser checks).
   tout: ALL_IDS,
 });

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { PLAYER_COUNT, PLAYER_NAMES } from '../web/players.js';
 import { GROUPS, PUBLIC_IDS, applyGroupLink, readGroups, unlockedIds } from '../web/roster-access.js';
 
 const memory = () => { const data = new Map(); return { getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, String(value)) }; };
@@ -28,12 +29,25 @@ test('broken or stale storage falls back to the public roster', () => {
   assert.deepEqual(readGroups({ getItem() { throw Error('blocked'); } }), []);
 });
 test('every group only lists known characters', () => {
-  for (const ids of Object.values(GROUPS)) assert.ok(ids.every(id => Number.isInteger(id) && id >= 1 && id <= 23));
+  for (const ids of Object.values(GROUPS)) assert.ok(ids.every(id => Number.isInteger(id) && id >= 1 && id <= PLAYER_COUNT));
 });
 test('groups match the friend circles', () => {
   const names = code => [...unlockedIds([code])].filter(id => id > 12).sort((a, b) => a - b);
   assert.deepEqual(names('rennes'), [13, 14, 15, 16, 17, 18, 19, 22, 23]);
   assert.deepEqual(names('insa'), [13, 14, 18, 20, 21, 23]);
   assert.deepEqual(names('famille'), [13, 14, 18, 23]);
-  assert.equal(unlockedIds(['tout']).size, 23);
+  assert.equal(unlockedIds(['tout']).size, PLAYER_COUNT);
+});
+
+test('Macedonia unlocks its three portraits alongside the shared family characters', () => {
+  assert.deepEqual(PLAYER_NAMES.slice(23), ['Dragan', 'Budimka', 'Alex']);
+  assert.deepEqual(GROUPS.macedonia, [13, 18, 14, 23, 24, 25, 26]);
+  const storage = memory();
+  assert.deepEqual(applyGroupLink(place('?groupe=Macedonia'), storage), ['macedonia']);
+  const visible = unlockedIds(readGroups(storage));
+  for (const id of [24, 25, 26]) {
+    assert.equal(visible.has(id), true);
+    for (const group of ['rennes', 'insa', 'famille']) assert.equal(unlockedIds([group]).has(id), false);
+  }
+  assert.equal(visible.size, 19);
 });

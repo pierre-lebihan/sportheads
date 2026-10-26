@@ -9,12 +9,22 @@ on:
     branches: [main]
     paths-ignore: ['**.md']
   workflow_dispatch:
+    inputs:
+      force_full:
+        description: Run all checks, even for a roster-only change
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
 jobs:
   build:
+    outputs:
+      profile: ${{ steps.plan.outputs.profile }}
+    permissions:
+      contents: read
+      actions: read
     # A newer push to the same branch cancels this validation: only the latest
     # commit is worth testing and deploying.
     concurrency:
@@ -24,34 +34,63 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24'
           cache: npm
+      - name: Select validation and reuse an unchanged engine
+        id: plan
+        run: node scripts/ci-plan.cjs
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Install pinned browser test dependencies
         run: npm ci
       - name: Install Rust components
+        if: steps.plan.outputs.profile != 'roster'
         run: |
           rust_version=$(python3 -c 'import tomllib; print(tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])')
           rustup toolchain install "$rust_version" --profile minimal --component clippy,rustfmt --target wasm32-unknown-unknown
       - name: Validate native core and compile WebAssembly
+        if: steps.plan.outputs.profile != 'roster'
         run: python3 scripts/build-core.py
       - name: Validate browser source
         run: |
           for file in web/*.js; do node --check "$file"; done
-          npm test
+      - name: Validate roster and state contracts
+        if: steps.plan.outputs.profile == 'roster'
+        run: npm run test:roster
+      - name: Validate all JavaScript
+        if: steps.plan.outputs.profile != 'roster'
+        run: npm test
       - name: Build playable match and comparison bench
         run: python3 scripts/build-pages.py
         env:
           # Public URL of the optional TURN credential service (relay/README.md).
           SPORTHEADS_TURN_URL: ${{ vars.SPORTHEADS_TURN_URL }}
+      - name: Install browsers for roster validation
+        if: steps.plan.outputs.profile == 'roster'
+        run: npx playwright install --with-deps chromium webkit
+      - name: Validate portraits, groups and selection
+        if: steps.plan.outputs.profile == 'roster'
+        id: roster
+        run: npm run test:browser -- --roster
+      - name: Save roster browser report
+        if: ${{ !cancelled() && (steps.roster.outcome == 'success' || steps.roster.outcome == 'failure') }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2 (Node 24)
+        with:
+          name: browser-report-roster-${{ github.run_attempt }}
+          path: browser-report/
+          retention-days: 7
+          if-no-files-found: error
       - name: Hand the built site to the browser jobs
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2 (Node 24)
         with:
           name: site
           path: _site
           include-hidden-files: true
-          retention-days: 1
+          retention-days: 14
           if-no-files-found: error
       - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -64,6 +103,7 @@ jobs:
     # The same Chromium and WebKit checks as before, split across three
     # machines (groups in scripts/check-browser-ci.cjs).
     needs: build
+    if: needs.build.outputs.profile != 'roster'
     strategy:
       fail-fast: true
       matrix:
@@ -104,7 +144,7 @@ jobs:
 
   deploy:
     needs: [build, browser]
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.build.result == 'success' && (needs.browser.result == 'success' || (needs.build.outputs.profile == 'roster' && needs.browser.result == 'skipped')) }}
     # A deployment that has started always finishes; a newer one waits behind it
     # and replaces any older one still queued.
     concurrency:

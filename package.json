@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "test:roster": "node --test tests/ci-plan.test.mjs tests/roster-access.test.mjs tests/app-state.test.mjs tests/net-state.test.mjs",
     "test:browser": "node scripts/check-browser-ci.cjs"
   },
   "devDependencies": {

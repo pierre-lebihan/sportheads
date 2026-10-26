@@ -20,7 +20,9 @@ const grouped = shards.flat();
 if (grouped.length !== checks.length || checks.some(name => !grouped.includes(name)))
   throw Error('Browser check shards must contain every check exactly once');
 const shardArg = process.argv.indexOf('--shard');
-const selected = shardArg < 0 ? checks : shards[Number(process.argv[shardArg + 1]) - 1];
+const roster = process.argv.includes('--roster');
+if (roster && shardArg >= 0) throw Error('Choose either --roster or --shard');
+const selected = roster ? ['roster'] : shardArg < 0 ? checks : shards[Number(process.argv[shardArg + 1]) - 1];
 if (!selected) throw Error(`Unknown shard: ${process.argv[shardArg + 1]} (1-${shards.length})`);
 const results = [];
 let server, child;

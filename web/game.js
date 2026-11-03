@@ -3,8 +3,8 @@ import { assetStats } from './assets.js';
 import { createRoomSession } from './room-session.js';
 import { createPlannerService } from './planner.js';
 import { createPerformanceMonitor } from './performance.js';
-import { createFixedStepper } from './fixed-step.js';
 import { createMatchQuality } from './match-quality.js';
+import { createFixedStepper } from './fixed-step.js';
 import { createFramePacer } from './frame-pacing.js';
 import { createTickBlend } from './tick-blend.js';
 import { createGameUI } from './game-ui.js';
@@ -50,7 +50,6 @@ let opponent = null;
 let analytics = { track() {} };
 const track = (event, properties) => analytics.track(event, { build: BUILD.revision, commit: BUILD.commit, ...properties });
 const observeMatch = createMatchTracker(track);
-
 const quality = createMatchQuality({ track, visible: () => !document.hidden, context: () => ({ build: BUILD.revision, commit: BUILD.commit,
   ...network?.qualityContext(), battery_saver: pacer.saver, canvas_scale: canvas.width / 800, pixel_ratio: window.devicePixelRatio || 1 }) });
 const monitor = createPerformanceMonitor(undefined, quality.record);
@@ -58,6 +57,7 @@ try {
   const observer = new PerformanceObserver(list => { for (const entry of list.getEntries()) quality.record('longTask', entry.duration); });
   observer.observe({ type: 'longtask' });
 } catch { /* Long-task timing is optional, notably on WebKit. */ }
+
 const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
 const touch = createTouchControls($('#touch-controls'), sendInput, monitor.measure);
 app.dispatch({ type: 'preferences.changed', touchLayout: touch.layout });
@@ -298,9 +298,9 @@ function update() {
   monitor.measure('ui', renderUI);
   $('#update-notice').hidden = !updateReady || app.value.started;
   observeMatch({ ...snapshot(), skins: skins() });
+  quality.observe(snapshot());
 }
 function animate(time) {
-  quality.observe(snapshot());
   const playing = core && app.value.started && !app.value.paused && engine().game_value(MATCH.phase) !== PHASE.finished
     && (app.value.mode !== 'online' || app.value.connected);
   const running = playing && (app.value.mode !== 'online' || app.value.role === 'host');
@@ -315,11 +315,11 @@ function animate(time) {
   if (advanced) broadcast();
   if (advanced) update();
   network.heartbeat();
-  network.advance(time);
-  const view = running && renderEngine() === core ? blend.view(clock.debtMs / TICK_MS) : renderEngine();
   // Drawing may be capped independently of the host's fixed simulation ticks.
   if (!pacer.due(time)) { requestAnimationFrame(animate); return; }
   monitor.frame(time);
+  network.advance(time);
+  const view = running && renderEngine() === core ? blend.view(clock.debtMs / TICK_MS) : renderEngine();
   const resolution = canvas.width / 800;
   ctx.setTransform(resolution, 0, 0, resolution, 0, 0);
   monitor.measure('render', () => drawGame(ctx, view, renderState()));

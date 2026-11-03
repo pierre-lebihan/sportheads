@@ -19,8 +19,8 @@ export function createRoomSession({ app, getCore, skins, bonusMode, targetScore,
  let lastBroadcast = 0, frameSequence = 0, receivedSequence = -1, inputSequence = 0, receivedInput = -1;
  let remoteInput = 0, lastInputAt = 0, soundTick = -1, soundMatch = -1;
  let remoteJumpPending = false, receivedJump = null, sentJump = null, recoveryTimer, matchmaker = null;
- const pitchGeometry = 'balanced-v1';
  let qualityMatch = -1, qualityToken = '';
+ const pitchGeometry = 'balanced-v1';
  const engine = () => remote.engine;
 function refreshDiagnostic() {
   if (room) $('#network-report').textContent = JSON.stringify(room.diagnostic(), null, 2);
@@ -58,8 +58,8 @@ function broadcast() {
   // Starting a bonus pitch remains blocked until the capability is advertised.
   if (!app.value.guestBonusPitches && isBonusPitch(frame.match.pitch)) frame.match.pitch = 8;
   const packet = encodeFrame(frame);
-  if (!app.value.guestStatBuffs) delete packet.buffs;
   ensureQualityToken();
+  if (!app.value.guestStatBuffs) delete packet.buffs;
   if (!app.value.guestBonusV2) delete packet.bonus;
   // ack: the newest guest input already applied, so the guest can predict the rest.
   const sent = room.send({ type: 'frame', sequence: ++frameSequence, ack: receivedInput, qualityToken, matchId: app.value.matchId, started: app.value.started,
@@ -67,8 +67,8 @@ function broadcast() {
     pauseFlags: [...app.value.pauseFlags], pitchGeometry, bonusPitches: app.value.config.bonusPitches, balancePreset: app.value.config.balance.preset,
     balanceAmount: app.value.config.balance.amount, state: packet },
     { volatile: app.value.started && !app.value.paused && frame.match.phase === PHASE.playing });
-  lastBroadcast = performance.now();
   if (!sent) quality?.count('sendDrops');
+  lastBroadcast = performance.now();
 }
 
 function onMessage(message) {
@@ -121,8 +121,8 @@ function onMessage(message) {
   const newMatch = message.matchId !== app.value.matchId || app.value.started !== message.started;
   const oldPaused = app.value.paused;
   receivedSequence = message.sequence;
-  app.dispatch({ type: 'remote.frame', matchId: message.matchId, started: message.started, pauseFlags: message.pauseFlags,
   if (typeof message.qualityToken === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(message.qualityToken)) qualityToken = message.qualityToken;
+  app.dispatch({ type: 'remote.frame', matchId: message.matchId, started: message.started, pauseFlags: message.pauseFlags,
     setupStep: message.setupStep, balancedPitches: message.pitchGeometry === pitchGeometry, newMatch,
     config: { skins: [received.skins[0], skins()[1]], pitch: received.match.pitch, bonusPitches: message.bonusPitches ?? false, targetScore: received.match.targetScore,
       bonusMode: bonusModeFromMessage(message), balance: received.buffs ? { preset: message.balancePreset, amount: message.balanceAmount, buffs: received.buffs } : createBalance() } });
@@ -131,8 +131,8 @@ function onMessage(message) {
   quality?.state(message.sequence, received.match.tick);
   remoteView.update({ active: app.value.started && !app.value.paused && received.match.phase === PHASE.playing,
     key: `${app.value.matchId}:${app.value.started}:${received.match.phase}:${received.match.pitch}` });
-  if (newMatch) {if (app.value.started) app.dispatch({ type: 'settings.closed' });clearInput();music();if (app.value.started && document.hidden) pause(true);else if (app.value.started) canvas.focus({ preventScroll: true });}
   quality?.record('correction', remoteView.diagnostics().correctionPx);
+  if (newMatch) {if (app.value.started) app.dispatch({ type: 'settings.closed' });clearInput();music();if (app.value.started && document.hidden) pause(true);else if (app.value.started) canvas.focus({ preventScroll: true });}
   if (oldPaused !== app.value.paused) {clearInput();music();if (!app.value.paused) canvas.focus({ preventScroll: true });}
   if (app.value.started && !app.value.paused && (soundTick !== engine().game_value(MATCH.tick) || soundMatch !== app.value.matchId)) {
     soundTick = engine().game_value(MATCH.tick);soundMatch = app.value.matchId;playSounds(engine().game_value(MATCH.sounds));
@@ -223,8 +223,8 @@ async function connectRoom(create, { search = null, code: found = '' } = {}) {
     onRedialFailed: () => {if (room === candidate) roomStatus(search ? 'La connexion n’a pas pu être rétablie. Cherchez un autre adversaire.' : 'La connexion n’a pas pu être rétablie. Rejoignez la salle avec le même code.', true);},
     onDisconnect: () => {
       if (room !== candidate) return;
-      clearTimeout(recoveryTimer); app.dispatch({ type: 'room.disconnected' });
       track('online_disconnected', { role: candidate.role, peer_build: candidate.peerBuild, ...roomSessionQuality() });
+      clearTimeout(recoveryTimer); app.dispatch({ type: 'room.disconnected' });
       clearInput(); remoteInput = 0; if (app.value.started) audio.stopAll();
       roomStatus(search ? candidate.role === 'guest' ? 'Vous êtes déconnecté de votre adversaire. Reconnexion automatique…'
         : 'Votre adversaire est déconnecté. Attendez son retour ou cherchez un autre adversaire.'
@@ -298,11 +298,10 @@ async function copyRoom(link) {
   consumedInput() { remoteJumpPending = false; },
   heartbeat() { if (app.value.role === 'host' && performance.now() - lastBroadcast > 200) broadcast(); },
   advance: time => remoteView.advance(time),
-  get engine() { return remote.engine; }, get viewEngine() { return remoteView.engine; },
   qualityContext: roomSessionQuality,
   viewDiagnostics: time => remoteView.diagnostics(time),
+  get engine() { return remote.engine; }, get viewEngine() { return remoteView.engine; },
  });
-}
  function roomSessionQuality() {
    ensureQualityToken();
    return { ...(qualityToken ? { match_token: qualityToken } : {}), path: connectionPath({ connectivity: room?.connectivity }),
@@ -311,3 +310,4 @@ async function copyRoom(link) {
  function ensureQualityToken() {
    if (app.value.role === 'host' && app.value.started && qualityMatch !== app.value.matchId) { qualityMatch = app.value.matchId; qualityToken = crypto.randomUUID(); }
  }
+}

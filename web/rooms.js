@@ -19,8 +19,8 @@ export const CODE_HELP = 'Entrez le caractère du code de la salle.';
 // Only matchmaking passes through PeerServer. Match snapshots and inputs use
 // encrypted WebRTC data channels; the creator is the sole simulation owner.
 export class Room {
-  constructor({ onReady, onMessage, onDisconnect, onError, onRedialFailed, onBuild }) {
-    Object.assign(this, { onReady, onMessage, onDisconnect, onError, onRedialFailed, onBuild });
+  constructor({ onReady, onMessage, onDisconnect, onError, onRedialFailed, onBuild, onStats }) {
+    Object.assign(this, { onReady, onMessage, onDisconnect, onError, onRedialFailed, onBuild, onStats });
     this.closed = false; this.connected = false; this.peer = null; this.connection = null;
     this.timer = null; this.heartbeat = null; this.code = ''; this.role = null;
     this.suspended = false; this.lastSeen = 0;
@@ -56,13 +56,13 @@ export class Room {
     this.collectingStats = true;
     try {
       const report = await pc.getStats();
-      if (this.connection === connection) this.connectivity = {
+      if (this.connection === connection) { this.connectivity = {
         ms: Math.round(performance.now() - this.createdAt),
         signaling: pc.signalingState, gathering: pc.iceGatheringState,
         localDescription: pc.localDescription?.type, remoteDescription: pc.remoteDescription?.type,
         remoteSdpCandidates: (pc.remoteDescription?.sdp?.match(/^a=candidate:/gm) || []).length,
         ...summarizeIce(report),
-      };
+      }; this.onStats?.(this.connectivity); }
     } catch { /* Some browsers stop providing stats while closing or suspended. */ }
     finally { this.collectingStats = false; }
   }

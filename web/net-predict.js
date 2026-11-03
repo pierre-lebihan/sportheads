@@ -31,7 +31,7 @@ export function replay(start, ticks, controls, params) {
 
 export function createOwnPrediction(now = () => performance.now()) {
   let sent = [], target = { x: 0, y: 0 }, shown = { x: 0, y: 0 }, shownAt = 0;
-  let authority = null, rest = Infinity, active = false;
+  let authority = null, rest = Infinity, active = false, measuredAck = -1;
   function settle(time) {
     const blend = 1 - Math.exp(-Math.max(0, time - shownAt) / SMOOTHING_MS);
     shown = { x: shown.x + (target.x - shown.x) * blend, y: shown.y + (target.y - shown.y) * blend };
@@ -67,6 +67,8 @@ export function createOwnPrediction(now = () => performance.now()) {
     },
     /** engine: the guest's read-only copy of the creator's last frame. */
     frame(engine, ack, buffs, playing, time = now()) {
+      const acknowledged = ack > measuredAck ? sent.find(entry => entry.sequence === ack) : null;
+      if (Number.isSafeInteger(ack)) measuredAck = Math.max(measuredAck, ack);
       settle(time);
       active = playing && Number.isSafeInteger(ack);
       const index = Array.from({ length: engine.game_body_count() }, (_, i) => i).find(i => engine.game_body_value(i, BODY.role) === BODY_ROLE.red);
@@ -85,6 +87,7 @@ export function createOwnPrediction(now = () => performance.now()) {
       } };
       sent = sent.filter(entry => entry.sequence >= ack);
       recompute(time);
+      return acknowledged ? time - acknowledged.time : undefined;
     },
     /** Offset for a body role at this display time; zero for every other body. */
     offset(role, time = now()) {
@@ -92,6 +95,6 @@ export function createOwnPrediction(now = () => performance.now()) {
       recompute(time); settle(time);
       return shown;
     },
-    reset() { sent = []; authority = null; active = false; rest = Infinity; target = shown = { x: 0, y: 0 }; },
+    reset() { sent = []; authority = null; active = false; measuredAck = -1; rest = Infinity; target = shown = { x: 0, y: 0 }; },
   });
 }

@@ -16,6 +16,13 @@ export function deviceInfo(ua = '', touchPoints = 0, width = 0) {
   return { $os: os, $browser: browser, $device_type: device };
 }
 
+export function browserVersion(ua = '') {
+  const pattern = { 'Samsung Internet': /SamsungBrowser\/([\d.]+)/, 'Microsoft Edge': /Edg(?:A|iOS)?\/([\d.]+)/,
+    Opera: /(?:OPR|Opera)\/([\d.]+)/, Firefox: /(?:Firefox|FxiOS)\/([\d.]+)/,
+    Chrome: /(?:Chrome|CriOS)\/([\d.]+)/, Safari: /Version\/([\d.]+)/ }[deviceInfo(ua).$browser];
+  return pattern?.exec(ua)?.[1];
+}
+
 // relay = through the TURN server, direct = peer to peer, unknown = no selected pair yet.
 export function connectionPath(diagnostic) {
   const pair = diagnostic?.connectivity?.pairs?.find(row => row.selected);
@@ -74,6 +81,7 @@ export function createAnalytics({ key = POSTHOG_KEY, host = POSTHOG_HOST } = {})
   if (!enabled) return { enabled: false, track() {} };
   const distinctId = visitorId(), session = uuid7();
   const common = { ...deviceInfo(navigator.userAgent, navigator.maxTouchPoints, screen.width), $lib: 'sportheads',
+    $browser_version: browserVersion(navigator.userAgent),
     $session_id: session, $process_person_profile: false, $screen_width: screen.width, $screen_height: screen.height,
     standalone: matchMedia('(display-mode: standalone)').matches || navigator.standalone === true };
   function track(event, properties = {}) {

@@ -79,7 +79,7 @@ assert.ok(url, 'Usage: node scripts/check-online.cjs URL');
       await page.click('#play-view');
       for (const selector of ['#setup-steps','#setup-navigation','#online-panel','#player-choice','.rules-screen .launch'])
         assert.equal(await page.locator(selector).isVisible(),false,`online match settings hide ${selector}`);
-      for (const selector of ['[data-setup-screen=rules]','#quit-match-settings','#close-settings','#fullscreen-settings','#performance-diagnostic'])
+      for (const selector of ['[data-setup-screen=rules]','#quit-match-settings','#close-settings','#fullscreen-settings'])
         assert.equal(await page.locator(selector).isVisible(),true,`online match settings keep ${selector}`);
       await page.click('#close-settings'); await page.click('#resume');
       await Promise.all([host,guest].map(p=>p.waitForFunction(()=>!sportheads.snapshot().paused)));

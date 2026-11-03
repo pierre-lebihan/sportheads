@@ -14,7 +14,19 @@ function run(pacer, hz, frames, playing = true, start = 0) {
 test('60 Hz screens draw every frame and 120 Hz screens every other one', () => {
   assert.equal(run(createFramePacer(), 60, 120).drawn, 120);
   assert.equal(run(createFramePacer(), 120, 240).drawn, 120);
-  assert.equal(run(createFramePacer(), 144, 288).drawn, 144);
+  assert.equal(run(createFramePacer(), 144, 288).drawn, 120);
+});
+
+test('90 and variable refresh keep the 60 fps budget without triggering the saver', () => {
+  const pacer = createFramePacer();
+  let result = run(pacer, 90, 900);
+  assert.ok(Math.abs(result.drawn - 600) <= 1);
+  assert.equal(pacer.saver, false);
+  result = run(pacer, 144, 1440, true, result.time);
+  assert.ok(Math.abs(result.drawn - 600) <= 1);
+  assert.equal(pacer.saver, false);
+  result = run(pacer, 120, 1200, true, result.time);
+  assert.ok(Math.abs(result.drawn - 600) <= 1);
 });
 
 test('a device below 45 fps during play switches to a steady 30 fps', () => {

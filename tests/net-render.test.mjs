@@ -4,15 +4,15 @@ import { readFile } from 'node:fs/promises';
 import { captureState, createRemoteEngine } from '../web/net-state.js';
 import { createRemoteView } from '../web/net-render.js';
 
-async function setup() {
+async function setup(prediction, role = 1) {
   const { instance } = await WebAssembly.instantiate(await readFile(new URL('../probe/physics-core.wasm', import.meta.url)));
   instance.exports.game_reset(1);
   const packet = captureState(instance.exports, [1, 2]);
-  const head = packet.bodies.find(body => body[9] === 1);
+  const head = packet.bodies.find(body => body[9] === role);
   head[0] = 100; head[1] = 200; head[2] = 120; head[3] = 0;
   const remote = createRemoteEngine(); remote.update(packet);
-  const view = createRemoteView(remote.engine);
-  const index = packet.bodies.findIndex(body => body[9] === 1);
+  const view = createRemoteView(remote.engine, undefined, prediction);
+  const index = packet.bodies.findIndex(body => body[9] === role);
   view.update({ active: true, key: 'match-1' }, 0);
   return { packet, head, remote, view, index, x: () => view.engine.game_body_value(index, 0) };
 }
@@ -51,4 +51,22 @@ test('finite but extreme velocities have bounded visual displacement', async () 
   const { view, remote, packet, head, x } = await setup();
   head[2] = 1e10; remote.update(packet); view.update({ active: true, key: 'new' }, 0);
   view.advance(80); near(x(), 140);
+});
+
+test('repeated snapshots never accumulate the guest prediction into the route correction', async () => {
+  let lead = 10;
+  const { view, remote, packet, head, x } = await setup({ offset: role => role === 2 ? { x: lead, y: 0 } : null }, 2);
+  head[2] = 0;
+  remote.update(packet); view.update({ active: true, key: 'stationary' }, 0);
+  for (let tick = 1; tick <= 30; tick++) {
+    remote.update(packet); view.update({ active: true, key: 'stationary' }, tick * 1000 / 30);
+    near(x(), 110);
+  }
+  lead = 0;
+  view.advance(1100); near(x(), 100);
+  assert.ok(Number.isFinite(view.diagnostics(1100).correctionPx));
+  lead = 80; view.advance(1100); near(x(), 180);
+  head[0] = 105; remote.update(packet); view.update({ active: true, key: 'stationary' }, 1100);
+  near(x(), 180, 'a large predicted lead is not a teleport');
+  view.advance(1150); near(x(), 185);
 });

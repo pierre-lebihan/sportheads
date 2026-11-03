@@ -117,14 +117,41 @@ par image et conserve la dette pour les images suivantes. Aucun pas en attente
 n'est supprimé et aucun delta variable n'est transmis au solveur. Le plafond
 de 250 ms sur le temps écoulé et la remise à zéro à la pause existaient déjà.
 
-Depuis le menu **Pause → Mesurer la fluidité (10 s)** ou les réglages en match,
-**Fluidité du jeu → Mesurer pendant 10 secondes** relance
-la partie et mesure séparément les commandes, le contrôleur IA, l'anticipation
-du Worker, la physique, l'interface et le rendu. Le diagnostic contient les
-moyennes, médianes, 95es percentiles et maxima, le retard de simulation,
-les images chargées et l'état du Worker. **Copier le diagnostic** permet
-d'obtenir ces mesures sur un véritable iPhone ou Android, sans les envoyer
-automatiquement ailleurs.
+Le suivi des parties en ligne est automatique (`web/match-quality.js`) :
+une synthèse `online_quality` est envoyée à PostHog toutes les 15 secondes de
+jeu visible, avec une dernière fenêtre à la pause, à la déconnexion ou à la
+sortie. Aucun bouton de mesure manuelle n'est nécessaire.
+
+Les synthèses distinguent cadence d'affichage, images espacées de plus de 50 ms,
+coût du rendu, de la physique et du traitement réseau, longs blocages du fil
+principal quand le navigateur les expose, intervalle et irrégularité des états,
+âge du dernier état reçu et corrections de position. L'aller-retour ICE et le
+délai d'accusé de commande sont deux mesures distinctes. Les états sautés ne
+constituent pas une mesure de perte de paquets : ils incluent les vues écartées
+par le transport ou remplacées par des états plus récents.
+
+Chaque synthèse précise la version du jeu, le rôle, le terrain, le trajet direct
+ou TURN, le canal rapide et la résolution. Un identifiant aléatoire par match,
+partagé par les deux joueurs, permet de rapprocher leurs mesures sans envoyer
+le code de salle. Le navigateur, sa version et le système proviennent des
+propriétés communes d'audience. Aucun replay, commande, IP ou SDP n'est envoyé.
+Les statistiques désactivées, Do Not Track et Global Privacy Control restent
+respectés. Les requêtes bloquées ou hors ligne sont abandonnées sans relance.
+
+Les distributions sont bornées à 1 024 échantillons récents par métrique ;
+les moyennes et maxima portent sur toute la fenêtre. Les percentiles agrégés
+dans PostHog sont des moyennes de percentiles par fenêtre, pas le percentile
+global de toutes les images. Les pauses, les décomptes et les pages masquées
+sont exclus. L'envoi de fin de page reste au mieux, car un navigateur peut
+arrêter une page sans exécuter son dernier callback.
+
+Le tableau de bord [Sportheads — fluidité des parties](https://eu.posthog.com/project/313996/dashboard/1054176)
+présente les FPS par rôle, les images lentes par système, les délais réseau et
+les corrections de position. Ces mesures de diagnostic sont propres au jeu,
+sans définition certifiée dans le Data Catalog. Elles commencent avec la
+publication de cette instrumentation ; elles ne reconstituent pas les anciennes
+parties. Le dernier résumé et les mesures techniques restent accessibles à la
+console avec `sportheads.performance()`.
 
 Les essais CDP et WebKit sont des émulations : cette refonte n'est pas une
 mesure sur téléphone physique. Le ralentissement CDP s'applique au fil principal,
@@ -136,6 +163,16 @@ ressources de démarrage, l'absence d'anticipation native sur le fil principal,
 la parité du vrai Worker, les limites de rattrapage, les transitions de sortie
 et le repli sans Worker. Les timings de performance restent des mesures
 diagnostiques, pas un seuil de FPS dépendant de la machine du runner.
+
+`check-online-quality.cjs` ajoute un contrôle Chromium en CI : signalisation
+locale, vrais canaux WebRTC, résumé automatique intercepté, identifiant partagé,
+refus de collecte côté invité et réduction de résolution après un ralentissement
+invité provoqué. Aucun événement de test n'est envoyé au projet PostHog.
+Les menus et le retrait de la mesure manuelle sont vérifiés dans Chromium et
+WebKit par les scénarios d'affichage et de runtime. L'option `--webkit` du
+contrôle réseau reste un diagnostic séparé : sur le Mac de validation, ICE est
+resté `new` sans paire de candidats malgré les offres/réponses et candidats
+acceptés. Ce résultat ne valide pas le transport WebKit ni un téléphone réel.
 
 ## Fluidité sur iPhone
 
@@ -167,9 +204,9 @@ image étaient stables. Les corrections suivantes visent donc les coûts propres
   (rotation, écran partagé) les relâche désormais. Le joystick lit la mise en
   page une fois avant d'écrire ses styles.
 
-Ces changements n'ont pas encore été mesurés sur un iPhone physique. Pour le
-faire, comparez deux diagnostics **Fluidité du jeu**, l'un en début de match et
-l'autre en fin de match.
+Ces changements n'ont pas encore été mesurés sur un iPhone physique. Le suivi
+automatique des parties en ligne permet de comparer les fenêtres successives
+d'une même partie et les versions du jeu sur les appareils réellement utilisés.
 
 ## Terrains bonus
 

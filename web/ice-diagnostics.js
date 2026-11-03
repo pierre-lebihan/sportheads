@@ -21,6 +21,7 @@ export function summarizeIce(report) {
     requestsSent: count(row.requestsSent), requestsReceived: count(row.requestsReceived),
     responsesReceived: count(row.responsesReceived), responsesSent: count(row.responsesSent),
     bytesSent: count(row.bytesSent), bytesReceived: count(row.bytesReceived),
+    ...(count(row.currentRoundTripTime) === undefined ? {} : { rttMs: row.currentRoundTripTime * 1000 }),
   })).sort((a, b) => Number(b.selected) - Number(a.selected) || (b.requestsSent || 0) - (a.requestsSent || 0));
   return {
     localCandidates: local.map(candidate), remoteCandidates: remote.map(candidate),

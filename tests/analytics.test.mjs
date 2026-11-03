@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deviceInfo, connectionPath, createMatchTracker } from '../web/analytics.js';
+import { deviceInfo, browserVersion, connectionPath, createMatchTracker } from '../web/analytics.js';
 
 test('device type, system and browser come from the user agent', () => {
   assert.deepEqual(deviceInfo('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1', 5, 390),
@@ -20,6 +20,14 @@ test('the online path tells the TURN relay from a direct link', () => {
   assert.equal(connectionPath({ connectivity: { pairs: [pair('relay', 'relay', false), pair('srflx', 'host')] } }), 'direct');
   assert.equal(connectionPath({ connectivity: { pairs: [pair('host', 'host', false)] } }), 'unknown');
   assert.equal(connectionPath(undefined), 'unknown');
+});
+
+test('browser version belongs to the actual browser rather than an embedded compatibility token', () => {
+  assert.equal(browserVersion('Chrome/150.0 Mobile Safari/537.36 SamsungBrowser/30.1'), '30.1');
+  assert.equal(browserVersion('Chrome/150.0 Safari/537.36 Edg/151.2'), '151.2');
+  assert.equal(browserVersion('Chrome/150.0 Safari/537.36 OPR/120.3'), '120.3');
+  assert.equal(browserVersion('Version/27.1 Mobile Safari/605.1'), '27.1');
+  assert.equal(browserVersion('Android Chrome/150.4 Mobile Safari/537.36'), '150.4');
 });
 
 test('each match is reported once as started, then finished or left', () => {

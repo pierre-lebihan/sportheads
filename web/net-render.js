@@ -13,7 +13,7 @@ export function createRemoteView(authority, now = () => performance.now(), predi
     const residual = Math.max(0, 1 - age / CORRECTION);
     displayed = poses.map(pose => {
       const lead = running ? prediction?.offset(pose.role, time) : null;
-      return { role: pose.role, radius: pose.radius,
+      return { role: pose.role, radius: pose.radius, leadX: lead?.x || 0, leadY: lead?.y || 0,
         x: pose.x + (running ? clamp(pose.vx * seconds, MAX_TRAVEL) + pose.dx * residual + (lead?.x || 0) : 0),
         y: pose.y + (running ? clamp(pose.vy * seconds, MAX_TRAVEL) + pose.dy * residual + (lead?.y || 0) : 0),
         angle: pose.angle + (running ? clamp(pose.omega * seconds, 1.2) + pose.da * residual : 0) };
@@ -39,12 +39,18 @@ export function createRemoteView(authority, now = () => performance.now(), predi
       poses = Array.from({ length: authority.game_body_count() }, (_, index) => {
         const pose = { ...readBody(authority, index), dx: 0, dy: 0, da: 0 };
         const before = previous.get(pose.role);
-        if (continuous && before?.radius === pose.radius && Math.hypot(before.x - pose.x, before.y - pose.y) < TELEPORT) {
-          pose.dx = before.x - pose.x; pose.dy = before.y - pose.y; pose.da = angleDelta(before.angle - pose.angle);
+        if (continuous && before?.radius === pose.radius && Math.hypot(before.x - before.leadX - pose.x, before.y - before.leadY - pose.y) < TELEPORT) {
+          // Preserve the unpredicted route. Including the player's input offset
+          // here would add it again on every packet and amplify it over time.
+          pose.dx = before.x - before.leadX - pose.x; pose.dy = before.y - before.leadY - pose.y; pose.da = angleDelta(before.angle - pose.angle);
         }
         return pose;
       });
       advance(time);
+    },
+    diagnostics(time = now()) {
+      return { ageMs: running ? Math.max(0, time - receivedAt) : 0,
+        correctionPx: running ? Math.max(0, ...poses.map(pose => Math.hypot(pose.dx, pose.dy))) : 0 };
     },
   });
 }

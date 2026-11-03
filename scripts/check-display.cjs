@@ -66,7 +66,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
           for (const selector of ['#setup-steps','#setup-navigation','#online-panel','#player-choice','#reload-page','.rules-screen .launch','[data-setup-screen=home]','[data-setup-screen=difficulty]','[data-setup-screen=pitch]']) {
             assert.equal(await page.locator(selector).isVisible(),false,`match settings hide ${selector}`);
           }
-          for (const selector of ['[data-setup-screen=rules]','#target-score','#balance-controls','#quit-match-settings','#fullscreen-settings','#close-settings','#touch-settings','#performance-diagnostic']) {
+          for (const selector of ['[data-setup-screen=rules]','#target-score','#balance-controls','#quit-match-settings','#fullscreen-settings','#close-settings','#touch-settings']) {
             assert.equal(await page.locator(selector).isVisible(),true,`match settings keep ${selector}`);
           }
           await page.screenshot({path:`evidence/match-settings-${browser===chrome?'chrome':'webkit'}-${mode}.png`});
@@ -82,7 +82,7 @@ const url = process.argv[2]; assert.ok(url, 'Usage: node scripts/check-display.c
         }
         await page.click('#play-view'); await page.click('#quit-match-settings');
         assert.equal(await page.locator('#play-local').isVisible(),true);
-        assert.equal(await page.locator('#performance-diagnostic').isVisible(),true,'preparation retains its help sections');
+        assert.equal(await page.locator('#performance-diagnostic').count(),0,'manual performance measurement is removed');
       }
       await page.click('#play-online');
       assert.equal(await page.locator('#reload-page').isVisible(),false,'room preparation hides reload');

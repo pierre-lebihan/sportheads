@@ -216,6 +216,13 @@ aucune donnée personnelle n'est envoyée ; l'identifiant aléatoire du visiteur
 expire après 13 mois. Do Not Track, Global Privacy Control ou `?stats=off`
 désactivent la mesure (`?stats=on` la réactive). Rien n'est envoyé en local ni
 pendant les tests automatisés.
+Les parties en ligne ajoutent des résumés automatiques de fluidité toutes les
+15 secondes de jeu visible : FPS, lenteurs de rendu, délais réseau et corrections
+de position, avec un identifiant de match partagé et la version du jeu.
+Le [tableau de bord de fluidité](https://eu.posthog.com/project/313996/dashboard/1054176)
+et [le contrat des mesures](docs/runtime.md) permettent de comparer les appareils
+et les versions sans lancer une mesure manuelle. Aucun replay ni commande de
+joueur n'est enregistré.
 Pour revenir à une version précédente, rétablir le commit souhaité sur `main` et
 laisser le workflow Pages republier cette version.
 

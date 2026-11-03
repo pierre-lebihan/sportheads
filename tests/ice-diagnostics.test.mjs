@@ -43,3 +43,11 @@ test('server errors are labelled without exposing custom URLs or credentials', (
   assert.equal(iceServerLabel('turn:us-0.turn.peerjs.com:3478'), 'peerjs-us');
   assert.equal(iceServerLabel('turns:secret:password@192.0.2.1:443'), 'other-turn');
 });
+
+test('selected ICE latency is converted to milliseconds and missing timing stays absent', () => {
+  const report = new Map([['transport', { type: 'transport', selectedCandidatePairId: 'pair' }],
+    ['pair', { id: 'pair', type: 'candidate-pair', currentRoundTripTime: .042 }]]);
+  assert.equal(summarizeIce(report).pairs[0].rttMs, 42);
+  report.get('pair').currentRoundTripTime = undefined;
+  assert.equal(Object.hasOwn(summarizeIce(report).pairs[0], 'rttMs'), false);
+});

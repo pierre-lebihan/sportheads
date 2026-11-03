@@ -1,10 +1,10 @@
 import { readRenderState } from './engine-view.js';
-import { setupPerformancePanel } from './performance-ui.js';
 import { assetStats } from './assets.js';
 import { createRoomSession } from './room-session.js';
 import { createPlannerService } from './planner.js';
 import { createPerformanceMonitor } from './performance.js';
 import { createFixedStepper } from './fixed-step.js';
+import { createMatchQuality } from './match-quality.js';
 import { createFramePacer } from './frame-pacing.js';
 import { createTickBlend } from './tick-blend.js';
 import { createGameUI } from './game-ui.js';
@@ -28,7 +28,7 @@ import { BONUS_NAMES, NEW_BONUSES } from "./bonuses.js";
 import { createAnalytics, createMatchTracker } from './analytics.js';
 import { BUILD, createUpdateWatcher } from './version.js';
 
-const app = createAppStore(), monitor = createPerformanceMonitor(), clock = createFixedStepper(), pacer = createFramePacer();
+const app = createAppStore(), clock = createFixedStepper(), pacer = createFramePacer();
 let updateReady = false;
 const $ = (selector) => document.querySelector(selector);
 const randomChoices = [['random-player-0', 'skin-left'], ['random-player-1', 'skin-right'], ['random-pitch', 'pitch']];
@@ -48,9 +48,16 @@ let core, network, blend;
 let opponent = null;
 // Started once the game has loaded, so statistics never delay the first match.
 let analytics = { track() {} };
-const track = (event, properties) => analytics.track(event, properties);
+const track = (event, properties) => analytics.track(event, { build: BUILD.revision, commit: BUILD.commit, ...properties });
 const observeMatch = createMatchTracker(track);
 
+const quality = createMatchQuality({ track, visible: () => !document.hidden, context: () => ({ build: BUILD.revision, commit: BUILD.commit,
+  ...network?.qualityContext(), battery_saver: pacer.saver, canvas_scale: canvas.width / 800, pixel_ratio: window.devicePixelRatio || 1 }) });
+const monitor = createPerformanceMonitor(undefined, quality.record);
+try {
+  const observer = new PerformanceObserver(list => { for (const entry of list.getEntries()) quality.record('longTask', entry.duration); });
+  observer.observe({ type: 'longtask' });
+} catch { /* Long-task timing is optional, notably on WebKit. */ }
 const hasTouch = () => navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches;
 const touch = createTouchControls($('#touch-controls'), sendInput, monitor.measure);
 app.dispatch({ type: 'preferences.changed', touchLayout: touch.layout });
@@ -260,17 +267,17 @@ window.addEventListener('keydown', (event) => {
 });
 window.addEventListener('keyup', (event) => {keys.delete(event.code);sendInput();});
 window.addEventListener('blur', () => {clearInput();sendInput();pause();});
-function suspendPage() {clearInput();sendInput();pause();network.suspend();}
+function suspendPage() {quality.suspend();clearInput();sendInput();pause();network.suspend();}
 function resumePage() {network.resume();clock.reset();}
 // Mobile browsers can suspend this page while the invitation is shared in another app.
-window.addEventListener('pagehide', (event) => {if (event.persisted) suspendPage();else network.close();});
+window.addEventListener('pagehide', (event) => {quality.suspend('pagehide');if (event.persisted) suspendPage();else network.close();});
 window.addEventListener('pageshow', resumePage);
 window.addEventListener('online', resumePage);
 document.addEventListener('visibilitychange', () => {if (document.hidden) suspendPage();else resumePage();});
 setInterval(sendInput, 50);
 
 function renderState() { return readRenderState(engine(), app.value); }
-network = createRoomSession({ app, getCore: () => core, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio, track, checkPeerBuild });
+network = createRoomSession({ app, getCore: () => core, skins, bonusMode, targetScore, validTarget, clearMatch, clearInput, update, music, pause, applyPause, canvas, touch, input, playSounds, audio, track, checkPeerBuild, quality, measure: monitor.measure });
 function sendInput() { network?.sendInput(); }
 function broadcast() { network?.broadcast(); }
 function connectRoom(create) { return network.connect(create); }
@@ -293,10 +300,10 @@ function update() {
   observeMatch({ ...snapshot(), skins: skins() });
 }
 function animate(time) {
-  if (!pacer.due(time)) { requestAnimationFrame(animate); return; }
-  monitor.frame(time);
-  const running = core && app.value.started && !app.value.paused && engine().game_value(MATCH.phase) !== PHASE.finished
-    && (app.value.mode !== 'online' || (app.value.role === 'host' && app.value.connected));
+  quality.observe(snapshot());
+  const playing = core && app.value.started && !app.value.paused && engine().game_value(MATCH.phase) !== PHASE.finished
+    && (app.value.mode !== 'online' || app.value.connected);
+  const running = playing && (app.value.mode !== 'online' || app.value.role === 'host');
   const advanced = clock.advance(time, running, () => {
     const human = monitor.measure('input', () => input());
     const opponentMask = app.value.mode === 'ai' ? monitor.measure('aiMain', () => opponent.step(core)) << 4
@@ -306,24 +313,28 @@ function animate(time) {
     touch.consumeJumps(); network.consumedInput(); playSounds(core.game_value(MATCH.sounds));
   });
   if (advanced) broadcast();
-  if (running) update();
+  if (advanced) update();
   network.heartbeat();
   network.advance(time);
   const view = running && renderEngine() === core ? blend.view(clock.debtMs / TICK_MS) : renderEngine();
+  // Drawing may be capped independently of the host's fixed simulation ticks.
+  if (!pacer.due(time)) { requestAnimationFrame(animate); return; }
+  monitor.frame(time);
   const resolution = canvas.width / 800;
   ctx.setTransform(resolution, 0, 0, resolution, 0, 0);
   monitor.measure('render', () => drawGame(ctx, view, renderState()));
   monitor.record('simulationDebt', clock.debtMs);
-  const saver = pacer.saver; pacer.drawn(time, running); if (pacer.saver !== saver) fitResolution();
+  if (app.value.role === 'guest') quality.record('stateAge', network.viewDiagnostics(time).ageMs);
+  const saver = pacer.saver; pacer.drawn(time, playing); if (pacer.saver !== saver) fitResolution();
+  quality.frame(time);
   requestAnimationFrame(animate);
 }
 function performanceReport() {
   return { revision: 1, browser: navigator.userAgent, mode: app.value.mode, role: app.value.role, started: app.value.started, paused: app.value.paused, matchId: app.value.matchId, difficulty: app.value.mode === 'ai' ? difficulty().id : null,
     costs: monitor.report(), assets: { ...assetStats(), imageTransferBytes: performance.getEntriesByType('resource')
       .filter(entry => /\/assets\/.*\.(svg|png|webp)(?:\?|$)/.test(entry.name)).reduce((sum, entry) => sum + entry.encodedBodySize, 0) },
-    planner: planner?.stats(), scheduler: { tickMs: 1000 / 30, maxStepsPerFrame: 2, debtMs: clock.debtMs, batterySaver: pacer.saver } };
+    planner: planner?.stats(), onlineQuality: quality.report(), scheduler: { tickMs: 1000 / 30, maxStepsPerFrame: 2, debtMs: clock.debtMs, batterySaver: pacer.saver } };
 }
-setupPerformancePanel({ report: performanceReport, reset: () => monitor.reset(), resume() { closeSettings(); pause(false); } });
 window.sportheads = { resetPerformance: () => monitor.reset(), checkUpdate: reason => updates.check(reason), performance: performanceReport, inspectPlanner: () => planner.inspect(), get state() { return app.value; }, snapshot, renderState, get engine() {return engine();}, get renderEngine() {return renderEngine();}, render() {update();network.advance();ctx.setTransform(canvas.width / 800, 0, 0, canvas.width / 800, 0, 0);drawGame(ctx, renderEngine(), renderState());} };
 try {
   const response = await fetch('./physics-core.wasm');if (!response.ok) throw new Error('Chargement du moteur impossible.');

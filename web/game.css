@@ -170,7 +170,6 @@ select,input[type="number"]{color:#304e6c;background:white;border:1px solid #bdc
 
 .bonuses-help{flex-basis:100%;margin:0;color:#61798e;font-size:11px;line-height:1.4}.v2-guide{width:100%;font-size:12px}.v2-guide summary{cursor:pointer;color:#244875}.v2-guide ul{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:10px}.v2-guide li{display:grid;grid-template-columns:76px 1fr;gap:3px 8px;align-items:center}.v2-guide canvas{grid-row:1/3;width:76px;height:40px}.v2-guide strong{font-size:12px}.v2-guide span{grid-column:2;line-height:1.4;color:#61798e;font-size:11px}.settings #bonuses{max-width:100%}
 
-#performance-report { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .72rem; }
 /* Shown by compat.js on browsers too old for the game: no inset or flex gap. */
 .unsupported-browser{position:fixed;top:0;right:0;bottom:0;left:0;z-index:100;padding:30vh 24px 24px;background:#244875;color:#fff;text-align:center;font:16px/1.4 -apple-system,system-ui,sans-serif}.unsupported-browser strong{display:block;margin-bottom:12px;font-size:22px}
 
